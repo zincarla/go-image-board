@@ -1,0 +1,88 @@
+{{template "header.html" .}}
+	<body>
+		{{template "headMenu.html" .}}
+		<div id="BodyContent">
+			<div id="SideMenu" class="cellDefaultHidden">
+				<form action="/images" method="post">
+					<input type="text" name="SearchTerms" placeholder="Search" value="{{.OldQuery}}">
+					<input type="submit" value="Go">
+				</form>
+			</div>
+			<div id="ImageGridContainer">
+				<div class="narrowCenteredContainer">
+					{{$EditPermissions := .UserPermissions.HasPermission 128}}
+					{{$DisableAccount := .UserPermissions.HasPermission 64}}
+					{{if or $EditPermissions $DisableAccount}}
+						{{if $EditPermissions}}
+						<h3>Edit a User's Permissions</h3>
+						<form method="post" action="/mod">
+							<label>UserName</label>
+							<input type="text" name="userName" value="" placeholder="UserName"/><br>
+							<label>Permissions</label>
+							<input type="number" name="permissions" value="" placeholder="Permissions"/><br>
+							<input type="hidden" name="command" value="editUserPerms" />
+							<input type="submit" value="Update" />
+							<h5>Reference</h5>
+							From the table below, select the permissions you want to grab. Add their corresponding numbers together to get your final permission. Example: Upload(16) + Tag Image(1) = 17
+							<table>
+								<tr>
+									<th>Description</th>
+									<th>Number</th>
+								</tr>
+								<tr>
+									<td>Allows a user to add and remove tags to/from an image, but not create or delete tags themselves</td>
+									<td>1</td>
+								</tr>
+									<tr>
+									<td>Allows a user to add a new tag to the system (But not delete)</td>
+									<td>2</td>
+								</tr>
+								<tr>
+									<td>Allows a user to modify a tag from the system</td>
+									<td>4</td>
+								</tr>
+								<tr>
+									<td>Allows a user to remove a tag from the system</td>
+									<td>8</td>
+								</tr>
+								<tr>
+									<td>Allows a user to upload an image</td>
+									<td>16</td>
+								</tr>
+								<tr>
+									<td>Allows a user to remove an uploaded image. (Note that we can short circuit this in other code to allow a user to remove their own images)</td>
+									<td>32</td>
+								</tr>
+								<tr>
+									<td>Allows a user to disable another user</td>
+									<td>64</td>
+								</tr>
+								<tr>
+									<td>Allows a user to edit permissions of another user</td>
+									<td>128</td>
+								</tr>
+								<tr>
+									<td>BulkTagOperations</td>
+									<td>256</td>
+								</tr>
+							</table>
+						</form>
+						{{end}}
+						{{if $DisableAccount}}
+						<h3>Enable/Disable User</h3>
+						<form method="post" action="/mod">
+							<label>UserName</label>
+							<input type="text" name="userName" value="" placeholder="UserName"/><br>
+							<label>Disable?</label>
+							<input type="text" name="isDisabled" value="false" placeholder="true/false"/><br>
+							<input type="hidden" name="command" value="disableUser" />
+							<input type="submit" value="Set" />
+						</form>
+						{{end}}
+					{{else}}
+					<p>This page is for moderators. Try navigating somewhere else.</p>
+					{{end}}
+				</div>
+			</div>
+		</div>
+{{template "footer.html" .}}

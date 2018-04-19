@@ -1,0 +1,93 @@
+{{template "header.html" .}}
+	<body>
+		{{template "headMenu.html" .}}
+		<div id="BodyContent">
+			<div id="SideMenu" class="cellDefaultHidden">
+				<form action="/images" method="post">
+					<input type="text" name="SearchTerms" placeholder="Search" value="{{.OldQuery}}">
+					<input type="submit" value="Go">
+				</form>
+				{{if ne .UserID 0}}
+				<a href="/logon?command=logout">Logout</a>
+				{{end}}
+			</div>
+			<div id="ImageGridContainer">
+				<div class="narrowCenteredContainer">
+					{{if eq .UserID 0}}
+					<form method="post" action="/logon" id="logonForm" class="display{{if ne .QuestionOne ""}}Hidden{{else}}Block{{end}}">
+						<h2>Logon</h2><br>
+						UserName: <input type="text" name="userName"/><br>
+						Password: <input type="password" name="password"/><br>
+						<a href="#resetPasswordForm" onclick="ToggleDIVDisplay('logonForm'); ToggleDIVDisplay('resetPasswordForm');">Reset Password</a>
+						<input type="hidden" name="command" value="validate" />
+						<input type="submit" value="Logon" />
+						{{if .AllowAccountCreation}}
+						<a href="#createForm" onclick="ToggleDIVDisplay('logonForm'); ToggleDIVDisplay('createForm');">Create an account</a>
+						{{end}}
+					</form>
+					
+					<form method="post" action="/logon" id="resetPasswordForm" class="display{{if ne .QuestionOne ""}}Block{{else}}Hidden{{end}}">
+						<h2>Reset Password</h2><br>
+						{{if eq .UserName ""}}
+						UserName: <input type="text" name="userName"/><br>
+						{{else}}
+						<input type="hidden" name="userName" value="{{.UserName}}"/><br>
+						{{end}}
+						{{if ne .QuestionOne ""}}
+						Question 1: {{.QuestionOne}}<br>
+						Answer 1: <input type="text" name="qonea"/><br>
+						Question 2: {{.QuestionTwo}}<br>
+						Answer 2: <input type="text" name="qtwoa"/><br>
+						Question 3: {{.QuestionThree}}<br>
+						Answer 3: <input type="text" name="qthreea"/><br>
+						New Password: <input type="password" name="newpassword"/><br>
+						Confirm Password: <input type="password" name="confirmpassword"/><br>
+						{{end}}
+						<input type="hidden" name="command" value="resetpassword" />
+						<input type="submit" value="Submit" />
+						<a href="#createForm" onclick="ToggleDIVDisplay('createForm'); ToggleDIVDisplay('resetPasswordForm');">Create an account</a>
+					</form>
+					<form method="post" action="/logon" id="createForm" class="displayHidden">
+						<h2>Create Account</h2><br>
+						UserName: <input type="text" name="userName"/><br>
+						Password: <input type="password" name="password"/><br>
+						Confirm Password: <input type="password" name="confirmpassword"/><br>
+						Email: <input type="text" name="eMail"/>
+						<input type="hidden" name="command" value="create" />
+						<input type="submit" value="Create Account" />
+						Already have an account? <a href="#createForm" onclick="ToggleDIVDisplay('logonForm'); ToggleDIVDisplay('createForm');">Login</a>
+					</form>
+					{{else}}
+					<form method="post" action="/logon" id="changePWForm">
+						<h2>Change Password</h2><br>
+						UserName: <input type="text" name="userName" value="{{.UserName}}"/><br>
+						Current Password: <input type="password" name="oldpassword"/><br>
+						New Password: <input type="password" name="newpassword"/><br>
+						Confirm New Password: <input type="password" name="confirmpassword"/><br>
+						<input type="hidden" name="command" value="changepw" />
+						<input type="submit" value="Change Password" />
+					</form>
+					<form method="post" action="/logon" id="securityQForm">
+						<h2>Set Security Questions</h2><br>
+						Confirm Password: <input type="password" name="confirmpassword"/><br>
+						Question 1: <input type="text" name="qone"/><br>
+						Answer 1: <input type="text" name="qonea"/><br>
+						<p>In case your account is compromised, this question will be used to change your security questions. This will help ensure that, even if your password is taken, the thief will have difficulty changing these questions, ensuring you can reset your password. As such, choose something absolutly no one could guess about you.</p>
+						Question 2: <input type="text" name="qtwo"/><br>
+						Answer 2: <input type="text" name="qtwoa"/><br>
+						Question 3: <input type="text" name="qthree"/><br>
+						Answer 3: <input type="text" name="qthreea"/><br>
+						{{if ne .QuestionOne ""}}
+						<strong>Challenge</strong>
+						<p>You have already set your questions in the past. To verfiy this is you, answer this question.</p>
+						Challenge Question: {{.QuestionOne}}<br>
+						Answer: <input type="text" name="qoneca"/><br>
+						{{end}}
+						<input type="hidden" name="command" value="securityQuestion" />
+						<input type="submit" value="Submit" />
+					</form>
+					{{end}}
+				</div>
+			</div>
+		</div>
+{{template "footer.html" .}}

@@ -1,0 +1,12 @@
+{{template "header.html" .}}
+	<body>
+		<div id="SearchContainer">
+			<img alt="Logo" src="/resources/logo.png" />
+			<form action="/images" method="post">
+				<input type="text" name="SearchTerms" placeholder="What are you looking for?">
+				<input type="submit" value="Go">
+			</form>
+			<span id="ImageCount">{{.TotalResults}} Images!</span>
+		</div>
+	</body>
+</html>

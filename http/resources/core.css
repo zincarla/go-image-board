@@ -1,0 +1,275 @@
+div {
+	box-sizing: border-box;
+}
+video, audio {
+	display: block;
+	max-width: 100%;
+}
+#SearchContainer {
+	width: 27em;
+	text-align: center;
+	margin: auto;
+	margin-top: calc(50vh - 8.5em); /*Half viewport height, minus half this div's height*/
+	height: 17em;
+	border-radius: 4px;
+	border: 1px solid #ccc;
+	padding: 15px;
+}
+#SearchContainer img {
+	display:block;
+	margin: auto;
+}
+#ImageCount {
+	font-size: 1.3em;
+}
+input {
+	width: 100%;
+	box-sizing: border-box;
+	margin: 8px 0;
+	border-radius: 4px;
+	border: 1px solid #ccc;
+	padding: 7px 20px;
+	font-size: 1.5em
+}
+input[type=submit] {
+	border: none;
+	cursor: pointer;
+}
+form {
+	width:100%;
+}
+li {
+	display:block;
+	list-style: none;
+}
+ul {
+	padding: 0px;
+}
+#HeadMenu {
+	width:100%;
+	height:96px;
+	text-align: center;
+}
+#HeadMenu ul {
+	font-size: 1.25em;
+}
+#HeadMenu ul li {
+	margin-right: 5px;
+	border-right: solid 1px black;
+	display: inline-block;
+	padding-right: 5px;
+}
+#HeadMenu ul li:last-child {
+	border-right: none;
+}
+#SideMenu {
+	float:left;
+	width: 192px;
+	padding-left: 10px;
+}
+#SideMenu li {
+	text-transform: capitalize;
+}
+#ImageGridContainer {
+	float:left;
+	width: calc(100% - 192px); /*192 is Same as SideMenu width*/
+	padding: 10px;
+}
+#ImageGridContainer > img {
+	max-width: 100%;
+	display:block
+}
+#BodyContent {
+	width: 100%;
+}
+#BodyContent:after {
+	clear:both;
+	content:"";
+	display:table;
+}
+body {
+	padding: 0px;
+	margin: 0px;
+	border: 0px;
+	font-size: 20px;
+}
+.ImageResultContainer {
+	float:left;
+	margin: 5px;
+	padding: 5px;
+	height: 192px;
+	width: 288px;
+	background-color: lightgreen;
+	border-radius: 4px;
+	border-color: lightslategray;
+}
+.ImageResultContainer img {
+	max-width: 100%;
+	max-height: 100%;
+	height:100%;
+	object-fit: contain;
+	display: block;
+	margin: auto;
+}
+#PageMenu {
+	margin-left: 192px; /*Same as SideMenu width*/
+	text-align: center;
+	font-size: 1.5em;
+}
+#Footer {
+	text-align: right;
+	color: #CECECE;
+}
+#Footer a {
+	color: #CECECE;
+}
+#Footer ul li {
+	margin-right: 5px;
+	border-right: solid 1px #CECECE;
+	display: inline-block;
+	padding-right: 5px;
+}
+#Footer ul li:last-child {
+	border-right: none;
+}
+.icon {
+	width: 1em;
+	height: 1em;
+	display: inline-block;
+}
+td, tr, th {
+	text-align: left;
+}
+.narrowCenteredContainer {
+	width:75%;
+	margin: auto;
+}
+h1, h2, h3, h4, h5 {
+	margin-top: .33em;
+	margin-bottom: .66em;
+}
+h1 {
+	font-size: 2em;  
+}
+
+h2 {
+	font-size: 1.7em;
+}
+
+h3 {
+	font-size: 1.5em;
+}
+
+h4 {
+	font-size: 1.1em
+}
+
+h5 {
+	font-size: 1.05em; 
+	margin-top: .33em;
+	margin-bottom: .1em;
+}
+.displayBlock {
+	display:block;
+}
+.displayHidden {
+	display:none;
+}
+#messageContainer {
+	background-color: #f9f9aa;
+	border-radius: 4px;
+	padding: .5em;
+}
+#downloadButton {
+	margin: 5px;
+	font-size: 1.2em;
+	display:block;
+}
+#CellMenuButton {
+	display: none;
+}
+/*Cell phone selector*/
+@media (max-device-width: 536px), (max-width: 536px) {
+	#SearchContainer {
+		width: 100%;
+		border: none;
+		margin: auto;
+		margin-top: calc(50vh - 25vh);
+		height: 50vh;
+
+	}
+	#SearchContainer img {
+		width: 66vw;
+	}
+	#ImageGridContainer > img {
+		max-width: 100%;
+		width: 100%;
+		display: block;
+	}
+	#ImageGridContainer{
+		width:100%;
+		float:none;
+		display: block;
+		padding: 0px;
+	}
+	.ImageResultContainer {
+		float:none;
+		display:block;
+		margin-bottom: 20px;
+		padding: 20px;
+		
+		width: 100%;
+		background-color: lightgreen;
+		border-radius: 4px;
+		border-color: lightslategray;
+		height: auto;
+	}
+	.ImageResultContainer img {
+		max-width: 100%; /*ImageResultContainer width - padding*2 */
+		display: block;
+		margin: auto;
+		width: 100%;
+		max-height: unset;
+	}
+	#SideMenu {
+		float: none;
+		width: 100%;
+	}
+	#HeadMenu ul li {
+		display: block;
+		border: none;
+	}
+	#HeadMenu {
+		height: auto;
+	}
+	#PageMenu {
+		margin: auto;
+	}
+	.narrowCenteredContainer {
+		width:95%;
+	}
+	#SideMenu {
+		padding: 0px 10px;
+	}
+	body {
+		font-size: 40px;  
+	}
+	#downloadButton {
+		margin: 5px;
+		font-size: 1.2em;
+		display:block;
+		text-align: center;
+	}
+	.cellDefaultHidden {
+		display:none;
+	}
+	#CellMenuButton {
+		display: block;
+		padding: .25em;
+		width: 1.8em;
+		height: 1.8em;
+	}
+	video, audio {
+		width: 100%;
+	}
+}

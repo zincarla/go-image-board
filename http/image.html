@@ -1,0 +1,46 @@
+{{template "header.html" .}}
+	<body>
+		{{template "headMenu.html" .}}
+		<div id="BodyContent">
+			<div id="SideMenu" class="cellDefaultHidden">
+				<form action="/images" method="post">
+					<input type="text" name="SearchTerms" placeholder="Search" value="{{.OldQuery}}">
+					<input type="submit" value="Go">
+				</form>
+				<ul>
+				<li><h5>Tags</h5></li>
+				{{$ImageID := .ImageContentInfo.ID}}
+				{{$OldQuery := .OldQuery}}
+				{{$CanModifyTags := .UserPermissions.HasPermission 1}}
+				{{$CanDeleteImage := .UserPermissions.HasPermission 32}}
+				{{$IsOwn := eq .ImageContentInfo.UploaderID .UserID}}
+				{{$CanModifyOwn := and .UserControlsOwn $IsOwn}}
+				{{range .Tags}}
+				<li>{{.Name}} {{if $CanModifyTags}}<a href="/tag?ID={{.ID}}&command=remove&ImageID={{$ImageID}}&SearchTerms={{$OldQuery}}">-</a> {{end}}{{if ne .ID 0}}<a href="/tag?ID={{.ID}}&SearchTerms={{$OldQuery}}">?</a>{{else}}<a href="/about/tags.html?SearchTerms={{$OldQuery}}">?</a>{{end}}</li>
+				{{end}}
+				</ul>
+				{{if ne .UserName ""}}
+				{{if or $CanModifyTags $CanModifyOwn}}
+				<h5>Add tags</h5>
+				<form action="/tag" method="post">
+					<input type="text" name="NewTags" placeholder="New Tags" value="">
+					<input type="hidden" name="ImageID" value="{{.ImageContentInfo.ID}}">
+					<input type="hidden" name="command" value="AddTags" />
+					<input type="submit" value="Add">
+				</form>
+				{{end}}
+					{{if or $CanDeleteImage $CanModifyOwn}}
+				<a href="/images?command=delete&ID={{$ImageID}}&SearchTerms={{.OldQuery}}">Delete Image</a>
+					{{end}}
+				{{end}}
+				<h5>Uploaded</h5>
+				{{.ImageContentInfo.UploadTime.Format "Jan 02, 2006 15:04:05 UTC"}}
+				<h5>Uploader</h5>
+				<a href="/images?SearchTerms=uploader:{{.ImageContentInfo.UploaderName}}">{{.ImageContentInfo.UploaderName}}</a>
+			</div>
+			<div id="ImageGridContainer">
+				{{.ImageContent}}
+				{{if .ImageContentInfo.Location}}<div id="downloadButton"><a href="/images/{{.ImageContentInfo.Location}}">Download</a></div> {{end}}
+			</div>
+		</div>
+{{template "footer.html" .}}

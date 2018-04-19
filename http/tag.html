@@ -1,0 +1,59 @@
+{{template "header.html" .}}
+	<body>
+		{{template "headMenu.html" .}}
+		<div id="BodyContent">
+			<div id="SideMenu" class="cellDefaultHidden">
+				<form action="/images" method="post">
+					<input type="text" name="SearchTerms" placeholder="Search" value="{{.OldQuery}}">
+					<input type="submit" value="Go">
+				</form>
+			</div>
+			<div id="ImageGridContainer">
+				<div class="narrowCenteredContainer">
+					{{$PermissionQ := .UserPermissions.HasPermission 4}}
+					{{$PermissionBulkTag := .UserPermissions.HasPermission 256}}
+					{{$IsOwn := eq .TagContentInfo.UploaderID .UserID}}
+					{{$CanModifyOwn := and .UserControlsOwn $IsOwn}}
+					{{if or $PermissionQ $CanModifyOwn}}
+					<h4>Update {{.TagContentInfo.Name}}</h4>
+					<form method="post" action="/tag">
+						<label>Tag Name</label>
+						<input type="text" name="tagName" value="{{.TagContentInfo.Name}}" placeholder="Name"/><br>
+						<label>Tag Description</label>
+						<input type="text" name="tagDescription" value="{{.TagContentInfo.Description}}" placeholder="Description"/><br>
+						<label>Aliased Tag</label>
+						<input type="text" name="aliasedTagName" value="{{.AliasTagInfo.Name}}" placeholder="Aliased Name"/><br>
+						<input type="hidden" name="ID" value="{{.TagContentInfo.ID}}" />
+						<input type="hidden" name="command" value="updateTag" />
+						<input type="submit" value="Update" />
+					</form>
+					{{if and $PermissionQ $PermissionBulkTag}}
+					<h4>Replace a Tag</h4>
+					<form method="post" action="/tag">
+						<label>Tag to Replace</label>
+						<input type="text" name="tagName" value="" placeholder="Tag to Replace"/><br>
+						<label>Replacing Tag</label>
+						<input type="text" name="newTagName" value="{{.TagContentInfo.Name}}" placeholder="Replace Tag With"/><br>
+						<input type="hidden" name="command" value="replaceTag" />
+						<input type="submit" value="Replace" />
+					</form>
+					<h4>Add Tag to Images with a Tag</h4>
+					<form method="post" action="/tag">
+						<label>Add this Tag</label>
+						<input type="text" name="newTagName" value="" placeholder="Tag to Add"/><br>
+						<label>To images with this Tag</label>
+						<input type="text" name="tagName" value="{{.TagContentInfo.Name}}" placeholder="To Images with this Tag"/><br>
+						<input type="hidden" name="command" value="bulkAddTag" />
+						<input type="submit" value="Bulk Add" />
+					</form>
+					{{end}}
+					{{else}}
+					<h4>Tag Name</h4>
+					{{.TagContentInfo.Name}}
+					<h4>Tag Description</h4>
+					{{.TagContentInfo.Description}}
+					{{end}}
+				</div>
+			</div>
+		</div>
+{{template "footer.html" .}}

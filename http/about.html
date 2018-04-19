@@ -1,0 +1,15 @@
+{{template "header.html" .}}
+	<body>
+		{{template "headMenu.html" .}}
+		<div id="BodyContent">
+			<div id="SideMenu">
+				<form action="/images" method="post">
+					<input type="text" name="SearchTerms" placeholder="Search" value="{{.OldQuery}}">
+					<input type="submit" value="Go">
+				</form>
+			</div>
+			<div id="ImageGridContainer">
+				{{.ImageContent}}
+			</div>
+		</div>
+{{template "footer.html" .}}

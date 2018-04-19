@@ -1,0 +1,80 @@
+package interfaces
+
+//DBInterface is a generic interface to allow swappable databases
+type DBInterface interface {
+	////Account operations
+	//CreateUser is used to create and add a user to the AuthN database (return nil on success)
+	CreateUser(userName string, password []byte, email string, permissions uint64) error
+	//ValidateUser Validate a user's password (return nil if valid)
+	ValidateUser(userName string, password []byte) error
+	//SetUserPassword Update a user's password, validation of user provided by either old password, or security answers. (nil on success)
+	SetUserPassword(userName string, password []byte, newPassword []byte, answerOne []byte, answerTwo []byte, answerThree []byte) error
+	//ValidateToken Validate a cookie token (true if valid cookie, false otherwise, error for reason or nil)
+	ValidateToken(userName string, tokenID string, ip string) error
+	//GenerateToken Generate a cookie token (string token, or error)
+	GenerateToken(userName string, ip string) (string, error)
+	//RevokeToken Revokes a token (nil on success)
+	RevokeToken(userName string) error
+	//RemoveUser Removes a user from the AuthN database (nil on success)
+	RemoveUser(userName string) error
+	//SetSecurityQuestions changes a user's security questions (nil if success)
+	SetSecurityQuestions(userName string, questionOne string, questionTwo string, questionThree string, answerOne []byte, answerTwo []byte, answerThree []byte, challengeAnswer []byte) error
+	//ValidateSecurityQuestions Validates answers against a user's security questions (nil on success)
+	ValidateSecurityQuestions(userName string, answerOne []byte, answerTwo []byte, answerThree []byte) error
+	//GetSecurityQuestions returns the three questions, first, second, third, and an error if an issue occured
+	GetSecurityQuestions(userName string) (string, string, string, error)
+	//GetUserPermissionSet returns a UserPermission object representing a user's intended access
+	GetUserPermissionSet(userName string) (UserPermission, error)
+	//SetUserPermissionSet sets a user's permission in the database
+	SetUserPermissionSet(userID uint64, permissions uint64) error
+	//SetUserDisableState disables or enables a user account
+	SetUserDisableState(userID uint64, isDisabled bool) error
+	//ValidatePasswordStrength Returns an error if there is an issue with the password describing the issue. Else nil
+	ValidatePasswordStrength(password string) error
+	//GetUserID returns a user's DBID for association with other db elements
+	GetUserID(userName string) (uint64, error)
+	//GetImage returns an ImageInformation object given an ID
+	GetImage(ID uint64) (ImageInformation, error)
+	//ValidateProposedUsername returns whether a username is in a valid format
+	ValidateProposedUsername(UserName string) error
+
+	//Image operations
+	//NewImage adds an image with the provided information and returns the id, or error
+	NewImage(ImageName string, ImageFileName string, OwnerID uint64) (uint64, error)
+	//DeleteImage removes an image from the db
+	DeleteImage(ImageID uint64) error
+	//SearchImages performs a search for images (Returns a list of imageIDs, or error)
+	SearchImages(Tags []TagInformation, PageStart uint64, PageStride uint64) ([]ImageInformation, uint64, error)
+
+	//GetQueryTags returns a slice of tags based on a query
+	GetQueryTags(UserQuery string) ([]TagInformation, error)
+	//GetImageTags returns a list of TagInformation for all tags that apply to the given image
+	GetImageTags(ImageID uint64) ([]TagInformation, error)
+	//GetAllTags returns a list of all tags
+	GetAllTags() ([]TagInformation, error)
+	//GetTag return detailed information on one tag
+	GetTag(ID uint64) (TagInformation, error)
+	//Tag Operations
+	//NewTag adds a tag with the provided information
+	NewTag(Name string, Description string, UploaderID uint64) (uint64, error)
+	//DeleteTag removes a tag
+	DeleteTag(TagID uint64) error
+	//AddTag adds an association of a tag to image into the association table
+	AddTag(TagID uint64, ImageID uint64, LinkerID uint64) error
+	//RemoveTag remove a tag association
+	RemoveTag(TagID uint64, ImageID uint64) error
+	//UpdateTag updates a pre-existing tag
+	UpdateTag(TagID uint64, Name string, Description string, AliasedID uint64, IsAlias bool, UploadID uint64) error
+	//BulkAddTag Adds tags to images that already have another tag
+	BulkAddTag(TagID uint64, OldTagID uint64, LinkerID uint64) error
+	//ReplaceImageTags Replaces an old tag, with the new tag
+	ReplaceImageTags(OldTagID uint64, NewTagID uint64, LinkerID uint64) error
+
+	//Maitenance
+	//InitDatabase connects to a database, and if needed, creates and or updates tables
+	InitDatabase() error
+	//GetPluginInformation Return plugin info as string
+	GetPluginInformation() string
+	//AddAuditLog adds a new audit log to the db
+	AddAuditLog(UserID uint64, Type string, Info string) error
+}
