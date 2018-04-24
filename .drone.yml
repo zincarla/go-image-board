@@ -35,7 +35,7 @@
         auto_tag: true
         when:
           branch: master
-          event: [push, tag]
+          event: [push, tag, deployment]
           
       publish_test:
         image: plugins/docker
@@ -45,4 +45,4 @@
         tag: [ testing ]
         when:
           branch: testing
-          event: push, tag
+          event: [push, tag]
