@@ -1,0 +1,48 @@
+    workspace:
+      base: /go
+      path: src/go-image-board
+
+    clone:
+      git:
+        image: plugins/git
+
+    pipeline:
+      build:
+        image: golang:1.10.1
+        environment:
+          - GO15VENDOREXPERIMENT=0
+          - GOOS=linux
+          - GOARCH=amd64
+          - CGO_ENABLED=0
+        commands:
+          - go get github.com/gorilla/mux
+          - go get github.com/gorilla/securecookie
+          - go get github.com/gorilla/sessions
+          - go get github.com/satori/go.uuid
+          - go get golang.org/x/crypto/bcrypt
+          - go get github.com/nfnt/resize
+          - go get golang.org/x/image/bmp
+          - go get golang.org/x/image/webp
+          - go get github.com/go-sql-driver/mysql
+          - go test
+          - go build -v -a -installsuffix cgo -o gib .
+          
+      publish_server:
+        image: plugins/docker
+        repo: ziviz/go-image-board
+        dockerfile: Dockerfile
+        secrets: [ docker_username, docker_password ]
+        auto_tag: true
+        when:
+          branch: master
+          event: [push, tag]
+          
+      publish_test:
+        image: plugins/docker
+        repo: ziviz/go-image-board
+        dockerfile: Dockerfile
+        secrets: [ docker_username, docker_password ]
+        tag: [ testing ]
+        when:
+          branch: testing
+          event: push, tag
