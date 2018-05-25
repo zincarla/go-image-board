@@ -9,7 +9,11 @@
 				</form>
 			</div>
 			<div id="ImageGridContainer">
-				<table class="narrowCenteredContainer">
+				<form id="filterForm">
+					<input type="text" name="query" placeholder="Tags containing">
+					<input type="submit" value="Filter Table" OnClick="return SearchTagTable('tagTable','filterForm');">
+				</form>
+				<table class="narrowCenteredContainer" id="tagTable">
 					<tr>
 						<th style="width:25%;">Name</th>
 						<th style="width:1em;"></th>
@@ -17,7 +21,7 @@
 					</tr>
 					{{range .Tags}}
 					<tr>
-						<td><a href="/tag?ID={{.ID}}">{{.Name}}</a></td>
+						<td class="noBreak"><a href="/tag?ID={{.ID}}"><img src="/resources/{{if .IsAlias}}alias.svg" alt="alias"{{else}}tag.svg" alt="tag"{{end}}class="icon" /> {{.Name}}</a></td>
 						<td><a href="/images?SearchTerms={{.Name}}"><img src="/resources/searchicon.svg" class="icon" /></a></td>
 						<td>{{.Description}}</td>
 					</tr>

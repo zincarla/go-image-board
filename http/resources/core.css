@@ -188,6 +188,13 @@ h5 {
 #CellMenuButton {
 	display: none;
 }
+.noBreak {
+	white-space: nowrap;
+}
+#filterForm {
+	width: 50%;
+	margin:auto;
+}
 /*Cell phone selector*/
 @media (max-device-width: 536px), (max-width: 536px) {
 	#SearchContainer {
@@ -267,6 +274,9 @@ h5 {
 		height: 1.8em;
 	}
 	video, audio {
+		width: 100%;
+	}
+	#filterForm {
 		width: 100%;
 	}
 }

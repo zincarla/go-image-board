@@ -15,7 +15,7 @@
 					{{$IsOwn := eq .TagContentInfo.UploaderID .UserID}}
 					{{$CanModifyOwn := and .UserControlsOwn $IsOwn}}
 					{{if or $PermissionQ $CanModifyOwn}}
-					<h4>Update {{.TagContentInfo.Name}}</h4>
+					<h4>Update {{.TagContentInfo.Name}} <img src="/resources/{{if .TagContentInfo.IsAlias}}alias.svg" alt="alias"{{else}}tag.svg" alt="tag"{{end}}class="icon" /></h4>
 					<form method="post" action="/tag">
 						<label>Tag Name</label>
 						<input type="text" name="tagName" value="{{.TagContentInfo.Name}}" placeholder="Name"/><br>
