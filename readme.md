@@ -103,6 +103,8 @@ under
 <link rel="stylesheet" href="/resources/core.css">
 ```
 
+![Example of DarkTheme](http://ziviz.us/images/GIBDarkSearch.PNG "DarkThem Image Details")
+
 ## CLI tools
 
 ### -thumbsonly
