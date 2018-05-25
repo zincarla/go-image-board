@@ -217,11 +217,8 @@ h5 {
 		display:block;
 		margin-bottom: 20px;
 		padding: 20px;
-		
 		width: 100%;
-		background-color: lightgreen;
 		border-radius: 4px;
-		border-color: lightslategray;
 		height: auto;
 	}
 	.ImageResultContainer img {

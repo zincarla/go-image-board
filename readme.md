@@ -93,6 +93,16 @@ Default permissions granted automatically to new accounts
 * **UsersControlOwnObjects**
 If true, the permission system is bypassed if a user is attempting to edit their own contributions.
 
+### Optional Darktheme
+There is also an optional darktheme that can be enabled. To do so, edit /http/headerhtml and add
+```
+<link rel="stylesheet" href="/resources/darktheme.css">
+```
+under
+```
+<link rel="stylesheet" href="/resources/core.css">
+```
+
 ## CLI tools
 
 ### -thumbsonly
@@ -132,3 +142,45 @@ BulkTagOperations UserPermission = 256
 ## About files
 Files located in the "/http/about/" directory are imported into the about.html template and served when requested from http://\<yourserver\>/about/\<filename\>.html
 This can be used to easily write rules, or other documentation for your board while maintaining the same general theme.
+
+## Programmer Reference
+This section contains general notes on how to add onto the ImageBoard.
+
+### Routers
+General pattern to add a new router (Handler for a specific URL), is to create a new .go file under routers. This file should follow the pattern
+```
+package routers
+
+import (
+	"go-image-board/logging"
+	"net/http"
+
+	"github.com/gorilla/mux"
+)
+
+//ResourceRouter handles requests to /xxx
+func XxxRouter(responseWriter http.ResponseWriter, request *http.Request) {
+	urlVariables := mux.Vars(request)
+	logging.LogInterface.WriteLog("ContentRouter", "GetCoreResource", "*", "SUCCESS", []string{"Someone accessed xxx"})
+	//etc
+}
+```
+Then activate the router function by adding it to gib.go's main() under the //Add routers comment
+```
+requestRouter.HandleFunc("/xxx", routers.XxxRouter)
+```
+
+### Images/Thumbnails
+All functions that generate a thumbnail or serve an uploaded image are stored in resourcesrouters.go. To add a new image format to support, add it's handler to the import of resourcesrouters.go.
+```
+import (
+...
+_ "golang.org/x/image/webp"
+...
+)
+```
+
+### Add new database function
+First update the dbinterface in dbinterface.go. Then implement the new interface in /plugins/mariadbplugin. That folder contains all the functions for directly communicating with the MariaDB. The files are named after and loosely contain functions based on which section of the database they interact with. MariaDBPlugin.go contains the database install/upgrade code and versioning. 
+
+Since the database is based on an interface someone could program another database that implements the interface and replace MariaDB. After a new implementation of the interface is created, swap out the database in the main() function under the `//Initialize DB Connection` comment.

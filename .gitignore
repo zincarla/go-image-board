@@ -1,0 +1,7 @@
+configuration/*
+configuration\*
+*.exe
+images\*
+images/*
+.vscode
+gib
