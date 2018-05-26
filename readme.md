@@ -186,3 +186,21 @@ _ "golang.org/x/image/webp"
 First update the dbinterface in dbinterface.go. Then implement the new interface in /plugins/mariadbplugin. That folder contains all the functions for directly communicating with the MariaDB. The files are named after and loosely contain functions based on which section of the database they interact with. MariaDBPlugin.go contains the database install/upgrade code and versioning. 
 
 Since the database is based on an interface someone could program another database that implements the interface and replace MariaDB. After a new implementation of the interface is created, swap out the database in the main() function under the `//Initialize DB Connection` comment.
+
+### Update Database Schema
+1. In MariaDBPlugin.go, update the performFreshDBInstall() function to reflect new schema.
+2. Increment database version number in performFreshDBInstall() as well, and the currentDBVersion variable in same file
+3. Update InitDatabase() to add schema update code to upgrade a pre-existing database to the new schema
+4. Update GetPluginInformation() to a new display version
+5. If schema update code could not be added and schema changes are not backwards compatible, increment minSupportedDBVersion variable. This will prompt user action.
+
+### To add a new metatag
+Metatags directly query the Images table. parseMetaTags() converts the query name to the database column name and if needed, converts the queried value to something the column would expect. (Like a username to id)
+1. Update parseMetaTags() in ImageFunctions.go, note that the tag.Name should be the same named used in the database, not the name used in the query
+As long as the limitations are adhered to, then this is the only change necessary outside of the schema changes
+2. To add to form though, need to update ImageInformation struct and add a new property for metatag
+3. Update GetImage() function to return new information as part of ImageInformation object it returns
+4. Edit Image.html template, and add a new form to change the metatag
+5. Update database interface and add a function to change the column in the images table for the tag
+6. Implement the new interface in MariaDBPlugin
+7. Update the relevant router that the form will send the change request to

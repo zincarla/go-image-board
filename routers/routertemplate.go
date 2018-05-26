@@ -7,7 +7,6 @@ import (
 	"go-image-board/logging"
 	"go-image-board/routers/templatecache"
 	"html/template"
-	"net"
 	"net/http"
 	"strings"
 	"time"
@@ -60,18 +59,15 @@ func getNewTemplateInput(request *http.Request) templateInput {
 	//Verify user is logged in by validating token
 	userNameT, tokenIDT, _ := getSessionInformation(request)
 	if tokenIDT != "" && userNameT != "" {
-		ip, _, _ := net.SplitHostPort(request.RemoteAddr)
-		if database.DBInterface.ValidateToken(userNameT, tokenIDT, ip) == nil {
-			TemplateInput.UserName = userNameT
-			permissions, _ := database.DBInterface.GetUserPermissionSet(userNameT)
-			TemplateInput.UserPermissions = interfaces.UserPermission(permissions)
-			//Translate UserID
-			userID, err := database.DBInterface.GetUserID(userNameT)
-			if err == nil {
-				TemplateInput.UserID = userID
-			} else {
-				logging.LogInterface.WriteLog("routertemplate", "getNewTemplateInput", userNameT, "ERROR", []string{"Failed to get UserID: ", err.Error()})
-			}
+		TemplateInput.UserName = userNameT
+		permissions, _ := database.DBInterface.GetUserPermissionSet(userNameT)
+		TemplateInput.UserPermissions = interfaces.UserPermission(permissions)
+		//Translate UserID
+		userID, err := database.DBInterface.GetUserID(userNameT)
+		if err == nil {
+			TemplateInput.UserID = userID
+		} else {
+			logging.LogInterface.WriteLog("routertemplate", "getNewTemplateInput", userNameT, "ERROR", []string{"Failed to get UserID: ", err.Error()})
 		}
 	}
 

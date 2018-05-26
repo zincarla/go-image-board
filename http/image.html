@@ -15,12 +15,14 @@
 				{{$CanDeleteImage := .UserPermissions.HasPermission 32}}
 				{{$IsOwn := eq .ImageContentInfo.UploaderID .UserID}}
 				{{$CanModifyOwn := and .UserControlsOwn $IsOwn}}
+				{{$UserNotNull := ne .UserName ""}}
+				{{$HasTagPermissions := or $CanModifyTags $CanModifyOwn}}
+				{{$HasDeletePermissions := or $CanDeleteImage $CanModifyOwn}}
 				{{range .Tags}}
 				<li>{{.Name}} {{if $CanModifyTags}}<a href="/tag?ID={{.ID}}&command=remove&ImageID={{$ImageID}}&SearchTerms={{$OldQuery}}">-</a> {{end}}{{if ne .ID 0}}<a href="/tag?ID={{.ID}}&SearchTerms={{$OldQuery}}">?</a>{{else}}<a href="/about/tags.html?SearchTerms={{$OldQuery}}">?</a>{{end}}</li>
 				{{end}}
 				</ul>
-				{{if ne .UserName ""}}
-				{{if or $CanModifyTags $CanModifyOwn}}
+				{{if and $UserNotNull $HasTagPermissions}}
 				<h5>Add tags</h5>
 				<form action="/tag" method="post">
 					<input type="text" name="NewTags" placeholder="New Tags" value="">
@@ -28,10 +30,19 @@
 					<input type="hidden" name="command" value="AddTags" />
 					<input type="submit" value="Add">
 				</form>
+				<h5>Change Rating <a href="/about/tags.html?SearchTerms={{$OldQuery}}">?</a></h5>
+				<form action="/tag" method="post">
+					<input type="text" name="NewRating" placeholder="New Rating" value="{{.ImageContentInfo.Rating}}">
+					<input type="hidden" name="ImageID" value="{{.ImageContentInfo.ID}}">
+					<input type="hidden" name="command" value="ChangeRating" />
+					<input type="submit" value="Change">
+				</form>
+				{{else}}
+				<h5>Rating</h5>
+				{{.ImageContentInfo.Rating}} <a href="/about/tags.html?SearchTerms={{$OldQuery}}">?</a>
 				{{end}}
-					{{if or $CanDeleteImage $CanModifyOwn}}
+				{{if and $UserNotNull $HasDeletePermissions}}
 				<a href="/images?command=delete&ID={{$ImageID}}&SearchTerms={{.OldQuery}}">Delete Image</a>
-					{{end}}
 				{{end}}
 				<h5>Uploaded</h5>
 				{{.ImageContentInfo.UploadTime.Format "Jan 02, 2006 15:04:05 UTC"}}

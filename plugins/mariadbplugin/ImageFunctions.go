@@ -273,7 +273,7 @@ func (DBConnection *MariaDBPlugin) searchImagesExclusive(ExcludeTags []uint64, M
 func (DBConnection *MariaDBPlugin) GetImage(ID uint64) (interfaces.ImageInformation, error) {
 	ToReturn := interfaces.ImageInformation{ID: ID}
 	var UploadTime mysql.NullTime
-	err := DBConnection.DBHandle.QueryRow("Select Images.Name as ImageName, Images.Location, Images.UploaderID, Images.UploadTime, Users.Name as UploaderName FROM Images LEFT OUTER JOIN Users ON Images.UploaderID = Users.ID WHERE Images.ID=?", ID).Scan(&ToReturn.Name, &ToReturn.Location, &ToReturn.UploaderID, &UploadTime, &ToReturn.UploaderName)
+	err := DBConnection.DBHandle.QueryRow("Select Images.Name as ImageName, Images.Location, Images.UploaderID, Images.UploadTime, Images.Rating, Users.Name as UploaderName FROM Images LEFT OUTER JOIN Users ON Images.UploaderID = Users.ID WHERE Images.ID=?", ID).Scan(&ToReturn.Name, &ToReturn.Location, &ToReturn.UploaderID, &UploadTime, &ToReturn.Rating, &ToReturn.UploaderName)
 	if err != nil {
 		logging.LogInterface.WriteLog("ImageFunctions", "GetImage", "*", "ERROR", []string{"Failed to get image info from database", err.Error()})
 		return ToReturn, err
@@ -284,12 +284,24 @@ func (DBConnection *MariaDBPlugin) GetImage(ID uint64) (interfaces.ImageInformat
 	return ToReturn, nil
 }
 
+//SetImageRating changes a given image's rating in the database
+func (DBConnection *MariaDBPlugin) SetImageRating(ID uint64, Rating string) error {
+	_, err := DBConnection.DBHandle.Exec("UPDATE Images SET Rating = ? WHERE ID = ?;", Rating, ID)
+	if err != nil {
+		logging.LogInterface.WriteLog("ImageFunctions", "SetImageRating", "*", "ERROR", []string{"Failed to set image rating", err.Error()})
+		return err
+	}
+	return nil
+}
+
+//parseMetaTags fills in additional information for MetaTags and vets out non-MetaTags
 func (DBConnection *MariaDBPlugin) parseMetaTags(MetaTags []interfaces.TagInformation) ([]interfaces.TagInformation, []error) {
 	var ToReturn []interfaces.TagInformation
 	var ErrorList []error
 	for _, tag := range MetaTags {
 		ToAdd := tag
 		switch ToAdd.Name {
+		//TODO: Add additional metatags here
 		case "uploader":
 			ToAdd.Name = "UploaderID"
 			ToAdd.Description = "The uploaded of the image"
@@ -306,6 +318,11 @@ func (DBConnection *MariaDBPlugin) parseMetaTags(MetaTags []interfaces.TagInform
 			} else {
 				ErrorList = append(ErrorList, errors.New("Could not convert metatag value to string as expected"))
 			}
+		case "rating":
+			ToAdd.Name = "Rating"
+			ToAdd.Description = "The rating of the image"
+			ToAdd.Exists = true
+			//Since rating is a string, no futher processing needed!
 		default:
 			ErrorList = append(ErrorList, errors.New("MetaTag does not exist"))
 		}

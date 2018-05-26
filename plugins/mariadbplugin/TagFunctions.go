@@ -144,7 +144,7 @@ func (DBConnection *MariaDBPlugin) RemoveTag(TagID uint64, ImageID uint64) error
 	return nil
 }
 
-//GetQueryTags returns a slice of tags based on a query
+//GetQueryTags returns a slice of tags based on a query string
 func (DBConnection *MariaDBPlugin) GetQueryTags(UserQuery string) ([]interfaces.TagInformation, error) {
 	//What we want to return
 	var ToReturn []interfaces.TagInformation

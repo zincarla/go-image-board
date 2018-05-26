@@ -195,6 +195,12 @@ h5 {
 	width: 50%;
 	margin:auto;
 }
+table {
+	width: 100%;
+}
+tr:nth-child(odd) {
+	background-color: #e4e4e4
+}
 /*Cell phone selector*/
 @media (max-device-width: 536px), (max-width: 536px) {
 	#SearchContainer {

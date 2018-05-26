@@ -12,4 +12,5 @@ type ImageInformation struct {
 	UploaderID   uint64
 	UploaderName string
 	UploadTime   time.Time
+	Rating       string
 }

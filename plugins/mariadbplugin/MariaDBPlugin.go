@@ -11,10 +11,10 @@ import (
 )
 
 //TODO: Increment this whenever we alter the DB Schema, ensure you attempt to add update code below
-var currentDBVersion int64
+var currentDBVersion int64 = 1
 
 //TODO: Increment this when we alter the db schema and don't add update code to compensate
-var minSupportedDBVersion int64
+var minSupportedDBVersion int64 = 0
 
 //MariaDBPlugin acts as plugin between gib and a Maria/MySQL DB
 type MariaDBPlugin struct {
@@ -36,6 +36,26 @@ func (DBConnection *MariaDBPlugin) InitDatabase() error {
 					return errors.New("database version is not supported and no update code was found to bring database up to current version")
 				} else if version < currentDBVersion {
 					//TODO: Add update code here
+					//Update from version 0 to 1
+					if version == 0 {
+						_, err := DBConnection.DBHandle.Exec("ALTER TABLE Images ADD COLUMN (Rating VARCHAR(255) DEFAULT 'unrated');")
+						if err != nil {
+							logging.LogInterface.WriteLog("MariaDBPlugin", "InitDatabase", "*", "ERROR", []string{"Failed to update database columns", err.Error()})
+							return err
+						}
+						_, err = DBConnection.DBHandle.Exec("UPDATE DBVersion SET version = 1;")
+						if err != nil {
+							logging.LogInterface.WriteLog("MariaDBPlugin", "InitDatabase", "*", "ERROR", []string{"Failed to update database version", err.Error()})
+							return err
+						}
+						_, err = DBConnection.DBHandle.Exec("UPDATE Images SET Rating = 'unrated';")
+						if err != nil {
+							logging.LogInterface.WriteLog("MariaDBPlugin", "InitDatabase", "*", "WARN", []string{"Failed to update rating on images after update", err.Error()})
+							//Update was technically successfull, not returning for this error
+						}
+						version = 1
+						logging.LogInterface.WriteLog("MariaDBPlugin", "InitDatabase", "*", "INFO", []string{"Database schema updated to version" + strconv.FormatInt(version, 10), err.Error()})
+					}
 				}
 			} else {
 				logging.LogInterface.WriteLog("MariaDBPlugin", "InitDatabase", "*", "WARNING", []string{"Failed to get database verion, assuming not installed. Will attempt to perform install.", err.Error()})
@@ -50,7 +70,7 @@ func (DBConnection *MariaDBPlugin) InitDatabase() error {
 
 //GetPluginInformation Return plugin info as string
 func (DBConnection *MariaDBPlugin) GetPluginInformation() string {
-	return "MariaDBPlugin 0.0.0.1"
+	return "MariaDBPlugin 0.0.0.2"
 }
 
 func (DBConnection *MariaDBPlugin) getDatabaseVersion() (int64, error) {
@@ -68,7 +88,7 @@ func (DBConnection *MariaDBPlugin) performFreshDBInstall() error {
 		logging.LogInterface.WriteLog("MariaDBPlugin", "performFreshDBInstall", "*", "ERROR", []string{"Failed to install database", err.Error()})
 		return err
 	}
-	_, err = DBConnection.DBHandle.Exec("INSERT INTO DBVersion (version) VALUES (?);", 0)
+	_, err = DBConnection.DBHandle.Exec("INSERT INTO DBVersion (version) VALUES (?);", currentDBVersion)
 	if err != nil {
 		logging.LogInterface.WriteLog("MariaDBPlugin", "performFreshDBInstall", "*", "ERROR", []string{"Failed to install database", err.Error()})
 		return err
@@ -84,7 +104,7 @@ func (DBConnection *MariaDBPlugin) performFreshDBInstall() error {
 		logging.LogInterface.WriteLog("MariaDBPlugin", "performFreshDBInstall", "*", "ERROR", []string{"Failed to install database", err.Error()})
 		return err
 	}
-	_, err = DBConnection.DBHandle.Exec("CREATE TABLE Images (ID BIGINT UNSIGNED NOT NULL AUTO_INCREMENT UNIQUE, UploaderID BIGINT UNSIGNED NOT NULL, Name VARCHAR(255) NOT NULL, Location VARCHAR(255) UNIQUE NOT NULL, UploadTime TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL);")
+	_, err = DBConnection.DBHandle.Exec("CREATE TABLE Images (ID BIGINT UNSIGNED NOT NULL AUTO_INCREMENT UNIQUE, UploaderID BIGINT UNSIGNED NOT NULL, Name VARCHAR(255) NOT NULL, Rating VARCHAR(255) DEFAULT 'unrated', Location VARCHAR(255) UNIQUE NOT NULL, UploadTime TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL);")
 	if err != nil {
 		logging.LogInterface.WriteLog("MariaDBPlugin", "performFreshDBInstall", "*", "ERROR", []string{"Failed to install database", err.Error()})
 		return err

@@ -37,6 +37,8 @@ type DBInterface interface {
 	GetImage(ID uint64) (ImageInformation, error)
 	//ValidateProposedUsername returns whether a username is in a valid format
 	ValidateProposedUsername(UserName string) error
+	//SetImageRating changes a given image's rating
+	SetImageRating(ID uint64, Rating string) error
 
 	//Image operations
 	//NewImage adds an image with the provided information and returns the id, or error

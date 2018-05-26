@@ -11,3 +11,6 @@ body {
 .ImageResultContainer {
 	background-color: #242475;
 }
+tr:nth-child(odd) {
+	background-color: #2f2f91
+}

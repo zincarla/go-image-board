@@ -301,8 +301,8 @@ func getSessionInformation(request *http.Request) (string, string, *sessions.Ses
 	session, err := config.SessionStore.Get(request, config.SessionVariableName)
 	if err != nil {
 		//Note that this just gobbles the error. Functions that call this should redirect when tokenID is "" or userName is ""
+		//If the user is supposed to be logged in that is
 		logging.LogInterface.WriteLog("LogonRouter", "getSessionInformation", "*", "WARN", []string{err.Error()})
-		//http.Error(responseWriter, "", http.StatusInternalServerError)
 		return "", "", session
 	}
 	// Get some session values.
@@ -310,7 +310,6 @@ func getSessionInformation(request *http.Request) (string, string, *sessions.Ses
 	userName = strings.ToLower(userName)
 	tokenID, _ := session.Values["TokenID"].(string)
 	ip, _, _ := net.SplitHostPort(request.RemoteAddr)
-	database.DBInterface.ValidateToken(userName, tokenID, ip)
 	if err := database.DBInterface.ValidateToken(userName, tokenID, ip); err != nil {
 		return userName, "", session
 	}
