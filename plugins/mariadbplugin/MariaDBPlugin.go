@@ -54,7 +54,7 @@ func (DBConnection *MariaDBPlugin) InitDatabase() error {
 							//Update was technically successfull, not returning for this error
 						}
 						version = 1
-						logging.LogInterface.WriteLog("MariaDBPlugin", "InitDatabase", "*", "INFO", []string{"Database schema updated to version" + strconv.FormatInt(version, 10), err.Error()})
+						logging.LogInterface.WriteLog("MariaDBPlugin", "InitDatabase", "*", "INFO", []string{"Database schema updated to version", strconv.FormatInt(version, 10)})
 					}
 				}
 			} else {
