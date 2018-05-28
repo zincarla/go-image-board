@@ -13,11 +13,13 @@
 				{{$OldQuery := .OldQuery}}
 				{{$CanModifyTags := .UserPermissions.HasPermission 1}}
 				{{$CanDeleteImage := .UserPermissions.HasPermission 32}}
+				{{$CanVoteImage := .UserPermissions.HasPermission 512}}
 				{{$IsOwn := eq .ImageContentInfo.UploaderID .UserID}}
 				{{$CanModifyOwn := and .UserControlsOwn $IsOwn}}
 				{{$UserNotNull := ne .UserName ""}}
 				{{$HasTagPermissions := or $CanModifyTags $CanModifyOwn}}
 				{{$HasDeletePermissions := or $CanDeleteImage $CanModifyOwn}}
+				{{$HasVotePermissions := or $CanVoteImage $CanModifyOwn}}
 				{{range .Tags}}
 				<li>{{.Name}} {{if $CanModifyTags}}<a href="/tag?ID={{.ID}}&command=remove&ImageID={{$ImageID}}&SearchTerms={{$OldQuery}}">-</a> {{end}}{{if ne .ID 0}}<a href="/tag?ID={{.ID}}&SearchTerms={{$OldQuery}}">?</a>{{else}}<a href="/about/tags.html?SearchTerms={{$OldQuery}}">?</a>{{end}}</li>
 				{{end}}
@@ -43,6 +45,21 @@
 				{{end}}
 				{{if and $UserNotNull $HasDeletePermissions}}
 				<a href="/images?command=delete&ID={{$ImageID}}&SearchTerms={{.OldQuery}}">Delete Image</a>
+				{{end}}
+				<h5>Score</h5>
+				<ul>
+					<li>Average: {{.ImageContentInfo.ScoreAverage}}</li>
+					<li>Total: {{.ImageContentInfo.ScoreTotal}}</li>
+					<li>Voters: {{.ImageContentInfo.ScoreVoters}}</li>
+					{{if eq $HasVotePermissions false}}<li>Your Score: {{.ImageContentInfo.UsersVotedScore}}</li>{{end}}
+				</ul>
+				{{if $HasVotePermissions}}
+				<form action="/image" method="post">
+					<input type="number" name="NewVote" placeholder="New Vote" value="{{.ImageContentInfo.UsersVotedScore}}">
+					<input type="hidden" name="ID" value="{{.ImageContentInfo.ID}}">
+					<input type="hidden" name="command" value="ChangeVote" />
+					<input type="submit" value="Score">
+				</form>
 				{{end}}
 				<h5>Uploaded</h5>
 				{{.ImageContentInfo.UploadTime.Format "Jan 02, 2006 15:04:05 UTC"}}

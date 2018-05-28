@@ -33,6 +33,8 @@ const (
 	EditUserPermissions UserPermission = 128
 	//BulkTagOperations
 	BulkTagOperations UserPermission = 256
+	//ScoreImage Allows a user to vote on an image's score
+	ScoreImage UserPermission = 512
 	//Add more permissions here as needed in future. Keep using powers of 2 for this to work.
 	//Max number will be 18446744073709551615, after 64 possible permission assignments.
 )

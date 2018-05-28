@@ -27,7 +27,8 @@ func ImageRouter(responseWriter http.ResponseWriter, request *http.Request) {
 	var requestedID uint64
 	var err error
 	//If we are just now uploading the file, then we need to get ID from upload function
-	if request.FormValue("uploadFile") == "true" {
+	switch {
+	case request.FormValue("uploadFile") == "true":
 		if TemplateInput.UserName == "" {
 			//Redirect to logon
 			http.Redirect(responseWriter, request, "/logon?prevMessage="+url.QueryEscape("You must be logged in to upload images"), 302)
@@ -39,7 +40,48 @@ func ImageRouter(responseWriter http.ResponseWriter, request *http.Request) {
 			logging.LogInterface.WriteLog("ImageRouter", "ImageRouter", TemplateInput.UserName, "WARNING", []string{err.Error()})
 			TemplateInput.Message = "One or more warnings generated during upload. " + err.Error()
 		}
-	} else {
+	case request.FormValue("command") == "ChangeVote":
+		sImageID := request.FormValue("ID")
+		if TemplateInput.UserName == "" || TemplateInput.UserID == 0 {
+			//Redirect to logon
+			http.Redirect(responseWriter, request, "/logon?prevMessage="+url.QueryEscape("You must be logged in to vote on images"), 302)
+			return
+		}
+		logging.LogInterface.WriteLog("ImageRouter", "ImageRouter", TemplateInput.UserName, "INFO", []string{"Attempting to vote on image"})
+
+		requestedID, err = strconv.ParseUint(sImageID, 10, 64)
+		if err != nil {
+			logging.LogInterface.WriteLog("ImageRouter", "ImageRouter", TemplateInput.UserName, "WARN", []string{"Failed to parse imageid to vote on"})
+			TemplateInput.Message += "Failed to parse image id to vote on. "
+			break
+		}
+		//Validate permission to vote
+		imageInfo, err := database.DBInterface.GetImage(requestedID)
+		if err != nil {
+			TemplateInput.Message += "Failed to get image information. "
+			break
+		}
+
+		if !(TemplateInput.UserPermissions.HasPermission(interfaces.ScoreImage) || (imageInfo.UploaderID == TemplateInput.UserID && config.Configuration.UsersControlOwnObjects)) {
+			go writeAuditLog(TemplateInput.UserID, "IMAGE-SCORE", TemplateInput.UserName+" failed to upload image. No permissions.")
+			TemplateInput.Message += "You do not have permissions to vote on this image. "
+			break
+		}
+		// /ValidatePermission
+
+		//At this point, user is validated
+		Score, err := strconv.ParseInt(request.FormValue("NewVote"), 10, 64)
+		if err != nil {
+			TemplateInput.Message += "Failed to parse your vote value. "
+			break
+		}
+		if err := database.DBInterface.UpdateUserVoteScore(TemplateInput.UserID, requestedID, Score); err != nil {
+			logging.LogInterface.WriteLog("ImageRouter", "ImageRouter", TemplateInput.UserName, "WARN", []string{"Failed to set vote in database", err.Error()})
+			TemplateInput.Message += "Failed to set vote in database, internal error. "
+			break
+		}
+		TemplateInput.Message += "Successfully changed vote! "
+	default:
 		//Otherwise ID should come from request
 		parsedValue, err := strconv.ParseUint(request.FormValue("ID"), 10, 32)
 		if err != nil {
@@ -63,6 +105,12 @@ func ImageRouter(responseWriter http.ResponseWriter, request *http.Request) {
 	}
 	//Set Template
 	TemplateInput.ImageContentInfo = imageInfo
+
+	//Get vote information
+	//Validate permission to upload
+	if TemplateInput.UserName != "" {
+		TemplateInput.ImageContentInfo.UsersVotedScore, err = database.DBInterface.GetUserVoteScore(TemplateInput.UserID, requestedID)
+	}
 
 	//Get the image content information based on type (Img, vs video vs...)
 	TemplateInput.ImageContent = getEmbedForContent(imageInfo.Location)

@@ -11,7 +11,7 @@ import (
 )
 
 //TODO: Increment this whenever we alter the DB Schema, ensure you attempt to add update code below
-var currentDBVersion int64 = 1
+var currentDBVersion int64 = 2
 
 //TODO: Increment this when we alter the db schema and don't add update code to compensate
 var minSupportedDBVersion int64 = 0
@@ -35,26 +35,9 @@ func (DBConnection *MariaDBPlugin) InitDatabase() error {
 				if version < minSupportedDBVersion {
 					return errors.New("database version is not supported and no update code was found to bring database up to current version")
 				} else if version < currentDBVersion {
-					//TODO: Add update code here
-					//Update from version 0 to 1
-					if version == 0 {
-						_, err := DBConnection.DBHandle.Exec("ALTER TABLE Images ADD COLUMN (Rating VARCHAR(255) DEFAULT 'unrated');")
-						if err != nil {
-							logging.LogInterface.WriteLog("MariaDBPlugin", "InitDatabase", "*", "ERROR", []string{"Failed to update database columns", err.Error()})
-							return err
-						}
-						_, err = DBConnection.DBHandle.Exec("UPDATE DBVersion SET version = 1;")
-						if err != nil {
-							logging.LogInterface.WriteLog("MariaDBPlugin", "InitDatabase", "*", "ERROR", []string{"Failed to update database version", err.Error()})
-							return err
-						}
-						_, err = DBConnection.DBHandle.Exec("UPDATE Images SET Rating = 'unrated';")
-						if err != nil {
-							logging.LogInterface.WriteLog("MariaDBPlugin", "InitDatabase", "*", "WARN", []string{"Failed to update rating on images after update", err.Error()})
-							//Update was technically successfull, not returning for this error
-						}
-						version = 1
-						logging.LogInterface.WriteLog("MariaDBPlugin", "InitDatabase", "*", "INFO", []string{"Database schema updated to version", strconv.FormatInt(version, 10)})
+					version, err = DBConnection.upgradeDatabase(version)
+					if err != nil {
+						return err
 					}
 				}
 			} else {
@@ -70,7 +53,7 @@ func (DBConnection *MariaDBPlugin) InitDatabase() error {
 
 //GetPluginInformation Return plugin info as string
 func (DBConnection *MariaDBPlugin) GetPluginInformation() string {
-	return "MariaDBPlugin 0.0.0.2"
+	return "MariaDBPlugin 0.0.0.3"
 }
 
 func (DBConnection *MariaDBPlugin) getDatabaseVersion() (int64, error) {
@@ -104,7 +87,12 @@ func (DBConnection *MariaDBPlugin) performFreshDBInstall() error {
 		logging.LogInterface.WriteLog("MariaDBPlugin", "performFreshDBInstall", "*", "ERROR", []string{"Failed to install database", err.Error()})
 		return err
 	}
-	_, err = DBConnection.DBHandle.Exec("CREATE TABLE Images (ID BIGINT UNSIGNED NOT NULL AUTO_INCREMENT UNIQUE, UploaderID BIGINT UNSIGNED NOT NULL, Name VARCHAR(255) NOT NULL, Rating VARCHAR(255) DEFAULT 'unrated', Location VARCHAR(255) UNIQUE NOT NULL, UploadTime TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL);")
+	_, err = DBConnection.DBHandle.Exec("CREATE TABLE Images (ID BIGINT UNSIGNED NOT NULL AUTO_INCREMENT UNIQUE, UploaderID BIGINT UNSIGNED NOT NULL, Name VARCHAR(255) NOT NULL, Rating VARCHAR(255) DEFAULT 'unrated', ScoreTotal BIGINT NOT NULL DEFAULT 0, ScoreAverage BIGINT NOT NULL DEFAULT 0, ScoreVoters BIGINT NOT NULL DEFAULT 0, Location VARCHAR(255) UNIQUE NOT NULL, UploadTime TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL);")
+	if err != nil {
+		logging.LogInterface.WriteLog("MariaDBPlugin", "performFreshDBInstall", "*", "ERROR", []string{"Failed to install database", err.Error()})
+		return err
+	}
+	_, err = DBConnection.DBHandle.Exec("CREATE TABLE ImageUserScores (ID BIGINT UNSIGNED NOT NULL AUTO_INCREMENT UNIQUE, UserID BIGINT UNSIGNED NOT NULL, ImageID BIGINT UNSIGNED NOT NULL, Score BIGINT NOT NULL, CreationTime TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL, UNIQUE INDEX ImageUserPair (UserID,ImageID));")
 	if err != nil {
 		logging.LogInterface.WriteLog("MariaDBPlugin", "performFreshDBInstall", "*", "ERROR", []string{"Failed to install database", err.Error()})
 		return err
@@ -128,4 +116,49 @@ func (DBConnection *MariaDBPlugin) performFreshDBInstall() error {
 		return err
 	}
 	return nil
+}
+
+//TODO: Add update code here
+func (DBConnection *MariaDBPlugin) upgradeDatabase(version int64) (int64, error) {
+	//Update version 0 -> 1
+	if version == 0 {
+		_, err := DBConnection.DBHandle.Exec("ALTER TABLE Images ADD COLUMN (Rating VARCHAR(255) DEFAULT 'unrated');")
+		if err != nil {
+			logging.LogInterface.WriteLog("MariaDBPlugin", "InitDatabase", "*", "ERROR", []string{"Failed to update database columns", err.Error()})
+			return version, err
+		}
+		_, err = DBConnection.DBHandle.Exec("UPDATE DBVersion SET version = 1;")
+		if err != nil {
+			logging.LogInterface.WriteLog("MariaDBPlugin", "InitDatabase", "*", "ERROR", []string{"Failed to update database version", err.Error()})
+			return version, err
+		}
+		_, err = DBConnection.DBHandle.Exec("UPDATE Images SET Rating = 'unrated';")
+		if err != nil {
+			logging.LogInterface.WriteLog("MariaDBPlugin", "InitDatabase", "*", "WARN", []string{"Failed to update rating on images after update", err.Error()})
+			//Update was technically successfull, not returning for this error
+		}
+		version = 1
+		logging.LogInterface.WriteLog("MariaDBPlugin", "InitDatabase", "*", "INFO", []string{"Database schema updated to version", strconv.FormatInt(version, 10)})
+	}
+	//Update version 1->2
+	if version == 1 {
+		_, err := DBConnection.DBHandle.Exec("ALTER TABLE Images ADD COLUMN (ScoreTotal BIGINT NOT NULL DEFAULT 0, ScoreAverage BIGINT NOT NULL DEFAULT 0, ScoreVoters BIGINT NOT NULL DEFAULT 0);")
+		if err != nil {
+			logging.LogInterface.WriteLog("MariaDBPlugin", "InitDatabase", "*", "ERROR", []string{"Failed to update database columns", err.Error()})
+			return version, err
+		}
+		_, err = DBConnection.DBHandle.Exec("CREATE TABLE ImageUserScores (ID BIGINT UNSIGNED NOT NULL AUTO_INCREMENT UNIQUE, UserID BIGINT UNSIGNED NOT NULL, ImageID BIGINT UNSIGNED NOT NULL, Score BIGINT NOT NULL, CreationTime TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL, UNIQUE INDEX ImageUserPair (UserID,ImageID));")
+		if err != nil {
+			logging.LogInterface.WriteLog("MariaDBPlugin", "performFreshDBInstall", "*", "ERROR", []string{"Failed to install database", err.Error()})
+			return version, err
+		}
+		_, err = DBConnection.DBHandle.Exec("UPDATE DBVersion SET version = 2;")
+		if err != nil {
+			logging.LogInterface.WriteLog("MariaDBPlugin", "InitDatabase", "*", "ERROR", []string{"Failed to update database version", err.Error()})
+			return version, err
+		}
+		version = 2
+		logging.LogInterface.WriteLog("MariaDBPlugin", "InitDatabase", "*", "INFO", []string{"Database schema updated to version", strconv.FormatInt(version, 10)})
+	}
+	return version, nil
 }

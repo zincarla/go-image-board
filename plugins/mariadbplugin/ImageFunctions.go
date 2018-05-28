@@ -278,11 +278,11 @@ func (DBConnection *MariaDBPlugin) searchImagesExclusive(ExcludeTags []uint64, M
 	return ToReturn, MaxResults, nil
 }
 
-//GetImage returns information on a single image (Returns a list of ImageInformations, or error)
+//GetImage returns information on a single image (Returns an ImageInformation, or error)
 func (DBConnection *MariaDBPlugin) GetImage(ID uint64) (interfaces.ImageInformation, error) {
 	ToReturn := interfaces.ImageInformation{ID: ID}
 	var UploadTime mysql.NullTime
-	err := DBConnection.DBHandle.QueryRow("Select Images.Name as ImageName, Images.Location, Images.UploaderID, Images.UploadTime, Images.Rating, Users.Name as UploaderName FROM Images LEFT OUTER JOIN Users ON Images.UploaderID = Users.ID WHERE Images.ID=?", ID).Scan(&ToReturn.Name, &ToReturn.Location, &ToReturn.UploaderID, &UploadTime, &ToReturn.Rating, &ToReturn.UploaderName)
+	err := DBConnection.DBHandle.QueryRow("Select Images.Name as ImageName, Images.Location, Images.UploaderID, Images.UploadTime, Images.Rating, Users.Name as UploaderName, Images.ScoreAverage, Images.ScoreTotal, Images.ScoreVoters FROM Images LEFT OUTER JOIN Users ON Images.UploaderID = Users.ID WHERE Images.ID=?", ID).Scan(&ToReturn.Name, &ToReturn.Location, &ToReturn.UploaderID, &UploadTime, &ToReturn.Rating, &ToReturn.UploaderName, &ToReturn.ScoreAverage, &ToReturn.ScoreTotal, &ToReturn.ScoreVoters)
 	if err != nil {
 		logging.LogInterface.WriteLog("ImageFunctions", "GetImage", "*", "ERROR", []string{"Failed to get image info from database", err.Error()})
 		return ToReturn, err
@@ -334,6 +334,54 @@ func (DBConnection *MariaDBPlugin) parseMetaTags(MetaTags []interfaces.TagInform
 			ToAdd.Exists = true
 			ToAdd.Comparator = "=" //Clobber any other comparator requested. This one will only support equals
 			//Since rating is a string, no futher processing needed!
+		case "score":
+			ToAdd.Name = "ScoreAverage"
+			ToAdd.Description = "The average voted score of the image"
+			//Must be an int64
+			score, isInt := ToAdd.MetaValue.(int64)
+			if isInt {
+				ToAdd.MetaValue = score
+				ToAdd.Exists = true
+			} else {
+				ErrorList = append(ErrorList, errors.New("could not parse requested score, ensure it is a number"))
+			}
+			//All comparators valid
+		case "averagescore":
+			ToAdd.Name = "ScoreAverage"
+			ToAdd.Description = "The average voted score of the image"
+			//Must be an int64
+			score, isInt := ToAdd.MetaValue.(int64)
+			if isInt {
+				ToAdd.MetaValue = score
+				ToAdd.Exists = true
+			} else {
+				ErrorList = append(ErrorList, errors.New("could not parse requested score, ensure it is a number"))
+			}
+			//All comparators valid
+		case "totalscore":
+			ToAdd.Name = "ScoreTotal"
+			ToAdd.Description = "The total sum of all voted scores for the image"
+			//Must be an int64
+			score, isInt := ToAdd.MetaValue.(int64)
+			if isInt {
+				ToAdd.MetaValue = score
+				ToAdd.Exists = true
+			} else {
+				ErrorList = append(ErrorList, errors.New("could not parse requested score total, ensure it is a number"))
+			}
+			//All comparators valid
+		case "scorevoters":
+			ToAdd.Name = "ScoreVoters"
+			ToAdd.Description = "The count of all users that voted on the image"
+			//Must be an int64
+			score, isInt := ToAdd.MetaValue.(int64)
+			if isInt {
+				ToAdd.MetaValue = score
+				ToAdd.Exists = true
+			} else {
+				ErrorList = append(ErrorList, errors.New("could not parse requested voter count, ensure it is a number"))
+			}
+			//All comparators valid
 		default:
 			ErrorList = append(ErrorList, errors.New("MetaTag does not exist"))
 		}
