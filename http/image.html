@@ -55,7 +55,7 @@
 				</ul>
 				{{if $HasVotePermissions}}
 				<form action="/image" method="post">
-					<input type="number" name="NewVote" placeholder="New Vote" value="{{.ImageContentInfo.UsersVotedScore}}">
+					<input type="number" name="NewVote" placeholder="New Vote" value="{{.ImageContentInfo.UsersVotedScore}}" min="-10" max="10">
 					<input type="hidden" name="ID" value="{{.ImageContentInfo.ID}}">
 					<input type="hidden" name="command" value="ChangeVote" />
 					<input type="submit" value="Score">

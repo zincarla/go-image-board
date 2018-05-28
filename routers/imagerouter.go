@@ -75,6 +75,10 @@ func ImageRouter(responseWriter http.ResponseWriter, request *http.Request) {
 			TemplateInput.Message += "Failed to parse your vote value. "
 			break
 		}
+		if Score < -10 || Score > 10 {
+			TemplateInput.Message += "Score must be between -10 and 10"
+			break
+		}
 		if err := database.DBInterface.UpdateUserVoteScore(TemplateInput.UserID, requestedID, Score); err != nil {
 			logging.LogInterface.WriteLog("ImageRouter", "ImageRouter", TemplateInput.UserName, "WARN", []string{"Failed to set vote in database", err.Error()})
 			TemplateInput.Message += "Failed to set vote in database, internal error. "
