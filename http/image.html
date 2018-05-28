@@ -46,12 +46,12 @@
 				{{if and $UserNotNull $HasDeletePermissions}}
 				<a href="/images?command=delete&ID={{$ImageID}}&SearchTerms={{.OldQuery}}">Delete Image</a>
 				{{end}}
-				<h5>Score</h5>
 				<ul>
+					<li><h5>Score</h5></li>
 					<li>Average: {{.ImageContentInfo.ScoreAverage}}</li>
 					<li>Total: {{.ImageContentInfo.ScoreTotal}}</li>
 					<li>Voters: {{.ImageContentInfo.ScoreVoters}}</li>
-					{{if eq $HasVotePermissions false}}<li>Your Score: {{.ImageContentInfo.UsersVotedScore}}</li>{{end}}
+					{{if eq $HasVotePermissions false}}{{if $UserNotNull}}<li>Your Score: {{.ImageContentInfo.UsersVotedScore}}</li>{{end}}{{end}}
 				</ul>
 				{{if $HasVotePermissions}}
 				<form action="/image" method="post">
