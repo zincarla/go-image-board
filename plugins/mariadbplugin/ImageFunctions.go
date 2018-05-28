@@ -337,10 +337,16 @@ func (DBConnection *MariaDBPlugin) parseMetaTags(MetaTags []interfaces.TagInform
 		case "score":
 			ToAdd.Name = "ScoreAverage"
 			ToAdd.Description = "The average voted score of the image"
+			sscore, isString := ToAdd.MetaValue.(string)
+			if isString {
+				score, err := strconv.ParseInt(sscore, 10, 64)
+				if err == nil {
+					ToAdd.MetaValue = score
+				}
+			}
 			//Must be an int64
-			score, isInt := ToAdd.MetaValue.(int64)
+			_, isInt := ToAdd.MetaValue.(int64)
 			if isInt {
-				ToAdd.MetaValue = score
 				ToAdd.Exists = true
 			} else {
 				ErrorList = append(ErrorList, errors.New("could not parse requested score, ensure it is a number"))
@@ -349,10 +355,16 @@ func (DBConnection *MariaDBPlugin) parseMetaTags(MetaTags []interfaces.TagInform
 		case "averagescore":
 			ToAdd.Name = "ScoreAverage"
 			ToAdd.Description = "The average voted score of the image"
+			sscore, isString := ToAdd.MetaValue.(string)
+			if isString {
+				score, err := strconv.ParseInt(sscore, 10, 64)
+				if err == nil {
+					ToAdd.MetaValue = score
+				}
+			}
 			//Must be an int64
-			score, isInt := ToAdd.MetaValue.(int64)
+			_, isInt := ToAdd.MetaValue.(int64)
 			if isInt {
-				ToAdd.MetaValue = score
 				ToAdd.Exists = true
 			} else {
 				ErrorList = append(ErrorList, errors.New("could not parse requested score, ensure it is a number"))
@@ -361,25 +373,37 @@ func (DBConnection *MariaDBPlugin) parseMetaTags(MetaTags []interfaces.TagInform
 		case "totalscore":
 			ToAdd.Name = "ScoreTotal"
 			ToAdd.Description = "The total sum of all voted scores for the image"
+			sscore, isString := ToAdd.MetaValue.(string)
+			if isString {
+				score, err := strconv.ParseInt(sscore, 10, 64)
+				if err == nil {
+					ToAdd.MetaValue = score
+				}
+			}
 			//Must be an int64
-			score, isInt := ToAdd.MetaValue.(int64)
+			_, isInt := ToAdd.MetaValue.(int64)
 			if isInt {
-				ToAdd.MetaValue = score
 				ToAdd.Exists = true
 			} else {
-				ErrorList = append(ErrorList, errors.New("could not parse requested score total, ensure it is a number"))
+				ErrorList = append(ErrorList, errors.New("could not parse requested score, ensure it is a number"))
 			}
 			//All comparators valid
 		case "scorevoters":
 			ToAdd.Name = "ScoreVoters"
 			ToAdd.Description = "The count of all users that voted on the image"
+			sscore, isString := ToAdd.MetaValue.(string)
+			if isString {
+				score, err := strconv.ParseInt(sscore, 10, 64)
+				if err == nil {
+					ToAdd.MetaValue = score
+				}
+			}
 			//Must be an int64
-			score, isInt := ToAdd.MetaValue.(int64)
+			_, isInt := ToAdd.MetaValue.(int64)
 			if isInt {
-				ToAdd.MetaValue = score
 				ToAdd.Exists = true
 			} else {
-				ErrorList = append(ErrorList, errors.New("could not parse requested voter count, ensure it is a number"))
+				ErrorList = append(ErrorList, errors.New("could not parse requested score, ensure it is a number"))
 			}
 			//All comparators valid
 		default:
