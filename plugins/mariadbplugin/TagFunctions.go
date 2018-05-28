@@ -24,7 +24,8 @@ func prepareTagName(Name string) string {
 	if strings.Count(Name, ":") == 1 {
 		//Assume a metatag
 		NameValue := strings.Split(Name, ":")
-		Name = regexTagName.ReplaceAllString(NameValue[0], "_") + ":" + regexTagName.ReplaceAllString(NameValue[1], "_")
+		value, comparator := getTagComparator(NameValue[1]) //Strip comparator, so it does not get replaced by a _
+		Name = regexTagName.ReplaceAllString(NameValue[0], "_") + ":" + comparator + regexTagName.ReplaceAllString(value, "_")
 	} else {
 		//Then any special characters replaced with _
 		Name = regexTagName.ReplaceAllString(Name, "_")
@@ -282,6 +283,21 @@ func (DBConnection *MariaDBPlugin) GetQueryTags(UserQuery string) ([]interfaces.
 	return ToReturn, nil
 }
 
+//getTagComparator returns the tagvalue and the comparator, or the original TagValue and an empty string if one does not exist
+func getTagComparator(TagValue string) (string, string) {
+	tagRunes := []rune(TagValue)
+	toReturn := ""
+	if tagRunes[0] == '>' || tagRunes[0] == '<' {
+		toReturn += string(tagRunes[0])
+		tagRunes = tagRunes[1:]
+	}
+	if tagRunes[0] == '=' {
+		toReturn += string(tagRunes[0])
+		tagRunes = tagRunes[1:]
+	}
+	return string(tagRunes), toReturn
+}
+
 //getTagsInfo is a helper function to get more details on a set of tags by name, note that the names should be cleaned up before passing to this function.
 //This function will also parse Alias mapping and return those as well.
 func (DBConnection *MariaDBPlugin) getTagsInfo(Tags []string, Exclude bool) ([]interfaces.TagInformation, error) {
@@ -295,11 +311,16 @@ func (DBConnection *MariaDBPlugin) getTagsInfo(Tags []string, Exclude bool) ([]i
 	var NonMetaTags []string //Tags will be set to this and used later on in code
 	for _, value := range Tags {
 		if strings.Contains(value, ":") {
+			MetaValue, Comparator := getTagComparator(strings.Split(value, ":")[1])
+			if Comparator == "" {
+				Comparator = "="
+			}
 			ToAdd := interfaces.TagInformation{
-				Name:      strings.Split(value, ":")[0],
-				MetaValue: strings.Split(value, ":")[1],
-				Exclude:   Exclude,
-				IsMeta:    true}
+				Name:       strings.Split(value, ":")[0],
+				MetaValue:  MetaValue,
+				Comparator: Comparator,
+				Exclude:    Exclude,
+				IsMeta:     true}
 			ToReturn = append(ToReturn, ToAdd)
 		} else {
 			NonMetaTags = append(NonMetaTags, value)
@@ -598,4 +619,24 @@ func sliceContains(slice []string, item string) bool {
 		}
 	}
 	return false
+}
+
+//inverts a tags comparator
+func getInvertedComparator(comparator string) string {
+	if comparator == "=" {
+		return "!="
+	}
+	if comparator == ">" {
+		return "<="
+	}
+	if comparator == "<" {
+		return ">="
+	}
+	if comparator == ">=" {
+		return "<"
+	}
+	if comparator == "<=" {
+		return ">"
+	}
+	return ""
 }

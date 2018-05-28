@@ -43,7 +43,7 @@ func (DBConnection *MariaDBPlugin) DeleteImage(ImageID uint64) error {
 	return err
 }
 
-//SearchImages performs a search for images (Returns a list of ImageInformations, or error)
+//SearchImages performs a search for images (Returns a list of ImageInformations a result count and an error/nil)
 func (DBConnection *MariaDBPlugin) SearchImages(Tags []interfaces.TagInformation, PageStart uint64, PageStride uint64) ([]interfaces.ImageInformation, uint64, error) {
 	//Cleanup input for use in code below
 	//Specifically we seperate the include, the exclude and metatags into their own lists
@@ -63,6 +63,7 @@ func (DBConnection *MariaDBPlugin) SearchImages(Tags []interfaces.TagInformation
 	}
 
 	//Short circuit if we have no inclusive tags
+	//This makes the query and function simpler to handle
 	if len(IncludeTags) == 0 {
 		return DBConnection.searchImagesExclusive(ExcludeTags, MetaTags, PageStart, PageStride)
 	}
@@ -93,11 +94,15 @@ func (DBConnection *MariaDBPlugin) SearchImages(Tags []interfaces.TagInformation
 	if len(MetaTags) > 0 {
 		for _, tag := range MetaTags {
 			metaTagQuery := "AND Images." + tag.Name + " "
+			comparator := tag.Comparator
 			if tag.Exclude {
-				metaTagQuery = metaTagQuery + "!= ? "
-			} else {
-				metaTagQuery = metaTagQuery + "= ? "
+				comparator = getInvertedComparator(comparator)
 			}
+			if comparator == "" {
+				return ToReturn, 0, errors.New("Failed to invert query to negate on " + tag.Name)
+			}
+			metaTagQuery = metaTagQuery + comparator + " ? "
+
 			sqlWhereClause = sqlWhereClause + metaTagQuery
 		}
 	}
@@ -172,7 +177,7 @@ func (DBConnection *MariaDBPlugin) SearchImages(Tags []interfaces.TagInformation
 	return ToReturn, MaxResults, nil
 }
 
-//SearchImages performs a search for images (Returns a list of ImageInformations, or error)
+//SearchImages performs a search for images (Returns a list of ImageInformations a result count and an error/nil)
 func (DBConnection *MariaDBPlugin) searchImagesExclusive(ExcludeTags []uint64, MetaTags []interfaces.TagInformation, PageStart uint64, PageStride uint64) ([]interfaces.ImageInformation, uint64, error) {
 
 	//Initialize output
@@ -198,14 +203,18 @@ func (DBConnection *MariaDBPlugin) searchImagesExclusive(ExcludeTags []uint64, M
 		for _, tag := range MetaTags {
 			metaTagQuery := "AND "
 			if firstPass && len(ExcludeTags) == 0 {
-				metaTagQuery = "WHERE "
+				metaTagQuery = "WHERE " //If we are processing a query only containing a metatag, then we need the where here, otherwise is added above
 			}
 			metaTagQuery = metaTagQuery + "Images." + tag.Name + " "
+			comparator := tag.Comparator
 			if tag.Exclude {
-				metaTagQuery = metaTagQuery + "!= ? "
-			} else {
-				metaTagQuery = metaTagQuery + "= ? "
+				comparator = getInvertedComparator(comparator)
 			}
+			if comparator == "" {
+				return ToReturn, 0, errors.New("Failed to invert query to negate on " + tag.Name)
+			}
+			metaTagQuery = metaTagQuery + comparator + " ? "
+
 			sqlWhereClause = sqlWhereClause + metaTagQuery
 			firstPass = false
 		}
@@ -315,6 +324,7 @@ func (DBConnection *MariaDBPlugin) parseMetaTags(MetaTags []interfaces.TagInform
 					ToAdd.MetaValue = value
 					ToAdd.Exists = true
 				}
+				ToAdd.Comparator = "=" //Clobber any other comparator requested. This one will only support equals
 			} else {
 				ErrorList = append(ErrorList, errors.New("Could not convert metatag value to string as expected"))
 			}
@@ -322,6 +332,7 @@ func (DBConnection *MariaDBPlugin) parseMetaTags(MetaTags []interfaces.TagInform
 			ToAdd.Name = "Rating"
 			ToAdd.Description = "The rating of the image"
 			ToAdd.Exists = true
+			ToAdd.Comparator = "=" //Clobber any other comparator requested. This one will only support equals
 			//Since rating is a string, no futher processing needed!
 		default:
 			ErrorList = append(ErrorList, errors.New("MetaTag does not exist"))

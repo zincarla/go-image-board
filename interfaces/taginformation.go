@@ -17,4 +17,5 @@ type TagInformation struct {
 	IsAlias     bool
 	IsMeta      bool
 	MetaValue   interface{}
+	Comparator  string
 }
