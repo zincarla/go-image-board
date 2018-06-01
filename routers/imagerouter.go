@@ -22,8 +22,6 @@ import (
 func ImageRouter(responseWriter http.ResponseWriter, request *http.Request) {
 	TemplateInput := getNewTemplateInput(request)
 
-	userQuery := TemplateInput.OldQuery
-
 	var requestedID uint64
 	var err error
 	//If we are just now uploading the file, then we need to get ID from upload function
@@ -35,11 +33,14 @@ func ImageRouter(responseWriter http.ResponseWriter, request *http.Request) {
 			return
 		}
 		logging.LogInterface.WriteLog("ImageRouter", "ImageRouter", TemplateInput.UserName, "INFO", []string{"Attempting to upload file"})
-		requestedID, err = handleImageUpload(request, userQuery, TemplateInput.UserName)
+		requestedID, err = handleImageUpload(request, TemplateInput.UserName)
 		if err != nil {
 			logging.LogInterface.WriteLog("ImageRouter", "ImageRouter", TemplateInput.UserName, "WARNING", []string{err.Error()})
 			TemplateInput.Message = "One or more warnings generated during upload. " + err.Error()
 		}
+		//redirect to a GET form of page
+		http.Redirect(responseWriter, request, "/image?ID="+strconv.FormatUint(requestedID, 10)+"&prevMessage="+TemplateInput.Message, 302)
+		return
 	case request.FormValue("command") == "ChangeVote":
 		sImageID := request.FormValue("ID")
 		if TemplateInput.UserName == "" || TemplateInput.UserID == 0 {
@@ -63,7 +64,7 @@ func ImageRouter(responseWriter http.ResponseWriter, request *http.Request) {
 		}
 
 		if !(TemplateInput.UserPermissions.HasPermission(interfaces.ScoreImage) || (imageInfo.UploaderID == TemplateInput.UserID && config.Configuration.UsersControlOwnObjects)) {
-			go writeAuditLog(TemplateInput.UserID, "IMAGE-SCORE", TemplateInput.UserName+" failed to upload image. No permissions.")
+			go writeAuditLog(TemplateInput.UserID, "IMAGE-SCORE", TemplateInput.UserName+" failed to score image. No permissions.")
 			TemplateInput.Message += "You do not have permissions to vote on this image. "
 			break
 		}
@@ -85,6 +86,44 @@ func ImageRouter(responseWriter http.ResponseWriter, request *http.Request) {
 			break
 		}
 		TemplateInput.Message += "Successfully changed vote! "
+	case request.FormValue("command") == "ChangeSource":
+		sImageID := request.FormValue("ID")
+		if TemplateInput.UserName == "" || TemplateInput.UserID == 0 {
+			//Redirect to logon
+			http.Redirect(responseWriter, request, "/logon?prevMessage="+url.QueryEscape("You must be logged in to vote on images"), 302)
+			return
+		}
+		logging.LogInterface.WriteLog("ImageRouter", "ImageRouter", TemplateInput.UserName, "INFO", []string{"Attempting to source an image"})
+
+		requestedID, err = strconv.ParseUint(sImageID, 10, 64)
+		if err != nil {
+			logging.LogInterface.WriteLog("ImageRouter", "ImageRouter", TemplateInput.UserName, "WARN", []string{"Failed to parse imageid to vote on"})
+			TemplateInput.Message += "Failed to parse image id to vote on. "
+			break
+		}
+		//Validate permission to vote
+		imageInfo, err := database.DBInterface.GetImage(requestedID)
+		if err != nil {
+			TemplateInput.Message += "Failed to get image information. "
+			break
+		}
+
+		if !(TemplateInput.UserPermissions.HasPermission(interfaces.SourceImage) || (imageInfo.UploaderID == TemplateInput.UserID && config.Configuration.UsersControlOwnObjects)) {
+			go writeAuditLog(TemplateInput.UserID, "IMAGE-SOURCE", TemplateInput.UserName+" failed to source image. No permissions.")
+			TemplateInput.Message += "You do not have permissions to change the source of this image. "
+			break
+		}
+		// /ValidatePermission
+
+		//At this point, user is validated
+		Source := request.FormValue("NewSource")
+
+		if err := database.DBInterface.SetImageSource(requestedID, Source); err != nil {
+			logging.LogInterface.WriteLog("ImageRouter", "ImageRouter", TemplateInput.UserName, "WARN", []string{"Failed to set source in database", err.Error()})
+			TemplateInput.Message += "Failed to set source in database, internal error. "
+			break
+		}
+		TemplateInput.Message += "Successfully changed source! "
 	default:
 		//Otherwise ID should come from request
 		parsedValue, err := strconv.ParseUint(request.FormValue("ID"), 10, 32)
@@ -109,6 +148,12 @@ func ImageRouter(responseWriter http.ResponseWriter, request *http.Request) {
 	}
 	//Set Template
 	TemplateInput.ImageContentInfo = imageInfo
+
+	//Check is source is a url
+	if _, err := url.ParseRequestURI(TemplateInput.ImageContentInfo.Source); err == nil {
+		//Source is url
+		TemplateInput.ImageContentInfo.SourceIsURL = true
+	}
 
 	//Get vote information
 	//Validate permission to upload
@@ -171,7 +216,7 @@ func getEmbedForContent(imageLocation string) template.HTML {
 	return template.HTML(ToReturn)
 }
 
-func handleImageUpload(request *http.Request, userQuery string, userName string) (uint64, error) {
+func handleImageUpload(request *http.Request, userName string) (uint64, error) {
 	//Translate UserID
 	userID, err := database.DBInterface.GetUserID(userName)
 	if err != nil {
@@ -196,6 +241,7 @@ func handleImageUpload(request *http.Request, userQuery string, userName string)
 	var lastID uint64
 	request.ParseMultipartForm(config.Configuration.MaxUploadBytes)
 	fileHeaders := request.MultipartForm.File["fileToUpload"]
+	source := request.FormValue("Source")
 	for _, fileHeader := range fileHeaders {
 		switch ext := strings.ToLower(filepath.Ext(fileHeader.Filename)); ext {
 		case ".jpg", ".jpeg", ".bmp", ".gif", ".png", ".svg", ".mpg", ".mov", ".webm", ".avi", ".mp4", ".mp3", ".ogg", ".wav", ".webp":
@@ -251,7 +297,7 @@ func handleImageUpload(request *http.Request, userQuery string, userName string)
 			saveStream.Close()
 			//Add image to Database
 
-			lastID, err = database.DBInterface.NewImage(originalName, hashName, userID)
+			lastID, err = database.DBInterface.NewImage(originalName, hashName, userID, source)
 			if err != nil {
 				logging.LogInterface.WriteLog("ImageRouter", "handleImageUpload", userName, "ERROR", []string{"error attempting to add file to database", err.Error(), filePath})
 				errorCompilation += fileHeader.Filename + " could not be added to database, internal error."
@@ -267,7 +313,7 @@ func handleImageUpload(request *http.Request, userQuery string, userName string)
 			go GenerateThumbnail(hashName)
 
 			//Get tags
-			userQTags, err := database.DBInterface.GetQueryTags(userQuery)
+			userQTags, err := database.DBInterface.GetQueryTags(request.FormValue("SearchTags"))
 			for _, tag := range userQTags {
 				if tag.Exists && tag.IsMeta == false {
 					//Assign pre-existing tag

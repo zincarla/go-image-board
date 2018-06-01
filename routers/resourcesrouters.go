@@ -25,8 +25,16 @@ import (
 //ResourceRouter handles requests to /resources
 func ResourceRouter(responseWriter http.ResponseWriter, request *http.Request) {
 	urlVariables := mux.Vars(request)
-	logging.LogInterface.WriteLog("ContentRouter", "GetCoreResource", "*", "SUCCESS", []string{"resources" + string(filepath.Separator) + urlVariables["file"]})
+	logging.LogInterface.WriteLog("ContentRouter", "ResourceRouter", "*", "SUCCESS", []string{"resources" + string(filepath.Separator) + urlVariables["file"]})
 	http.ServeFile(responseWriter, request, config.JoinPath(config.Configuration.HTTPRoot, "resources"+string(filepath.Separator)+urlVariables["file"]))
+}
+
+//RedirectRouter handles requests to /redirect
+func RedirectRouter(responseWriter http.ResponseWriter, request *http.Request) {
+	TemplateInput := getNewTemplateInput(request)
+	TemplateInput.RedirectLink = request.FormValue("RedirectLink")
+	logging.LogInterface.WriteLog("ContentRouter", "RedirectRouter", "*", "INFO", []string{request.FormValue("RedirectLink")})
+	replyWithTemplate("redirect.html", TemplateInput, responseWriter)
 }
 
 //ResourceImageRouter handles requests to /images/{file}

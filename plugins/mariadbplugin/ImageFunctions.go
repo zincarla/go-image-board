@@ -13,8 +13,8 @@ import (
 //Image operations
 
 //NewImage adds an image with the provided information
-func (DBConnection *MariaDBPlugin) NewImage(ImageName string, ImageFileName string, OwnerID uint64) (uint64, error) {
-	resultInfo, err := DBConnection.DBHandle.Exec("INSERT INTO Images (Name, Location, UploaderID) VALUES (?, ?, ?);", ImageName, ImageFileName, OwnerID)
+func (DBConnection *MariaDBPlugin) NewImage(ImageName string, ImageFileName string, OwnerID uint64, Source string) (uint64, error) {
+	resultInfo, err := DBConnection.DBHandle.Exec("INSERT INTO Images (Name, Location, UploaderID, Source) VALUES (?, ?, ?, ?);", ImageName, ImageFileName, OwnerID, Source)
 	if err != nil {
 		logging.LogInterface.WriteLog("MariaDBPlugin", "NewImage", "*", "ERROR", []string{"Failed to add image", err.Error()})
 		return 0, err
@@ -282,7 +282,7 @@ func (DBConnection *MariaDBPlugin) searchImagesExclusive(ExcludeTags []uint64, M
 func (DBConnection *MariaDBPlugin) GetImage(ID uint64) (interfaces.ImageInformation, error) {
 	ToReturn := interfaces.ImageInformation{ID: ID}
 	var UploadTime mysql.NullTime
-	err := DBConnection.DBHandle.QueryRow("Select Images.Name as ImageName, Images.Location, Images.UploaderID, Images.UploadTime, Images.Rating, Users.Name as UploaderName, Images.ScoreAverage, Images.ScoreTotal, Images.ScoreVoters FROM Images LEFT OUTER JOIN Users ON Images.UploaderID = Users.ID WHERE Images.ID=?", ID).Scan(&ToReturn.Name, &ToReturn.Location, &ToReturn.UploaderID, &UploadTime, &ToReturn.Rating, &ToReturn.UploaderName, &ToReturn.ScoreAverage, &ToReturn.ScoreTotal, &ToReturn.ScoreVoters)
+	err := DBConnection.DBHandle.QueryRow("Select Images.Name as ImageName, Images.Location, Images.UploaderID, Images.UploadTime, Images.Rating, Users.Name as UploaderName, Images.ScoreAverage, Images.ScoreTotal, Images.ScoreVoters, Images.Source FROM Images LEFT OUTER JOIN Users ON Images.UploaderID = Users.ID WHERE Images.ID=?", ID).Scan(&ToReturn.Name, &ToReturn.Location, &ToReturn.UploaderID, &UploadTime, &ToReturn.Rating, &ToReturn.UploaderName, &ToReturn.ScoreAverage, &ToReturn.ScoreTotal, &ToReturn.ScoreVoters, &ToReturn.Source)
 	if err != nil {
 		logging.LogInterface.WriteLog("ImageFunctions", "GetImage", "*", "ERROR", []string{"Failed to get image info from database", err.Error()})
 		return ToReturn, err
@@ -298,6 +298,16 @@ func (DBConnection *MariaDBPlugin) SetImageRating(ID uint64, Rating string) erro
 	_, err := DBConnection.DBHandle.Exec("UPDATE Images SET Rating = ? WHERE ID = ?;", Rating, ID)
 	if err != nil {
 		logging.LogInterface.WriteLog("ImageFunctions", "SetImageRating", "*", "ERROR", []string{"Failed to set image rating", err.Error()})
+		return err
+	}
+	return nil
+}
+
+//SetImageSource changes a given image's source in the database
+func (DBConnection *MariaDBPlugin) SetImageSource(ID uint64, Source string) error {
+	_, err := DBConnection.DBHandle.Exec("UPDATE Images SET Source = ? WHERE ID = ?;", Source, ID)
+	if err != nil {
+		logging.LogInterface.WriteLog("ImageFunctions", "SetImageSource", "*", "ERROR", []string{"Failed to set image source", err.Error()})
 		return err
 	}
 	return nil

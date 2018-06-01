@@ -33,6 +33,7 @@ type templateInput struct {
 	QuestionThree        string
 	UserPermissions      interfaces.UserPermission
 	UserControlsOwn      bool
+	RedirectLink         string
 }
 
 var totalImages uint64

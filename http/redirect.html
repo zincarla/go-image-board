@@ -1,0 +1,32 @@
+{{template "header.html" .}}
+	<body>
+		{{template "headMenu.html" .}}
+		<div id="BodyContent">
+			<div id="SideMenu" class="cellDefaultHidden">
+				<form action="/images" method="post">
+					<input type="text" name="SearchTerms" placeholder="Search" value="{{.OldQuery}}">
+					<input type="submit" value="Go">
+				</form>
+				<ul>
+				{{$OldQuery := .OldQuery}}
+				{{if .Tags}}
+				<li><h5>Tags</h5></li>
+				{{range .Tags}}
+					{{if .Exists}}
+				<li>{{if .Exclude}} - {{end}}{{.Name}} {{if ne .ID 0}}<a href="/tag?ID={{.ID}}&SearchTerms={{$OldQuery}}">?</a>{{else}}<a href="/about/tags.html?SearchTerms={{$OldQuery}}">?</a>{{end}}</li>
+					{{end}}
+				{{end}}
+				<li><h5>Invalid Tags</h5></li>
+				{{range .Tags}}
+					{{if eq .Exists false}}
+				<li>{{if .Exclude}} - {{end}}{{.Name}}</li>
+					{{end}}
+				{{end}}
+				{{end}}
+				</ul>
+			</div>
+			<div id="ImageGridContainer" style="text-align:center;">
+				{{if ne .RedirectLink ""}}<strong>Warning</strong> you are leaving this site. If you are sure you want to continue, click the link below<br> <a href="{{.RedirectLink}}">{{.RedirectLink}}</a>{{else}}You should only reach this page when you click on an external link, we are not sure where you inteded to go. Please click back and try again.{{end}}
+			</div>
+		</div>
+{{template "footer.html" .}}

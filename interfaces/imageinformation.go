@@ -17,4 +17,6 @@ type ImageInformation struct {
 	ScoreTotal      int64
 	ScoreVoters     int64
 	UsersVotedScore int64
+	Source          string
+	SourceIsURL     bool
 }

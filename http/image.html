@@ -14,26 +14,28 @@
 				{{$CanModifyTags := .UserPermissions.HasPermission 1}}
 				{{$CanDeleteImage := .UserPermissions.HasPermission 32}}
 				{{$CanVoteImage := .UserPermissions.HasPermission 512}}
+				{{$CanSourceImage := .UserPermissions.HasPermission 1024}}
 				{{$IsOwn := eq .ImageContentInfo.UploaderID .UserID}}
 				{{$CanModifyOwn := and .UserControlsOwn $IsOwn}}
 				{{$UserNotNull := ne .UserName ""}}
 				{{$HasTagPermissions := or $CanModifyTags $CanModifyOwn}}
 				{{$HasDeletePermissions := or $CanDeleteImage $CanModifyOwn}}
 				{{$HasVotePermissions := or $CanVoteImage $CanModifyOwn}}
+				{{$HasSourcePermissions := or $CanSourceImage $CanModifyOwn}}
 				{{range .Tags}}
 				<li>{{.Name}} {{if $CanModifyTags}}<a href="/tag?ID={{.ID}}&command=remove&ImageID={{$ImageID}}&SearchTerms={{$OldQuery}}">-</a> {{end}}{{if ne .ID 0}}<a href="/tag?ID={{.ID}}&SearchTerms={{$OldQuery}}">?</a>{{else}}<a href="/about/tags.html?SearchTerms={{$OldQuery}}">?</a>{{end}}</li>
 				{{end}}
 				</ul>
 				{{if and $UserNotNull $HasTagPermissions}}
 				<h5>Add tags</h5>
-				<form action="/tag" method="post">
+				<form action="/tag" method="POST">
 					<input type="text" name="NewTags" placeholder="New Tags" value="">
 					<input type="hidden" name="ImageID" value="{{.ImageContentInfo.ID}}">
 					<input type="hidden" name="command" value="AddTags" />
 					<input type="submit" value="Add">
 				</form>
 				<h5>Change Rating <a href="/about/tags.html?SearchTerms={{$OldQuery}}">?</a></h5>
-				<form action="/tag" method="post">
+				<form action="/tag" method="POST">
 					<input type="text" name="NewRating" placeholder="New Rating" value="{{.ImageContentInfo.Rating}}">
 					<input type="hidden" name="ImageID" value="{{.ImageContentInfo.ID}}">
 					<input type="hidden" name="command" value="ChangeRating" />
@@ -46,6 +48,20 @@
 				{{if and $UserNotNull $HasDeletePermissions}}
 				<a href="/images?command=delete&ID={{$ImageID}}&SearchTerms={{.OldQuery}}">Delete Image</a>
 				{{end}}
+				<h5>Source</h5>
+				{{if and $UserNotNull $HasSourcePermissions}}
+				<form action="/image" method="GET">
+					<input type="text" name="NewSource" placeholder="Source" value="{{.ImageContentInfo.Source}}">
+					<input type="hidden" name="ID" value="{{.ImageContentInfo.ID}}">
+					<input type="hidden" name="command" value="ChangeSource" />
+					<input type="submit" value="Change Source">
+				</form>
+				{{end}}
+				{{if .ImageContentInfo.SourceIsURL}}
+				<a href="/redirect?RedirectLink={{.ImageContentInfo.Source}}">Source URL</a>
+				{{else}}
+				{{.ImageContentInfo.Source}}
+				{{end}}
 				<ul>
 					<li><h5>Score</h5></li>
 					<li>Average: {{.ImageContentInfo.ScoreAverage}}</li>
@@ -54,7 +70,7 @@
 					{{if eq $HasVotePermissions false}}{{if $UserNotNull}}<li>Your Score: {{.ImageContentInfo.UsersVotedScore}}</li>{{end}}{{end}}
 				</ul>
 				{{if $HasVotePermissions}}
-				<form action="/image" method="post">
+				<form action="/image" method="GET">
 					<input type="number" name="NewVote" placeholder="New Vote" value="{{.ImageContentInfo.UsersVotedScore}}" min="-10" max="10">
 					<input type="hidden" name="ID" value="{{.ImageContentInfo.ID}}">
 					<input type="hidden" name="command" value="ChangeVote" />

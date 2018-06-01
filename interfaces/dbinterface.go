@@ -39,10 +39,12 @@ type DBInterface interface {
 	ValidateProposedUsername(UserName string) error
 	//SetImageRating changes a given image's rating
 	SetImageRating(ID uint64, Rating string) error
+	//SetImageSource changes a given image's source
+	SetImageSource(ID uint64, Source string) error
 
 	//Image operations
 	//NewImage adds an image with the provided information and returns the id, or error
-	NewImage(ImageName string, ImageFileName string, OwnerID uint64) (uint64, error)
+	NewImage(ImageName string, ImageFileName string, OwnerID uint64, Source string) (uint64, error)
 	//DeleteImage removes an image from the db
 	DeleteImage(ImageID uint64) error
 	//SearchImages performs a search for images (Returns a list of imageIDs, or error)

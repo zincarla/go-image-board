@@ -97,6 +97,7 @@ func main() {
 		requestRouter.HandleFunc("/about/{file}", routers.AboutRouter)
 		requestRouter.HandleFunc("/tags", routers.TagsRouter)
 		requestRouter.HandleFunc("/tag", routers.TagRouter)
+		requestRouter.HandleFunc("/redirect", routers.RedirectRouter)
 		//Account
 		requestRouter.HandleFunc("/logon", routers.LogonRouter)
 		requestRouter.HandleFunc("/mod", routers.ModRouter)
