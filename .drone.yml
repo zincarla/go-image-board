@@ -8,7 +8,7 @@
 
     pipeline:
       build:
-        image: golang:1.10.1
+        image: golang:1.10.2
         environment:
           - GO15VENDOREXPERIMENT=0
           - GOOS=linux

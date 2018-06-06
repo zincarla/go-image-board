@@ -86,6 +86,13 @@
 						<input type="hidden" name="command" value="securityQuestion" />
 						<input type="submit" value="Submit" />
 					</form>
+					<form method="post" action="/logon">
+						<h2>Set Global Filter</h2><br>
+						The filter below will be silently appended to all your searches. This allows you to automatically remove items with an unwanted tag from your view.
+						Filter Query: <input type="text" name="filter" value="{{.UserFilter}}"/><br>
+						<input type="hidden" name="command" value="setUserFilter" />
+						<input type="submit" value="Submit" />
+					</form>
 					{{end}}
 				</div>
 			</div>

@@ -341,7 +341,7 @@ func TagRouter(responseWriter http.ResponseWriter, request *http.Request) {
 
 		if err = database.DBInterface.SetImageRating(iImageID, newRating); err != nil {
 			logging.LogInterface.WriteLog("TagsRouter", "TagRouter", "*", "ERROR", []string{"Failed to change image rating ", err.Error()})
-			TemplateInput.Message += "Failed to change image rating, internal errror occured. "
+			TemplateInput.Message += "Failed to change image rating, internal error ocurred. "
 		}
 
 		//Redirect back to image

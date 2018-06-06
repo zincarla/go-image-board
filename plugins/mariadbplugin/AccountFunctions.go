@@ -93,6 +93,12 @@ func (DBConnection *MariaDBPlugin) SetUserDisableState(userID uint64, isDisabled
 	return err
 }
 
+//SetUserQueryTags sets a user's global filter
+func (DBConnection *MariaDBPlugin) SetUserQueryTags(UserID uint64, Filter string) error {
+	_, err := DBConnection.DBHandle.Exec("UPDATE Users SET SearchFilter=? WHERE ID=?", Filter, UserID)
+	return err
+}
+
 //SetUserPassword Update a user's password, validation of user provided by either old password, or security answers. (nil on success)
 func (DBConnection *MariaDBPlugin) SetUserPassword(userName string, password []byte, newPassword []byte, answerOne []byte, answerTwo []byte, answerThree []byte) error {
 	//Validate authentication method
@@ -157,4 +163,14 @@ func (DBConnection *MariaDBPlugin) ValidateProposedUsername(UserName string) err
 		return err
 	}
 	return nil
+}
+
+//GetUserFilter returns the raw string of the user's filter
+func (DBConnection *MariaDBPlugin) GetUserFilter(UserID uint64) (string, error) {
+	var userFilter string
+	err := DBConnection.DBHandle.QueryRow("SELECT SearchFilter FROM Users WHERE ID = ?", UserID).Scan(&userFilter)
+	if err != nil {
+		logging.LogInterface.WriteLog("MariaDBPlugin", "GetUserQueryTags", "*", "ERROR", []string{"Failed to get user filter", err.Error()})
+	}
+	return userFilter, nil
 }

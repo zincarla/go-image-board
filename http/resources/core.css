@@ -163,11 +163,18 @@ h3 {
 h4 {
 	font-size: 1.1em
 }
-
 h5 {
 	font-size: 1.05em; 
 	margin-top: .33em;
 	margin-bottom: .1em;
+}
+h6 {
+	font-size: 1em; 
+	margin-top: .15em;
+	margin-bottom: .05em;
+	font-weight: normal;
+	text-decoration: gray underline;
+	text-decoration-style: dotted;
 }
 .displayBlock {
 	display:block;

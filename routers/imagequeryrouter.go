@@ -75,13 +75,33 @@ func ImageQueryRouter(responseWriter http.ResponseWriter, request *http.Request)
 	//Cleanup and format tags for use with SearchImages
 	userQTags, err := database.DBInterface.GetQueryTags(userQuery)
 	if err == nil {
+		//if signed in, add user's global filters to query
+		if TemplateInput.UserName != "" {
+			userFilterTags, err := database.DBInterface.GetUserFilterTags(TemplateInput.UserID)
+			if err != nil {
+				logging.LogInterface.WriteLog("ImageRouter", "ImageQueryRouter", TemplateInput.UserName, "ERROR", []string{"Failed to load user's filter", err.Error()})
+				TemplateInput.Message += "Failed to add your global filter to this query. Internall error. "
+			} else {
+				userQTags = append(userQTags, userFilterTags...)
+			}
+		}
 		//Parse tag results for next query
 		imageInfo, MaxCount, err := database.DBInterface.SearchImages(userQTags, pageStart, pageStride)
 		if err == nil {
 			TemplateInput.ImageInfo = imageInfo
 			TemplateInput.TotalResults = MaxCount
 		} else {
-			logging.LogInterface.WriteLog("ImageRouter", "ImageQueryRouter", "*", "ERROR", []string{"Failed to search images", userQuery, err.Error()})
+			parsed := ""
+			for _, tag := range userQTags {
+				if tag.Exclude {
+					parsed += "-"
+				}
+				if !tag.Exists {
+					parsed += "!"
+				}
+				parsed += tag.Name + " "
+			}
+			logging.LogInterface.WriteLog("ImageRouter", "ImageQueryRouter", "*", "ERROR", []string{"Failed to search images", userQuery, parsed, err.Error()})
 		}
 	} else {
 		logging.LogInterface.WriteLog("ImageRouter", "ImageQueryRouter", "*", "ERROR", []string{"Failed to validate tags", userQuery, err.Error()})

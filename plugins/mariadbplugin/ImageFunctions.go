@@ -46,7 +46,7 @@ func (DBConnection *MariaDBPlugin) DeleteImage(ImageID uint64) error {
 //SearchImages performs a search for images (Returns a list of ImageInformations a result count and an error/nil)
 func (DBConnection *MariaDBPlugin) SearchImages(Tags []interfaces.TagInformation, PageStart uint64, PageStride uint64) ([]interfaces.ImageInformation, uint64, error) {
 	//Cleanup input for use in code below
-	//Specifically we seperate the include, the exclude and metatags into their own lists
+	//Specifically we separate the include, the exclude and metatags into their own lists
 	var IncludeTags []uint64
 	var ExcludeTags []uint64
 	var MetaTags []interfaces.TagInformation
@@ -87,7 +87,7 @@ func (DBConnection *MariaDBPlugin) SearchImages(Tags []interfaces.TagInformation
 	//Now for the variable piece
 	sqlWhereClause := "WHERE TagID IN (?" + strings.Repeat(",?", len(IncludeTags)-1) + ") "
 	if len(ExcludeTags) > 0 {
-		sqlWhereClause = "AND ImageID NOT IN (SELECT DISTINCT ImageID FROM ImageTags WHERE TagID IN (?" + strings.Repeat(",?", len(ExcludeTags)-1) + ")) "
+		sqlWhereClause += "AND ImageID NOT IN (SELECT DISTINCT ImageID FROM ImageTags WHERE TagID IN (?" + strings.Repeat(",?", len(ExcludeTags)-1) + ")) "
 	}
 
 	//And add any metatags
@@ -128,7 +128,7 @@ func (DBConnection *MariaDBPlugin) SearchImages(Tags []interfaces.TagInformation
 	for _, tag := range IncludeTags {
 		queryArray = append(queryArray, tag)
 	}
-	//Add the exlusive tags
+	//Add the exclusive tags
 	for _, tag := range ExcludeTags {
 		queryArray = append(queryArray, tag)
 	}
@@ -146,7 +146,7 @@ func (DBConnection *MariaDBPlugin) SearchImages(Tags []interfaces.TagInformation
 	//Run the count query (Count query does not use start/stride)
 	err := DBConnection.DBHandle.QueryRow(sqlCountQuery, queryArray...).Scan(&MaxResults)
 	if err != nil {
-		logging.LogInterface.WriteLog("MariaDBPlugin", "SearchImages", "*", "ERROR", []string{"Erorr running search querry", sqlCountQuery, err.Error()})
+		logging.LogInterface.WriteLog("MariaDBPlugin", "SearchImages", "*", "ERROR", []string{"Error running search query", sqlCountQuery, err.Error()})
 		return nil, 0, err
 	}
 
@@ -194,7 +194,7 @@ func (DBConnection *MariaDBPlugin) searchImagesExclusive(ExcludeTags []uint64, M
 	//Now for the variable piece
 	sqlWhereClause := ""
 	if len(ExcludeTags) > 0 {
-		sqlWhereClause = "WHERE ID NOT IN (SELECT DISTINCT ImageID FROM ImageTags WHERE TagID IN (?" + strings.Repeat(",?", len(ExcludeTags)-1) + ")) "
+		sqlWhereClause += "WHERE ID NOT IN (SELECT DISTINCT ImageID FROM ImageTags WHERE TagID IN (?" + strings.Repeat(",?", len(ExcludeTags)-1) + ")) "
 	}
 
 	//And add any metatags
@@ -232,7 +232,7 @@ func (DBConnection *MariaDBPlugin) searchImagesExclusive(ExcludeTags []uint64, M
 		Offset
 	*/
 	queryArray := []interface{}{}
-	//Add the exlusive tags
+	//Add the exclusive tags
 	for _, tag := range ExcludeTags {
 		queryArray = append(queryArray, tag)
 	}
@@ -247,7 +247,7 @@ func (DBConnection *MariaDBPlugin) searchImagesExclusive(ExcludeTags []uint64, M
 	//Run the count query (Count query does not use start/stride)
 	err := DBConnection.DBHandle.QueryRow(sqlCountQuery, queryArray...).Scan(&MaxResults)
 	if err != nil {
-		logging.LogInterface.WriteLog("MariaDBPlugin", "SearchImages", "*", "ERROR", []string{"Erorr running search querry", sqlCountQuery, err.Error()})
+		logging.LogInterface.WriteLog("MariaDBPlugin", "SearchImages", "*", "ERROR", []string{"Error running search query", sqlCountQuery, err.Error()})
 		return nil, 0, err
 	}
 
