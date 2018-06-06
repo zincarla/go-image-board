@@ -12,8 +12,18 @@
 				{{if .Tags}}
 				<li><h5>Tags</h5></li>
 				{{range .Tags}}
+					{{if eq .FromUserFilter false}}
 					{{if .Exists}}
 				<li>{{if .Exclude}} - {{end}}{{.Name}} {{if ne .ID 0}}<a href="/tag?ID={{.ID}}&SearchTerms={{$OldQuery}}">?</a>{{else}}<a href="/about/tags.html?SearchTerms={{$OldQuery}}">?</a>{{end}}</li>
+					{{end}}
+					{{end}}
+				{{end}}
+				<li><h6>Filter Tags</h6></li>
+				{{range .Tags}}
+					{{if .FromUserFilter}}
+					{{if .Exists}}
+				<li>{{if .Exclude}} - {{end}}{{.Name}} {{if ne .ID 0}}<a href="/tag?ID={{.ID}}&SearchTerms={{$OldQuery}}">?</a>{{else}}<a href="/about/tags.html?SearchTerms={{$OldQuery}}">?</a>{{end}}</li>
+					{{end}}
 					{{end}}
 				{{end}}
 				<li><h5>Invalid Tags</h5></li>

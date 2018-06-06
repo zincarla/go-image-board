@@ -11,10 +11,10 @@ import (
 )
 
 //TODO: Increment this whenever we alter the DB Schema, ensure you attempt to add update code below
-var currentDBVersion int64 = 3
+var currentDBVersion int64 = 4
 
 //TODO: Increment this when we alter the db schema and don't add update code to compensate
-var minSupportedDBVersion int64 = 0
+var minSupportedDBVersion int64 // 0 by default
 
 //MariaDBPlugin acts as plugin between gib and a Maria/MySQL DB
 type MariaDBPlugin struct {
@@ -27,7 +27,7 @@ func (DBConnection *MariaDBPlugin) InitDatabase() error {
 	//https://github.com/go-sql-driver/mysql/#dsn-data-source-name
 	DBConnection.DBHandle, err = sql.Open("mysql", config.Configuration.DBUser+":"+config.Configuration.DBPassword+"@tcp("+config.Configuration.DBHost+":"+config.Configuration.DBPort+")/"+config.Configuration.DBName)
 	if err == nil {
-		err = DBConnection.DBHandle.Ping() //Ping actually validates we can query databse
+		err = DBConnection.DBHandle.Ping() //Ping actually validates we can query database
 		if err == nil {
 			version, err := DBConnection.getDatabaseVersion()
 			if err == nil {
@@ -41,7 +41,7 @@ func (DBConnection *MariaDBPlugin) InitDatabase() error {
 					}
 				}
 			} else {
-				logging.LogInterface.WriteLog("MariaDBPlugin", "InitDatabase", "*", "WARNING", []string{"Failed to get database verion, assuming not installed. Will attempt to perform install.", err.Error()})
+				logging.LogInterface.WriteLog("MariaDBPlugin", "InitDatabase", "*", "WARNING", []string{"Failed to get database version, assuming not installed. Will attempt to perform install.", err.Error()})
 				//Assume no database installed. Perform fresh install
 				return DBConnection.performFreshDBInstall()
 			}
@@ -53,7 +53,7 @@ func (DBConnection *MariaDBPlugin) InitDatabase() error {
 
 //GetPluginInformation Return plugin info as string
 func (DBConnection *MariaDBPlugin) GetPluginInformation() string {
-	return "MariaDBPlugin 0.0.0.4"
+	return "MariaDBPlugin 0.0.0.5"
 }
 
 func (DBConnection *MariaDBPlugin) getDatabaseVersion() (int64, error) {
@@ -98,7 +98,7 @@ func (DBConnection *MariaDBPlugin) performFreshDBInstall() error {
 		return err
 	}
 	//Users
-	_, err = DBConnection.DBHandle.Exec("CREATE TABLE Users (ID BIGINT UNSIGNED NOT NULL AUTO_INCREMENT UNIQUE, Name VARCHAR(40) NOT NULL UNIQUE, EMail VARCHAR(255) NOT NULL UNIQUE, PasswordHash VARCHAR(255) NOT NULL, TokenID VARCHAR(255), IP VARCHAR(50), SecQuestionOne VARCHAR(50), SecQuestionTwo VARCHAR(50), SecQuestionThree VARCHAR(50), SecAnswerOne VARCHAR(255), SecAnswerTwo VARCHAR(255), SecAnswerThree VARCHAR(255), CreationTime TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL, Disabled BOOL NOT NULL DEFAULT FALSE, Permissions BIGINT UNSIGNED NOT NULL DEFAULT 0);")
+	_, err = DBConnection.DBHandle.Exec("CREATE TABLE Users (ID BIGINT UNSIGNED NOT NULL AUTO_INCREMENT UNIQUE, Name VARCHAR(40) NOT NULL UNIQUE, EMail VARCHAR(255) NOT NULL UNIQUE, PasswordHash VARCHAR(255) NOT NULL, TokenID VARCHAR(255), IP VARCHAR(50), SecQuestionOne VARCHAR(50), SecQuestionTwo VARCHAR(50), SecQuestionThree VARCHAR(50), SecAnswerOne VARCHAR(255), SecAnswerTwo VARCHAR(255), SecAnswerThree VARCHAR(255), CreationTime TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL, Disabled BOOL NOT NULL DEFAULT FALSE, Permissions BIGINT UNSIGNED NOT NULL DEFAULT 0, SearchFilter VARCHAR(255) NOT NULL DEFAULT '');")
 	if err != nil {
 		logging.LogInterface.WriteLog("MariaDBPlugin", "performFreshDBInstall", "*", "ERROR", []string{"Failed to install database", err.Error()})
 		return err
@@ -174,6 +174,21 @@ func (DBConnection *MariaDBPlugin) upgradeDatabase(version int64) (int64, error)
 			return version, err
 		}
 		version = 3
+		logging.LogInterface.WriteLog("MariaDBPlugin", "InitDatabase", "*", "INFO", []string{"Database schema updated to version", strconv.FormatInt(version, 10)})
+	}
+	//Update version 3->4
+	if version == 3 {
+		_, err := DBConnection.DBHandle.Exec("ALTER TABLE Users ADD COLUMN (SearchFilter VARCHAR(255) NOT NULL DEFAULT '');")
+		if err != nil {
+			logging.LogInterface.WriteLog("MariaDBPlugin", "InitDatabase", "*", "ERROR", []string{"Failed to update database columns", err.Error()})
+			return version, err
+		}
+		_, err = DBConnection.DBHandle.Exec("UPDATE DBVersion SET version = 4;")
+		if err != nil {
+			logging.LogInterface.WriteLog("MariaDBPlugin", "InitDatabase", "*", "ERROR", []string{"Failed to update database version", err.Error()})
+			return version, err
+		}
+		version = 4
 		logging.LogInterface.WriteLog("MariaDBPlugin", "InitDatabase", "*", "INFO", []string{"Database schema updated to version", strconv.FormatInt(version, 10)})
 	}
 	return version, nil

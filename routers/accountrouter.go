@@ -290,8 +290,30 @@ func LogonRouter(responseWriter http.ResponseWriter, request *http.Request) {
 			go writeAuditLogByName(userName, "QUESTION-SET", userName+" successfully set questions with password challenge. ")
 			TemplateInput.Message = "Successfully set questions."
 		}
+	case "setuserfilter":
+		//Ensure signed in
+		userName, tokenID, _ := getSessionInformation(request)
+		if tokenID == "" || userName == "" {
+			TemplateInput.Message = "You must be logged in to perform this action."
+			logging.LogInterface.WriteLog("AccountRouter", "AccountHandler", userName, "ERROR", []string{"User not logged in"})
+			break
+		}
+		err := database.DBInterface.SetUserQueryTags(TemplateInput.UserID, request.FormValue("filter"))
+		if err != nil {
+			go writeAuditLogByName(userName, "FILTER-SET", userName+" failed to set filter. "+err.Error())
+			TemplateInput.Message = "Failed to update filter."
+			break
+		}
+		//Success
+		go writeAuditLogByName(userName, "FILTER-SET", userName+" successfully set filter. ")
+		TemplateInput.Message = "Your filter was changed successfully."
 	}
 
+	//Populate user filter if signed in
+	userName, tokenID, _ := getSessionInformation(request)
+	if tokenID != "" && userName != "" {
+		TemplateInput.UserFilter, _ = database.DBInterface.GetUserFilter(TemplateInput.UserID)
+	}
 	replyWithTemplate("logon.html", TemplateInput, responseWriter)
 }
 

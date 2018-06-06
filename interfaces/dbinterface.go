@@ -41,6 +41,8 @@ type DBInterface interface {
 	SetImageRating(ID uint64, Rating string) error
 	//SetImageSource changes a given image's source
 	SetImageSource(ID uint64, Source string) error
+	//GetUserFilter returns the raw string of the user's filter
+	GetUserFilter(UserID uint64) (string, error)
 
 	//Image operations
 	//NewImage adds an image with the provided information and returns the id, or error
@@ -52,6 +54,10 @@ type DBInterface interface {
 
 	//GetQueryTags returns a slice of tags based on a query
 	GetQueryTags(UserQuery string) ([]TagInformation, error)
+	//GetUserFilterTags returns a slice of tags based on a user's custom filter
+	GetUserFilterTags(UserID uint64) ([]TagInformation, error)
+	//SetUserQueryTags sets a user's global filter
+	SetUserQueryTags(UserID uint64, Filter string) error
 	//GetImageTags returns a list of TagInformation for all tags that apply to the given image
 	GetImageTags(ImageID uint64) ([]TagInformation, error)
 	//GetAllTags returns a list of all tags
