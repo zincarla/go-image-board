@@ -40,14 +40,14 @@ var SessionStore *sessions.CookieStore
 var Configuration ConfigurationSettings
 
 //ApplicationVersion Current version of application. This should be incremented every release
-var ApplicationVersion = "0.0.0.4"
+var ApplicationVersion = "0.0.0.5"
 
 //SessionVariableName is used when checking cookies
 var SessionVariableName = "gib-session"
 
-//LoadConfiguration loads the specifed configuration file into Configuration
+//LoadConfiguration loads the specified configuration file into Configuration
 func LoadConfiguration(Path string) error {
-	//Open the specifed file
+	//Open the specified file
 	File, err := os.Open(Path)
 	if err != nil {
 		return err
