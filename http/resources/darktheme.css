@@ -4,6 +4,12 @@ a {
 #HeadMenu ul li {
 	border-right: #242475;
 }
+#messageContainer {
+	color: #12123b;
+}
+#messageContainer a {
+	color: #12123b;
+}
 body {
 	background-color: #12123b;
 	color: #cccccc;
