@@ -46,7 +46,7 @@
 				{{.ImageContentInfo.Rating}} <a href="/about/tags.html?SearchTerms={{$OldQuery}}">?</a>
 				{{end}}
 				{{if and $UserNotNull $HasDeletePermissions}}
-				<a href="/images?command=delete&ID={{$ImageID}}&SearchTerms={{.OldQuery}}">Delete Image</a>
+				<a href="/images?command=delete&ID={{$ImageID}}&SearchTerms={{.OldQuery}}" onclick="return confirm('Are you sure you want to delete this image?');">Delete Image</a>
 				{{end}}
 				<h5>Source</h5>
 				{{if and $UserNotNull $HasSourcePermissions}}
