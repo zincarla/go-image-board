@@ -95,6 +95,7 @@ body {
 }
 .ImageResultContainer {
 	float:left;
+	position: relative;
 	margin: 5px;
 	padding: 5px;
 	height: 192px;
@@ -110,6 +111,21 @@ body {
 	object-fit: contain;
 	display: block;
 	margin: auto;
+}
+.imageResultOverlay {
+	position: absolute;
+	top: 25%;
+	left: 25%;
+	width: 50%;
+	height: 50%;
+}
+.overlayvideo, .overlayaudio {
+	background-image: url("/resources/playicon.svg");
+	background-position: center;
+	background-repeat: no-repeat;
+}
+.overlayimage {
+	display:none;
 }
 #PageMenu {
 	margin-left: 192px; /*Same as SideMenu width*/

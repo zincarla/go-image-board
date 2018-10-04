@@ -7,7 +7,9 @@ import (
 	"image"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	//Because all image processing will happen in this file
 	_ "image/gif"
@@ -51,8 +53,10 @@ func ThumbnailRouter(responseWriter http.ResponseWriter, request *http.Request) 
 	//Check if file does not exist
 	if _, err := os.Stat(thumbnailPath); err != nil {
 		switch ext := filepath.Ext(strings.ToLower(urlVariables["file"])); ext {
+		//If it does not, and it is an image, return the original image, more bandwidth but better looking site
 		case ".jpg", ".jpeg", ".bmp", ".gif", ".png", ".svg", ".webp":
 			thumbnailPath = config.JoinPath(config.Configuration.ImageDirectory, string(filepath.Separator)+urlVariables["file"])
+		//If a video or music file, pull up a play icon
 		case ".mpg", ".mov", ".webm", ".avi", ".mp4", ".mp3", ".ogg", ".wav":
 			thumbnailPath = config.JoinPath(config.Configuration.HTTPRoot, "resources"+string(filepath.Separator)+"playicon.svg")
 		}
@@ -103,6 +107,25 @@ func GenerateThumbnail(Name string) error {
 		}
 		thumbnailImage := resize.Resize(uint(newWidth), uint(newHeight), originalImage, resize.Lanczos3)
 		return png.Encode(NewFile, thumbnailImage)
+	case ".mpg", ".mov", ".webm", ".avi", ".mp4":
+		logging.LogInterface.WriteLog("resourcesrouters", "GenerateThumbnail", "*", "DEBUG", []string{"Video detected", Name})
+
+		//Short circuit if can't support with FFMPEG
+		if !config.Configuration.UseFFMPEG {
+			return errors.New("No thumbnail method for file type")
+		}
+		//Spawn FFMPEG Process and save image file
+		//ffmpeg -i input.mp4 -vf  "thumbnail,scale=640:360" -frames:v 1 thumb.png
+		//Fire forget
+		sizeParam := "thumbnail,scale=" + strconv.FormatUint(uint64(config.Configuration.MaxThumbnailWidth), 10) + ":" + strconv.FormatUint(uint64(config.Configuration.MaxThumbnailHeight), 10)
+		ffmpegCMD := exec.Command(config.Configuration.FFMPEGPath, "-i", config.JoinPath(config.Configuration.ImageDirectory, Name), "-vf", sizeParam, "-frames:v", "1", config.JoinPath(config.Configuration.ImageDirectory, "thumbs"+string(filepath.Separator)+Name+".png"))
+		_, err := ffmpegCMD.Output()
+		if err != nil {
+			logging.LogInterface.WriteLog("resourcesrouters", "GenerateThumbnail", "*", "ERROR", []string{"Failed to use FFMPEG", Name, err.Error()})
+			return err
+		}
+		logging.LogInterface.WriteLog("resourcesrouters", "GenerateThumbnail", "*", "INFO", []string{"FFMPEG output success", Name})
+		return nil
 	default:
 		return errors.New("No thumbnail method for file type")
 	}

@@ -5,6 +5,7 @@ import (
 	"go-image-board/logging"
 	"html/template"
 	"io/ioutil"
+	"path/filepath"
 	"strings"
 )
 
@@ -27,8 +28,22 @@ func CacheTemplates() error {
 	}
 
 	//Add functions here
+	getImageType := func(path string) string {
+		text := ""
+		switch ext := filepath.Ext(strings.ToLower(path)); ext {
+		case ".wav", ".mp3", ".ogg":
+			text = "audio"
+		case ".mpg", ".mov", ".webm", ".avi", ".mp4", ".gif":
+			text = "video"
+		default:
+			text = "image"
+		}
+		return text
+	}
+	templates := template.New("")
+	templates = templates.Funcs(template.FuncMap{"getimagetype": getImageType})
 
-	templates, err := template.ParseFiles(allFiles...)
+	templates, err = templates.ParseFiles(allFiles...)
 	if err != nil {
 		logging.LogInterface.WriteLog("TemplateCache", "CacheTemplates", "*", "ERROR", []string{err.Error()})
 		return err

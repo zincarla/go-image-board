@@ -31,6 +31,8 @@ type ConfigurationSettings struct {
 	MaxThumbnailHeight     uint
 	DefaultPermissions     uint64
 	UsersControlOwnObjects bool
+	FFMPEGPath             string
+	UseFFMPEG              bool
 }
 
 //SessionStore contains cookie information
@@ -40,7 +42,7 @@ var SessionStore *sessions.CookieStore
 var Configuration ConfigurationSettings
 
 //ApplicationVersion Current version of application. This should be incremented every release
-var ApplicationVersion = "0.0.0.5"
+var ApplicationVersion = "0.0.0.6"
 
 //SessionVariableName is used when checking cookies
 var SessionVariableName = "gib-session"

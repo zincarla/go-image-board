@@ -38,7 +38,7 @@
 			<div id="ImageGridContainer">
 				{{$OldQuery := .OldQuery}}
 				{{range .ImageInfo}}
-					<div class="ImageResultContainer"><a href="/image?ID={{.ID}}&SearchTerms={{$OldQuery}}"><img alt="Preview image of {{.Name}}" title="{{.Name}}" src="/thumbs/{{.Location}}" /></a></div>
+					<div class="ImageResultContainer"><a href="/image?ID={{.ID}}&SearchTerms={{$OldQuery}}"><img alt="Preview image of {{.Name}}" title="{{.Name}}" src="/thumbs/{{.Location}}" /><div class="imageResultOverlay overlay{{.Location | getimagetype}}"></div></a></div>
 				{{end}}
 			</div>
 		</div>
