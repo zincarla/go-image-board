@@ -4,7 +4,7 @@
 		<div id="BodyContent">
 			<div id="SideMenu" class="cellDefaultHidden">
 				<form action="/images" method="post">
-					<input type="text" name="SearchTerms" placeholder="Search" value="{{.OldQuery}}">
+					<input type="text" name="SearchTerms" placeholder="Search Images" value="{{.OldQuery}}">
 					<input type="submit" value="Go">
 				</form>
 				{{if ne .UserID 0}}
@@ -70,9 +70,9 @@
 					<form method="post" action="/logon" id="securityQForm">
 						<h2>Set Security Questions</h2><br>
 						Confirm Password: <input type="password" name="confirmpassword"/><br>
+						<p>In case your account is compromised, this question will be used to change your security questions. This will help ensure that, even if your password is taken, the thief will have difficulty changing these questions, ensuring you can reset your password. As such, choose something absolutely no one could guess about you.</p>
 						Question 1: <input type="text" name="qone"/><br>
 						Answer 1: <input type="text" name="qonea"/><br>
-						<p>In case your account is compromised, this question will be used to change your security questions. This will help ensure that, even if your password is taken, the thief will have difficulty changing these questions, ensuring you can reset your password. As such, choose something absolutly no one could guess about you.</p>
 						Question 2: <input type="text" name="qtwo"/><br>
 						Answer 2: <input type="text" name="qtwoa"/><br>
 						Question 3: <input type="text" name="qthree"/><br>

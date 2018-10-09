@@ -19,4 +19,7 @@ type ImageInformation struct {
 	UsersVotedScore int64
 	Source          string
 	SourceIsURL     bool
+	//Special for collections
+	OrderInCollection uint64                  //Should be used in overview of a single collection
+	MemberCollections []CollectionInformation //Should be used in view of single image (For navigation of collections it's a member of)
 }

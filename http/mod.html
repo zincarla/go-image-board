@@ -4,7 +4,7 @@
 		<div id="BodyContent">
 			<div id="SideMenu" class="cellDefaultHidden">
 				<form action="/images" method="post">
-					<input type="text" name="SearchTerms" placeholder="Search" value="{{.OldQuery}}">
+					<input type="text" name="SearchTerms" placeholder="Search Images" value="{{.OldQuery}}">
 					<input type="submit" value="Go">
 				</form>
 			</div>
@@ -23,7 +23,10 @@
 							<input type="hidden" name="command" value="editUserPerms" />
 							<input type="submit" value="Update" />
 							<h5>Reference</h5>
-							From the table below, select the permissions you want to grab. Add their corresponding numbers together to get your final permission. Example: Upload(16) + Tag Image(1) = 17
+							<p>From the table below, select the permissions you want to grab. Add their corresponding numbers together to get your final permission. Example: Upload(16) + Tag Image(1) = 17</p>
+							<p>Note that this server is set to {{if .UserControlsOwn}}allow users to modify their own contributions without explicit permissions.{{else}}require users to have explicit permission to modify any contribution.{{end}} 
+								If a user is allowed to modify their own contributions without explicit permission, they can do things like, change the source or score of their own uploads, add/remove members to/from their 
+								own collections or delete their own contributions; all without explicit score/delete/etc permissions. They cannot perform these functions on things they did not directly contribute however.</p>
 							<table>
 								<tr>
 									<th>Description</th>
@@ -64,6 +67,30 @@
 								<tr>
 									<td>BulkTagOperations</td>
 									<td>256</td>
+								</tr>
+								<tr>
+									<td>Set score on images</td>
+									<td>512</td>
+								</tr>
+								<tr>
+									<td>Set source on images</td>
+									<td>1024</td>
+								</tr>
+								<tr>
+									<td>Create Collections</td>
+									<td>2048</td>
+								</tr>
+								<tr>
+									<td>Modify Collections</td>
+									<td>4096</td>
+								</tr>
+								<tr>
+									<td>Delete Collections</td>
+									<td>8192</td>
+								</tr>
+								<tr>
+									<td>Add/Remove members to/from Collections</td>
+									<td>16384</td>
 								</tr>
 							</table>
 						</form>

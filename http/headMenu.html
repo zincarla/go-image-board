@@ -8,6 +8,7 @@
 				<li><a href="/images">Images</a></li>
 				{{if ne .UserName ""}}{{if .UserPermissions.HasPermission 16}}<li><a href="/uploadImage">Upload</a></li>{{end}}{{end}}
 				{{if ne .UserName ""}}<li><a href="/images?SearchTerms=uploader:{{.UserName}}">My Images</a></li>{{end}}
+				<li><a href="/collections">Collections</a></li>
 				<li><a href="/tags">Tags</a></li>
 				{{if eq .UserName ""}}
 				<li><a href="/logon">Login</li></a>

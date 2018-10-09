@@ -25,9 +25,14 @@ video, audio {
 input {
 	width: 100%;
 	box-sizing: border-box;
-	margin: 8px 0;
+	margin: 4px 0;
 	border-radius: 4px;
 	border: 1px solid #ccc;
+	padding: 2px 5px;
+	font-size: 1em;
+}
+#splashForm input {
+	margin: 8px 0;
 	padding: 7px 20px;
 	font-size: 1.5em
 }
@@ -44,10 +49,11 @@ li {
 }
 ul {
 	padding: 0px;
+	margin: 5px;
 }
 #HeadMenu {
 	width:100%;
-	height:96px;
+	height:2em;
 	text-align: center;
 }
 #HeadMenu ul {
@@ -66,6 +72,7 @@ ul {
 	float:left;
 	width: 192px;
 	padding-left: 10px;
+	font-size: .8em;
 }
 #SideMenu li {
 	text-transform: capitalize;
@@ -76,8 +83,13 @@ ul {
 	padding: 10px;
 }
 #ImageGridContainer > img {
-	max-width: 100%;
-	display:block
+	max-width: calc(100% - 1em);
+	display:inline-block;
+	max-height: calc(100vh - 5em); /*Full screen except top menu size and size of DL button*/
+	vertical-align: top;
+}
+.resetHeight {
+	max-height: initial !important;
 }
 #BodyContent {
 	width: 100%;
@@ -93,8 +105,11 @@ body {
 	border: 0px;
 	font-size: 20px;
 }
+#collectionTitle {
+	text-align: center;
+}
 .ImageResultContainer {
-	float:left;
+	display:inline-block;
 	position: relative;
 	margin: 5px;
 	padding: 5px;
@@ -102,7 +117,16 @@ body {
 	width: 288px;
 	background-color: lightgreen;
 	border-radius: 4px;
-	border-color: lightslategray;
+	text-align: center;
+	/*Disable highlighting of stuff*/
+	-webkit-touch-callout: none;
+	-webkit-user-select: none;
+	-khtml-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
+	box-sizing: border-box;
+	/*/Highlighting*/
 }
 .ImageResultContainer img {
 	max-width: 100%;
@@ -118,6 +142,9 @@ body {
 	left: 25%;
 	width: 50%;
 	height: 50%;
+}
+.CollectionResultContainer img {
+	max-height: calc(100% - 1em);
 }
 .overlayvideo, .overlayaudio {
 	background-image: url("/resources/playicon.svg");
@@ -181,7 +208,7 @@ h4 {
 }
 h5 {
 	font-size: 1.05em; 
-	margin-top: .33em;
+	margin-top: 1em;
 	margin-bottom: .1em;
 }
 h6 {
@@ -223,6 +250,29 @@ table {
 }
 tr:nth-child(odd) {
 	background-color: #e4e4e4
+}
+video, audio {
+	display: inline-block;
+}
+.removeCollectionButton {
+	position: absolute;
+	right: 0px;
+	top: 0px;
+	background-color: #FF2211;
+	width: 1em;
+	height: 1em;
+	border-top-right-radius: 4px;
+}
+/*Drag n drop stuff*/
+.ImageResultContainer.dragging {
+	position: fixed;
+	pointer-events: none;
+	width: 216px;
+	height: 144px;
+	opacity: 0.8;
+}
+.proposeReplace {
+	border: solid 5px slategray;
 }
 /*Cell phone selector*/
 @media (max-device-width: 536px), (max-width: 536px) {
@@ -304,6 +354,7 @@ tr:nth-child(odd) {
 	}
 	video, audio {
 		width: 100%;
+		display: block;
 	}
 	#filterForm {
 		width: 100%;

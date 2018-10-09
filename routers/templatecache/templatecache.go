@@ -40,8 +40,40 @@ func CacheTemplates() error {
 		}
 		return text
 	}
+	increment := func(value interface{}) interface{} {
+		switch value.(type) {
+		case int:
+			return value.(int) + 1
+		case float64:
+			return value.(float64) + 1
+		case float32:
+			return value.(float32) + 1
+		case uint64:
+			return value.(uint64) + 1
+		case uint32:
+			return value.(uint32) + 1
+		}
+		return value
+	}
+	decrement := func(value interface{}) interface{} {
+		switch value.(type) {
+		case int:
+			return value.(int) - 1
+		case float64:
+			return value.(float64) - 1
+		case float32:
+			return value.(float32) - 1
+		case uint64:
+			return value.(uint64) - 1
+		case uint32:
+			return value.(uint32) - 1
+		}
+		return value
+	}
 	templates := template.New("")
 	templates = templates.Funcs(template.FuncMap{"getimagetype": getImageType})
+	templates = templates.Funcs(template.FuncMap{"inc": increment})
+	templates = templates.Funcs(template.FuncMap{"dec": decrement})
 
 	templates, err = templates.ParseFiles(allFiles...)
 	if err != nil {

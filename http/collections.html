@@ -1,0 +1,31 @@
+{{template "header.html" .}}
+	<body>
+		{{template "headMenu.html" .}}
+		<div id="BodyContent">
+			<div id="SideMenu" class="cellDefaultHidden">
+				<form action="/images" method="post">
+					<input type="text" name="SearchTerms" placeholder="Search Images" value="{{.OldQuery}}">
+					<input type="submit" value="Go">
+				</form>
+			</div>
+			<div id="ImageGridContainer">
+				{{$OldQuery := .OldQuery}}
+				{{range .CollectionInfoList}}
+					<div class="ImageResultContainer CollectionResultContainer">
+						<a href="/collectionimages?ID={{.ID}}&SearchTerms={{$OldQuery}}">
+							{{if eq .Location ""}}
+							<img alt="Preview image for {{.Name}}" title="{{.Name}}" src="/resources/noicon.svg" />
+							{{else}}
+							<img alt="Preview image for {{.Name}}" title="{{.Name}}" src="/thumbs/{{.Location}}" />
+							{{end}}
+							{{.Name}} - ({{.Members}} Members)
+						</a>
+					</div>
+				{{end}}
+			</div>
+		</div>
+		<div id="PageMenu">
+			{{.PageMenu}}<br>
+			<span id="ImageCount">{{.TotalResults}} Collections!</span>
+		</div>
+{{template "footer.html" .}}

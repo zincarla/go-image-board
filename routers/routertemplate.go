@@ -16,6 +16,8 @@ type templateInput struct {
 	PageTitle            string
 	GIBVersion           string
 	ImageInfo            []interfaces.ImageInformation
+	CollectionInfo       interfaces.CollectionInformation
+	CollectionInfoList   []interfaces.CollectionInformation
 	OldQuery             string
 	PageMenu             template.HTML
 	TotalResults         uint64
@@ -49,6 +51,21 @@ func replyWithTemplate(templateName string, templateInput interface{}, responseW
 		http.Error(responseWriter, "", http.StatusInternalServerError)
 		return
 	}
+}
+
+//ValidateUserLogon Returns either the UserID,Name,Token or 0,"",""
+func ValidateUserLogon(request *http.Request) (uint64, string, string) {
+	//Verify user is logged in by validating token
+	userNameT, tokenIDT, _ := getSessionInformation(request) //This bit actually validates, returns "","" otherwise
+	if tokenIDT != "" && userNameT != "" {
+		//Translate UserID
+		userID, err := database.DBInterface.GetUserID(userNameT)
+		if err == nil {
+			return userID, userNameT, tokenIDT
+		}
+		logging.LogInterface.WriteLog("routertemplate", "getNewTemplateInput", userNameT, "ERROR", []string{"Failed to get UserID: ", err.Error()})
+	}
+	return 0, "", ""
 }
 
 //getNewTemplateInput helper function initiliazes a new templateInput with common information

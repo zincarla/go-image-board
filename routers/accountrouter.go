@@ -333,7 +333,7 @@ func getSessionInformation(request *http.Request) (string, string, *sessions.Ses
 	tokenID, _ := session.Values["TokenID"].(string)
 	ip, _, _ := net.SplitHostPort(request.RemoteAddr)
 	if err := database.DBInterface.ValidateToken(userName, tokenID, ip); err != nil {
-		return userName, "", session
+		return "", "", session
 	}
 	return userName, tokenID, session
 }

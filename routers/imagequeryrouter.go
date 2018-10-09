@@ -66,7 +66,7 @@ func ImageQueryRouter(responseWriter http.ResponseWriter, request *http.Request)
 	pageStartS := request.FormValue("PageStart")
 	upageStart, err := strconv.ParseUint(pageStartS, 10, 32)
 	var pageStart uint64
-	var pageStride uint64 = 30
+	pageStride := config.Configuration.PageStride
 	if err == nil {
 		//default to 0 on err
 		pageStart = upageStart
@@ -109,16 +109,13 @@ func ImageQueryRouter(responseWriter http.ResponseWriter, request *http.Request)
 
 	TemplateInput.Tags = userQTags
 
-	TemplateInput.PageMenu, err = generatePageMenu(int64(pageStart), int64(pageStride), int64(TemplateInput.TotalResults), userQuery)
+	TemplateInput.PageMenu, err = generatePageMenu(int64(pageStart), int64(pageStride), int64(TemplateInput.TotalResults), "SearchTerms="+url.QueryEscape(userQuery), "/images")
 
 	replyWithTemplate("imageresults.html", TemplateInput, responseWriter)
 }
 
 //generatePageMenu generates a template.HTML menu given a few numbers. Returns a menu like "<< 1, 2, 3, [4], 5, 6, 7 >>"
-func generatePageMenu(Offset int64, Stride int64, Max int64, Query string) (template.HTML, error) {
-	//URL Escape Query before use
-	Query = url.QueryEscape(Query)
-
+func generatePageMenu(Offset int64, Stride int64, Max int64, Query string, PageURL string) (template.HTML, error) {
 	//Validate parameters
 	if Offset < 0 || Stride <= 0 || Max < 0 || Offset > Max {
 		return template.HTML(""), errors.New("parameters don't make sense. validate your parameters are positive numbers")
@@ -128,7 +125,7 @@ func generatePageMenu(Offset int64, Stride int64, Max int64, Query string) (temp
 	}
 
 	//<a href="/images?SearchTerms={{.OldQuery}}">&#x3C;&#x3C;</a> 1, <a href="#">2</a>, <a href="#">3</a>, <a href="#">4</a>, <a href="#">5</a>, <a href="#">6</a>, <a href="#">7</a> <a href="#">&#x3E;&#x3E;</a>
-	ToReturn := "<a href=\"/images?SearchTerms=" + Query + "\">&#x3C;&#x3C;</a>"
+	ToReturn := "<a href=\"" + PageURL + "?" + Query + "\">&#x3C;&#x3C;</a>"
 	//Max possible page number
 	maxPage := int64(math.Ceil(float64(Max) / float64(Stride)))
 	lastPage := maxPage
@@ -145,7 +142,7 @@ func generatePageMenu(Offset int64, Stride int64, Max int64, Query string) (temp
 
 	for processPage := minPage; processPage <= maxPage; processPage++ {
 		if processPage != currentPage {
-			ToReturn = ToReturn + ", <a href=\"/images?SearchTerms=" + Query + "&PageStart=" + strconv.FormatInt((processPage-1)*Stride, 10) + "\">" + strconv.FormatInt(processPage, 10) + "</a>"
+			ToReturn = ToReturn + ", <a href=\"" + PageURL + "?" + Query + "&PageStart=" + strconv.FormatInt((processPage-1)*Stride, 10) + "\">" + strconv.FormatInt(processPage, 10) + "</a>"
 		} else {
 			ToReturn = ToReturn + ", " + strconv.FormatInt(currentPage, 10)
 		}
@@ -153,6 +150,6 @@ func generatePageMenu(Offset int64, Stride int64, Max int64, Query string) (temp
 
 	//Add end
 	endOffset := strconv.FormatInt((lastPage-1)*Stride, 10)
-	ToReturn = ToReturn + ", <a href=\"/images?SearchTerms=" + Query + "&PageStart=" + endOffset + "\">&#x3E;&#x3E;</a>"
+	ToReturn = ToReturn + ", <a href=\"" + PageURL + "?" + Query + "&PageStart=" + endOffset + "\">&#x3E;&#x3E;</a>"
 	return template.HTML(ToReturn), nil
 }

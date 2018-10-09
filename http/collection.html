@@ -1,0 +1,52 @@
+{{template "header.html" .}}
+	<body>
+		{{template "headMenu.html" .}}
+		<div id="BodyContent">
+			<div id="SideMenu" class="cellDefaultHidden">
+				<form action="/images" method="post">
+					<input type="text" name="SearchTerms" placeholder="Search Images" value="{{.OldQuery}}">
+					<input type="submit" value="Go">
+				</form>
+				{{$CanDeleteCollection := .UserPermissions.HasPermission 8192}}
+				{{$CanRemoveFromCollection:= .UserPermissions.HasPermission 16384}}
+				{{$CollectionID := .CollectionInfo.ID}}
+
+				{{$IsOwn := eq .ImageContentInfo.UploaderID .UserID}}
+				{{$CanModifyOwn := and .UserControlsOwn $IsOwn}}
+				{{$UserNotNull := ne .UserName ""}}
+
+				{{$HasDeletePermissions := or $CanDeleteCollection $CanModifyOwn}}
+				{{$HasRemoveFromPermissions := or $CanRemoveFromCollection $CanModifyOwn}}
+
+				{{$OldQuery := .OldQuery}}
+				<h5>Commands</h5>
+				{{if and $UserNotNull $HasDeletePermissions}}
+				<a href="/collections?command=delete&ID={{.CollectionInfo.ID}}&SearchTerms={{.OldQuery}}" onclick="return confirm('Are you sure you want to delete this collection?');">Delete Collection</a>
+				{{end}}
+				{{if and $UserNotNull $HasRemoveFromPermissions}}
+				<br><a href="/collectionorder?ID={{$CollectionID}}&SearchTerms={{$OldQuery}}">Reorder Members</a>
+				{{end}}
+			</div>
+			<div id="ImageGridContainer">
+				<div id="collectionTitle">
+					<h3>{{.CollectionInfo.Name}}</h3>
+				</div>
+				{{$OldQuery := .OldQuery}}
+				{{range .ImageInfo}}
+				<div class="ImageResultContainer">
+					<a href="/image?ID={{.ID}}&SearchTerms={{$OldQuery}}">
+						<img alt="Preview image of {{.Name}}" title="{{.Name}}" src="/thumbs/{{.Location}}" />
+						<div class="imageResultOverlay overlay{{.Location | getimagetype}}"></div>
+					</a>
+					{{if and $UserNotNull $HasRemoveFromPermissions}}
+					<a href="/collectionimages?command=delete&ID={{$CollectionID}}&ImageID={{.ID}}&SearchTerms={{$OldQuery}}" onclick="return confirm('Are you sure you want to remove this from the collection?');"><div class="removeCollectionButton">X</div></a>
+					{{end}}
+				</div>
+				{{end}}
+			</div>
+		</div>
+		<div id="PageMenu">
+			{{.PageMenu}}<br>
+			<span id="ImageCount">{{.TotalResults}} Images!</span>
+		</div>
+{{template "footer.html" .}}

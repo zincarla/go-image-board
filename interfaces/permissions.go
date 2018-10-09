@@ -37,6 +37,14 @@ const (
 	ScoreImage UserPermission = 512
 	//SourceImage Allows a user to change an image's source
 	SourceImage UserPermission = 1024
+	//AddCollections Allows a user to add a new collection to the system (But not delete)
+	AddCollections UserPermission = 2048
+	//ModifyCollections Allows a user to modify a collection in the system
+	ModifyCollections UserPermission = 4096
+	//RemoveCollections Allows a user to remove a collection from the system
+	RemoveCollections UserPermission = 8192
+	//ModifyCollectionMembers Allows a user to add and remove images to/from a collection, but not create or delete collections themselves
+	ModifyCollectionMembers UserPermission = 16384
 	//Add more permissions here as needed in future. Keep using powers of 2 for this to work.
 	//Max number will be 18446744073709551615, after 64 possible permission assignments.
 )

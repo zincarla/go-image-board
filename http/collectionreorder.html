@@ -1,0 +1,47 @@
+{{template "header.html" .}}
+	<body onmousemove="updateDrag(event)" onmouseup="stopDrag(event)">
+		{{template "headMenu.html" .}}
+		<div id="BodyContent">
+			<div id="SideMenu" class="cellDefaultHidden">
+				<form action="/images" method="post">
+					<input type="text" name="SearchTerms" placeholder="Search Images" value="{{.OldQuery}}">
+					<input type="submit" value="Go">
+				</form>
+				{{$CanDeleteCollection := .UserPermissions.HasPermission 8192}}
+				{{$CanRemoveFromCollection:= .UserPermissions.HasPermission 16384}}
+				{{$CollectionID := .CollectionInfo.ID}}
+
+				{{$IsOwn := eq .ImageContentInfo.UploaderID .UserID}}
+				{{$CanModifyOwn := and .UserControlsOwn $IsOwn}}
+				{{$UserNotNull := ne .UserName ""}}
+
+				{{$HasDeletePermissions := or $CanDeleteCollection $CanModifyOwn}}
+				{{$HasRemoveFromPermissions := or $CanRemoveFromCollection $CanModifyOwn}}
+
+				{{$OldQuery := .OldQuery}}
+				<h5>Commands</h5>
+				<form action="/collectionorder" onsubmit="return generateOrder(this);">
+					<input type="hidden" name="ID" value="{{.CollectionInfo.ID}}">
+					<input type="hidden" name="NewOrder" value="" />
+					<input type="hidden" name="command" value="reorder">
+					<input type="submit" value="Save">
+				</form>
+			</div>
+			<div id="ImageGridContainer">
+				<div id="collectionTitle">
+					<h3>Reordering {{.CollectionInfo.Name}}</h3>
+					<p>Click and drag a member to re-order it.</p>
+				</div>
+				{{$OldQuery := .OldQuery}}
+				{{range .ImageInfo}}
+				<div class="ImageResultContainer" onmousedown="startDrag(event, this)" onmouseenter="suggestDragReplace(this)" onmouseleave="clearDragSuggestion()" id="image-{{.ID}}">
+					<img alt="Preview image of {{.Name}}" title="{{.Name}}" src="/thumbs/{{.Location}}" ondragstart="event.preventDefault();return false;" />
+				</div>
+				{{end}}
+			</div>
+		</div>
+		<div id="PageMenu">
+			{{.PageMenu}}<br>
+			<span id="ImageCount">{{.TotalResults}} Images!</span>
+		</div>
+{{template "footer.html" .}}

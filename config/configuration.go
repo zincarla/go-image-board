@@ -33,6 +33,7 @@ type ConfigurationSettings struct {
 	UsersControlOwnObjects bool
 	FFMPEGPath             string
 	UseFFMPEG              bool
+	PageStride             uint64
 }
 
 //SessionStore contains cookie information
@@ -42,7 +43,7 @@ var SessionStore *sessions.CookieStore
 var Configuration ConfigurationSettings
 
 //ApplicationVersion Current version of application. This should be incremented every release
-var ApplicationVersion = "0.0.0.6"
+var ApplicationVersion = "1.0.0.0"
 
 //SessionVariableName is used when checking cookies
 var SessionVariableName = "gib-session"

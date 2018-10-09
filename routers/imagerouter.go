@@ -39,7 +39,7 @@ func ImageRouter(responseWriter http.ResponseWriter, request *http.Request) {
 			TemplateInput.Message = "One or more warnings generated during upload. " + err.Error()
 		}
 		//redirect to a GET form of page
-		http.Redirect(responseWriter, request, "/image?ID="+strconv.FormatUint(requestedID, 10)+"&prevMessage="+TemplateInput.Message, 302)
+		http.Redirect(responseWriter, request, "/image?ID="+strconv.FormatUint(requestedID, 10)+"&prevMessage="+url.QueryEscape(TemplateInput.Message), 302)
 		return
 	case request.FormValue("command") == "ChangeVote":
 		sImageID := request.FormValue("ID")
@@ -136,17 +136,23 @@ func ImageRouter(responseWriter http.ResponseWriter, request *http.Request) {
 		requestedID = parsedValue
 	}
 
-	logging.LogInterface.WriteLog("ImageRouter", "ImageRouter", "*", "INFO", []string{"Attempting to get file"})
-
 	//Get Imageinformation
 	imageInfo, err := database.DBInterface.GetImage(requestedID)
 	if err != nil {
 		TemplateInput.Message += "Failed to get image information. "
-		logging.LogInterface.WriteLog("ImageRouter", "ImageRouter", "*", "ERROR", []string{"Failed to get image info for", strconv.FormatUint(requestedID, 10)})
+		logging.LogInterface.WriteLog("ImageRouter", "ImageRouter", "*", "ERROR", []string{"Failed to get image info for", strconv.FormatUint(requestedID, 10), err.Error()})
 		replyWithTemplate("image.html", TemplateInput, responseWriter)
 		return
 	}
-	//Set Template
+
+	//Get Collection Info
+	imageInfo.MemberCollections, err = database.DBInterface.GetCollectionsWithImage(requestedID)
+	if err != nil {
+		//log err but no need to inform user
+		logging.LogInterface.WriteLog("ImageRouter", "ImageRouter", "*", "ERROR", []string{"Failed to get collection info for", strconv.FormatUint(requestedID, 10), err.Error()})
+	}
+
+	//Set Template with imageInfo
 	TemplateInput.ImageContentInfo = imageInfo
 
 	//Check is source is a url

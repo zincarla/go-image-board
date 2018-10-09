@@ -94,4 +94,28 @@ type DBInterface interface {
 	GetPluginInformation() string
 	//AddAuditLog adds a new audit log to the db
 	AddAuditLog(UserID uint64, Type string, Info string) error
+
+	//Collections
+	//NewCollection adds a collection with the provided information, returns collection ID and/or error
+	NewCollection(Name string, Description string, UploaderID uint64) (uint64, error)
+	//UpdateCollection changes a basic property of a collection
+	UpdateCollection(CollectionID uint64, Name string, Description string) error
+	//AddCollectionMember adds an image to a collection
+	AddCollectionMember(CollectionID uint64, ImageID uint64, LinkerID uint64) error
+	//UpdateCollectionMember updates an image's properties in a collection
+	UpdateCollectionMember(CollectionID uint64, ImageID uint64, Order uint64) error
+	//RemoveCollectionMember removes an image from collection
+	RemoveCollectionMember(CollectionID uint64, ImageID uint64) error
+	//DeleteCollection removes a collection
+	DeleteCollection(CollectionID uint64) error
+	//GetCollections returns a list of Collections
+	GetCollections(PageStart uint64, PageStride uint64) ([]CollectionInformation, uint64, error)
+	//GetTag return detailed information on one tag
+	GetCollection(ID uint64) (CollectionInformation, error)
+	//GetCollectionByName returns detailed information on one collection
+	GetCollectionByName(Name string) (CollectionInformation, error)
+	//GetCollectionMembers gets a list of images in a collection (Returns a list of imageIDs, the count of the total members, and or error)
+	GetCollectionMembers(CollectionID uint64, PageStart uint64, PageStride uint64) ([]ImageInformation, uint64, error)
+	//GetCollectionsWithImage returns a slice of collections with a specific image
+	GetCollectionsWithImage(ImageID uint64) ([]CollectionInformation, error)
 }

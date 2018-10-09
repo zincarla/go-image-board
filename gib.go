@@ -9,6 +9,7 @@ import (
 	"go-image-board/plugins"
 	"go-image-board/plugins/mariadbplugin"
 	"go-image-board/routers"
+	"go-image-board/routers/api"
 	"go-image-board/routers/templatecache"
 	"io/ioutil"
 	"net/http"
@@ -22,7 +23,7 @@ import (
 
 func main() {
 	//Commands
-	generateThumbsOnly := flag.Bool("thumbsonly", false, "Regenerates all thumbnails and that's it")
+	generateThumbsOnly := flag.Bool("thumbsonly", false, "Regenerates all thumbnails. You should run this if you change your thumbnail size or enable ffmpeg.")
 	flag.Parse()
 
 	//Load succeeded
@@ -90,6 +91,9 @@ func main() {
 		requestRouter.HandleFunc("/resources/{file}", routers.ResourceRouter)
 		requestRouter.HandleFunc("/", routers.RootRouter)
 		requestRouter.HandleFunc("/images", routers.ImageQueryRouter)
+		requestRouter.HandleFunc("/collectionorder", routers.CollectionImageOrderRouter)
+		requestRouter.HandleFunc("/collectionimages", routers.CollectionImageRouter)
+		requestRouter.HandleFunc("/collections", routers.CollectionsRouter)
 		requestRouter.HandleFunc("/images/{file}", routers.ResourceImageRouter)
 		requestRouter.HandleFunc("/thumbs/{file}", routers.ThumbnailRouter)
 		requestRouter.HandleFunc("/image", routers.ImageRouter)
@@ -101,6 +105,8 @@ func main() {
 		//Account
 		requestRouter.HandleFunc("/logon", routers.LogonRouter)
 		requestRouter.HandleFunc("/mod", routers.ModRouter)
+		//API
+		requestRouter.HandleFunc("/api/Collection", api.CollectionAPIRouter)
 	} else {
 		requestRouter.HandleFunc("/", routers.BadConfigRouter)
 		requestRouter.HandleFunc("/resources/{file}", routers.ResourceRouter) /*Required for CSS*/
@@ -132,23 +138,26 @@ func fixMissingConfigs() {
 	if config.Configuration.HTTPRoot == "" {
 		config.Configuration.HTTPRoot = "." + string(filepath.Separator) + "http"
 	}
-	if config.Configuration.MaxUploadBytes == 0 {
+	if config.Configuration.MaxUploadBytes <= 0 {
 		config.Configuration.MaxUploadBytes = 100 << 20
 	}
-	if config.Configuration.MaxHeaderBytes == 0 {
+	if config.Configuration.MaxHeaderBytes <= 0 {
 		config.Configuration.MaxHeaderBytes = 1 << 20
 	}
-	if config.Configuration.ReadTimeout.Nanoseconds() == 0 {
+	if config.Configuration.ReadTimeout.Nanoseconds() <= 0 {
 		config.Configuration.ReadTimeout = 30 * time.Second
 	}
-	if config.Configuration.WriteTimeout.Nanoseconds() == 0 {
+	if config.Configuration.WriteTimeout.Nanoseconds() <= 0 {
 		config.Configuration.WriteTimeout = 30 * time.Second
 	}
-	if config.Configuration.MaxThumbnailWidth == 0 {
+	if config.Configuration.MaxThumbnailWidth <= 0 {
 		config.Configuration.MaxThumbnailWidth = 402
 	}
-	if config.Configuration.MaxThumbnailHeight == 0 {
+	if config.Configuration.MaxThumbnailHeight <= 0 {
 		config.Configuration.MaxThumbnailHeight = 258
+	}
+	if config.Configuration.PageStride <= 0 {
+		config.Configuration.PageStride = 30
 	}
 	config.CreateSessionStore()
 }

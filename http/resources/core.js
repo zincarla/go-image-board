@@ -18,6 +18,16 @@ function ToggleCellDIVDisplay(id) {
     }
 }
 
+//ToggleFormDisplay is used to show hidden forms, cleans up the UI
+function ToggleFormDisplay(id) {
+    if (document.getElementById(id).classList.contains("displayHidden")) {
+        document.getElementById(id).classList.remove("displayHidden");
+    } else {
+        document.getElementById(id).classList.add("displayHidden");
+    }
+    return false;
+}
+
 //
 function SearchTagTable(tagTableID, formID) {
     parent = document.getElementById(tagTableID);
@@ -32,5 +42,37 @@ function SearchTagTable(tagTableID, formID) {
             children[i].classList.add("displayHidden");
         }
     }
+    return false;
+}
+
+//Expand Image or not
+function ExpandImage() {
+    parent = document.getElementById("ImageGridContainer");
+    children = parent.getElementsByTagName("img");
+    for (i = 0; i < children.length; i++) { 
+        if (children[i].classList.contains("resetHeight")) {
+            children[i].classList.remove("resetHeight");
+        } else {
+            children[i].classList.add("resetHeight");
+        }
+    }
+    return false;
+}
+
+//API
+function CheckCollectionName(form, resultID) {
+    document.getElementById(resultID).innerHTML = "Add to Collection"
+    var xhttp = new XMLHttpRequest();
+    xhttp.onreadystatechange = function() {
+        if (this.readyState == 4 && this.status == 200 ) {
+            //Get JSON object, and ID
+            Result = JSON.parse(xhttp.responseText);
+            document.getElementById(resultID).innerHTML = "Add to Collection"
+        } else if (this.readyState == 4 && this.status == 404) {
+            document.getElementById(resultID).innerHTML = "Create Collection"
+        }
+    };
+    xhttp.open("GET", "/api/Collection?CollectionName="+form.elements["CollectionName"].value, true);
+    xhttp.send();
     return false;
 }

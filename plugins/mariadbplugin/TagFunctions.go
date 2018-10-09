@@ -39,16 +39,16 @@ func (DBConnection *MariaDBPlugin) NewTag(Name string, Description string, Uploa
 	Name = prepareTagName(Name)
 
 	if len(Name) < 3 || len(Name) > 255 || len(Description) > 255 {
-		logging.LogInterface.WriteLog("MariaDBPlugin", "NewTag", "*", "ERROR", []string{"Failed to add tag dues to size", Name, Description})
+		logging.LogInterface.WriteLog("MariaDBPlugin", "NewTag", "*", "ERROR", []string{"Failed to add tag dues to size of name/description", Name, Description})
 		return 0, errors.New("name or description outside of right sizes")
 	}
 
 	resultInfo, err := DBConnection.DBHandle.Exec("INSERT INTO Tags (Name, Description, UploaderID) VALUES (?, ?, ?);", Name, Description, UploaderID)
 	if err != nil {
-		logging.LogInterface.WriteLog("MariaDBPlugin", "NewTag", "*", "ERROR", []string{"Failed to add image", err.Error()})
+		logging.LogInterface.WriteLog("MariaDBPlugin", "NewTag", "*", "ERROR", []string{"Failed to add tag", err.Error()})
 		return 0, err
 	}
-	logging.LogInterface.WriteLog("MariaDBPlugin", "NewTag", "*", "SUCCESS", []string{"Image added"})
+	logging.LogInterface.WriteLog("MariaDBPlugin", "NewTag", "*", "SUCCESS", []string{"Tag added"})
 	id, _ := resultInfo.LastInsertId()
 	return uint64(id), err
 }
