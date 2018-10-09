@@ -187,7 +187,7 @@ func CollectionImageOrderRouter(responseWriter http.ResponseWriter, request *htt
 
 	if TemplateInput.UserName == "" {
 		//Redirect to logon
-		http.Redirect(responseWriter, request, "/logon?prevMessage="+url.QueryEscape("You must be logged in to remove collection members"), 302)
+		http.Redirect(responseWriter, request, "/logon?prevMessage="+url.QueryEscape("You must be logged in to modify collection members"), 302)
 		return
 	}
 
