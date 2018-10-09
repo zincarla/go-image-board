@@ -270,6 +270,7 @@ video, audio {
 	width: 216px;
 	height: 144px;
 	opacity: 0.8;
+	z-index: 100000000; /*Bring on top of everything else*/
 }
 .proposeReplace {
 	border: solid 5px slategray;
