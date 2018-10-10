@@ -45,7 +45,12 @@ function startDrag(e, toDrag) {
 function stopDrag(e) {
 	if (draggedElement !== null) {
 		if (proposedReplace !== null) {
-			draggedElement.parentElement.insertBefore(draggedElement, proposedReplace);
+			pointInProposed = e.clientX - (proposedReplace.getBoundingClientRect().left + document.documentElement.scrollLeft)
+			if (pointInProposed > proposedReplace.getBoundingClientRect().width /2 && proposedReplace.nextSibling !== null) {
+				draggedElement.parentElement.insertBefore(draggedElement, proposedReplace.nextSibling);
+			} else {
+				draggedElement.parentElement.insertBefore(draggedElement, proposedReplace);
+			}
 			clearDragSuggestion();
 		}
 		draggedElement.style.left = null
