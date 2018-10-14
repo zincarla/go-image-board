@@ -11,7 +11,7 @@ import (
 )
 
 //TODO: Increment this whenever we alter the DB Schema, ensure you attempt to add update code below
-var currentDBVersion int64 = 5
+var currentDBVersion int64 = 6
 
 //TODO: Increment this when we alter the db schema and don't add update code to compensate
 var minSupportedDBVersion int64 // 0 by default
@@ -53,7 +53,7 @@ func (DBConnection *MariaDBPlugin) InitDatabase() error {
 
 //GetPluginInformation Return plugin info as string
 func (DBConnection *MariaDBPlugin) GetPluginInformation() string {
-	return "MariaDBPlugin 0.0.0.6"
+	return "MariaDBPlugin 0.0.0.7"
 }
 
 func (DBConnection *MariaDBPlugin) getDatabaseVersion() (int64, error) {
@@ -110,7 +110,7 @@ func (DBConnection *MariaDBPlugin) performFreshDBInstall() error {
 		return err
 	}
 	//Auditing
-	_, err = DBConnection.DBHandle.Exec("CREATE TABLE AuditLogs (ID BIGINT UNSIGNED NOT NULL AUTO_INCREMENT UNIQUE, UserID BIGINT UNSIGNED NOT NULL, Type VARCHAR(40), Info VARCHAR(255));")
+	_, err = DBConnection.DBHandle.Exec("CREATE TABLE AuditLogs (ID BIGINT UNSIGNED NOT NULL AUTO_INCREMENT UNIQUE, UserID BIGINT UNSIGNED NOT NULL, Type VARCHAR(40), Info VARCHAR(10240) NOT NULL DEFAULT '', LogTime TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL);")
 	if err != nil {
 		logging.LogInterface.WriteLog("MariaDBPlugin", "performFreshDBInstall", "*", "ERROR", []string{"Failed to install database", err.Error()})
 		return err
@@ -221,6 +221,26 @@ func (DBConnection *MariaDBPlugin) upgradeDatabase(version int64) (int64, error)
 			return version, err
 		}
 		version = 5
+		logging.LogInterface.WriteLog("MariaDBPlugin", "InitDatabase", "*", "INFO", []string{"Database schema updated to version", strconv.FormatInt(version, 10)})
+	}
+	//Update version 5->6
+	if version == 5 {
+		_, err := DBConnection.DBHandle.Exec("ALTER TABLE AuditLogs ADD COLUMN (LogTime TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL);")
+		if err != nil {
+			logging.LogInterface.WriteLog("MariaDBPlugin", "InitDatabase", "*", "ERROR", []string{"Failed to update database version", err.Error()})
+			return version, err
+		}
+		_, err = DBConnection.DBHandle.Exec("ALTER TABLE AuditLogs CHANGE COLUMN Info Info VARCHAR(10240) NOT NULL DEFAULT '';")
+		if err != nil {
+			logging.LogInterface.WriteLog("MariaDBPlugin", "InitDatabase", "*", "ERROR", []string{"Failed to update database version", err.Error()})
+			return version, err
+		}
+		_, err = DBConnection.DBHandle.Exec("UPDATE DBVersion SET version = 6;")
+		if err != nil {
+			logging.LogInterface.WriteLog("MariaDBPlugin", "InitDatabase", "*", "ERROR", []string{"Failed to update database version", err.Error()})
+			return version, err
+		}
+		version = 6
 		logging.LogInterface.WriteLog("MariaDBPlugin", "InitDatabase", "*", "INFO", []string{"Database schema updated to version", strconv.FormatInt(version, 10)})
 	}
 	return version, nil
