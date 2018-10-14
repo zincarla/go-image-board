@@ -67,9 +67,17 @@ function CheckCollectionName(form, resultID) {
         if (this.readyState == 4 && this.status == 200 ) {
             //Get JSON object, and ID
             Result = JSON.parse(xhttp.responseText);
-            document.getElementById(resultID).innerHTML = "Add to Collection"
+            if (userPermissions & 4096 == 4096 || userControlsOwn && (userID == Result.UploaderID)) {
+                document.getElementById(resultID).innerHTML = "Add to Collection"
+            } else {
+                document.getElementById(resultID).innerHTML = "Insufficient Permissions!"
+            }
         } else if (this.readyState == 4 && this.status == 404) {
-            document.getElementById(resultID).innerHTML = "Create Collection"
+            if (userPermissions & 2048) {
+                document.getElementById(resultID).innerHTML = "Create Collection"
+            } else {
+                document.getElementById(resultID).innerHTML = "Insufficient Permissions!"
+            }
         }
     };
     xhttp.open("GET", "/api/Collection?CollectionName="+form.elements["CollectionName"].value, true);
