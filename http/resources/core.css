@@ -119,6 +119,7 @@ body {
 	border-radius: 4px;
 	text-align: center;
 	float:left;
+	overflow: hidden;
 	/*Disable highlighting of stuff*/
 	-webkit-touch-callout: none;
 	-webkit-user-select: none;
