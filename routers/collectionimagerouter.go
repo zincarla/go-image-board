@@ -140,6 +140,63 @@ func CollectionImageRouter(responseWriter http.ResponseWriter, request *http.Req
 		} else {
 			TemplateInput.Message += "Image added to collection. "
 		}
+	case "modify":
+		if TemplateInput.UserName == "" {
+			//Redirect to logon
+			http.Redirect(responseWriter, request, "/logon?prevMessage="+url.QueryEscape("You must be logged in to modify a collection"), 302)
+			return
+		}
+
+		//Get Collection ID
+		collectionID, err := strconv.ParseUint(request.FormValue("ID"), 10, 32)
+		if err != nil {
+			TemplateInput.Message += "Failed to get collection with that ID."
+			break
+		}
+
+		//Validate NewName
+		newName := strings.TrimSpace(request.FormValue("NewName"))
+		if len(newName) < 3 || len(newName) > 255 {
+			TemplateInput.Message += "New Name is an unsupported length. Please ensure it is longer than 3 characters but shorter than 255"
+			break
+		}
+		//Validate NewDescription
+		newDesc := strings.TrimSpace(request.FormValue("NewDescription"))
+		if len(newDesc) > 255 {
+			TemplateInput.Message += "Description cannot be longer than 255 characters"
+			break
+		}
+
+		//Cache collection data
+		CollectionInfo, err := database.DBInterface.GetCollection(collectionID)
+		if err != nil {
+			TemplateInput.Message += "Failed to edit collection. SQL Error. "
+			go writeAuditLogByName(TemplateInput.UserName, "MODIFY-COLLECTION", TemplateInput.UserName+" failed to modify collection. "+request.FormValue("ID")+", "+err.Error())
+			break //Cancel delete
+		}
+
+		//Validate unique name
+		newNameCollection, err := database.DBInterface.GetCollectionByName(newName)
+		if err == nil && newNameCollection.ID != CollectionInfo.ID {
+			TemplateInput.Message += newName + " is already in use, plese select a different name. "
+			break
+		}
+
+		//Validate Permission to delete
+		if TemplateInput.UserPermissions.HasPermission(interfaces.ModifyCollections) != true && (config.Configuration.UsersControlOwnObjects != true || CollectionInfo.UploaderID != TemplateInput.UserID) {
+			TemplateInput.Message += "User does not have edit member permission for collection. "
+			go writeAuditLogByName(TemplateInput.UserName, "MODIFY-COLLECTION", TemplateInput.UserName+" failed to modify collection. Insufficient permissions. "+request.FormValue("ID"))
+			break
+		}
+
+		//Permission validated, now modify
+		if err := database.DBInterface.UpdateCollection(collectionID, newName, newDesc); err != nil {
+			TemplateInput.Message += "Failed to modify collection. SQL Error. "
+			go writeAuditLogByName(TemplateInput.UserName, "MODIFY-COLLECTION", TemplateInput.UserName+" failed to modify collection. "+request.FormValue("ID")+", "+err.Error())
+			break //Cancel remove
+		}
+		go writeAuditLogByName(TemplateInput.UserName, "MODIFY-COLLECTION", TemplateInput.UserName+" modified collection ("+request.FormValue("ID")+")")
+		TemplateInput.Message += "Successfully modified collection."
 	}
 
 	//Get the page offset

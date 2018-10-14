@@ -260,10 +260,21 @@ video, audio {
 	position: absolute;
 	right: 0px;
 	top: 0px;
-	background-color: #FF2211;
+	background-color:rgb(238, 144, 144);
+	color: black;
 	width: 1em;
 	height: 1em;
 	border-top-right-radius: 4px;
+	border-bottom-left-radius: 4px;
+}
+.removeCollectionButton:not(:hover) span:after {
+	content: "X";
+}
+.removeCollectionButton:hover {
+	width: 5em;
+}
+.removeCollectionButton:hover span:after {
+	content: "Remove";
 }
 /*Drag n drop stuff*/
 .ImageResultContainer.dragging {
