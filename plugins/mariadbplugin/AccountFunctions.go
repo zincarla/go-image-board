@@ -5,7 +5,10 @@ import (
 	"go-image-board/interfaces"
 	"go-image-board/logging"
 	"regexp"
+	"strings"
+	"time"
 
+	"github.com/go-sql-driver/mysql"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -173,4 +176,65 @@ func (DBConnection *MariaDBPlugin) GetUserFilter(UserID uint64) (string, error) 
 		logging.LogInterface.WriteLog("MariaDBPlugin", "GetUserQueryTags", "*", "ERROR", []string{"Failed to get user filter", err.Error()})
 	}
 	return userFilter, nil
+}
+
+//SearchUsers performs a search for users (Returns a list of UserInfos, or error)
+func (DBConnection *MariaDBPlugin) SearchUsers(searchString string, PageStart uint64, PageStride uint64) ([]interfaces.UserInformation, uint64, error) {
+	var ToReturn []interfaces.UserInformation
+	searchString = strings.TrimSpace(searchString)
+	searchString = strings.Replace(searchString, "%", "", -1)
+	searchString = "%" + searchString + "%"
+	queryArray := []interface{}{}
+	sqlQuery := "SELECT ID, Name, CreationTime, Disabled, Permissions FROM Users WHERE Name Like ? ORDER BY Name"
+	sqlCountQuery := "SELECT COUNT(*) FROM Users WHERE Name Like ?"
+	if searchString == "" {
+		sqlQuery = "SELECT ID, Name, CreationTime, Disabled, Permissions FROM Users ORDER BY Name"
+		sqlCountQuery = "SELECT COUNT(*) FROM Users"
+	} else {
+		queryArray = append(queryArray, searchString)
+	}
+
+	//Query Count
+	//Run the count query (Count query does not use start/stride, so run this before we add those)
+	var MaxResults uint64
+	err := DBConnection.DBHandle.QueryRow(sqlCountQuery, queryArray...).Scan(&MaxResults)
+	if err != nil {
+		logging.LogInterface.WriteLog("MariaDBPlugin", "SearchUsers", "*", "ERROR", []string{"Error running search query", sqlCountQuery, err.Error()})
+		return nil, 0, err
+	}
+	//
+	if PageStride > 0 {
+		sqlQuery += " LIMIT ? OFFSET ?;"
+		queryArray = append(queryArray, PageStride)
+		queryArray = append(queryArray, PageStart)
+	}
+
+	//First Query the main information
+	rows, err := DBConnection.DBHandle.Query(sqlQuery, queryArray...)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer rows.Close()
+	//Placeholders for data returned by each row
+	var ID uint64
+	var Name string
+	var NCreationTime mysql.NullTime
+	var CreationTime time.Time
+	var Disabled bool
+	var Permissions uint64
+	//For each row
+	for rows.Next() {
+		//Parse out the data
+		err := rows.Scan(&ID, &Name, &NCreationTime, &Disabled, &Permissions)
+		if err != nil {
+			return nil, 0, err
+		}
+		if NCreationTime.Valid {
+			CreationTime = NCreationTime.Time
+		}
+		//Add this result to ToReturn
+		ToReturn = append(ToReturn, interfaces.UserInformation{ID: ID, Name: Name, CreationTime: CreationTime, Disabled: Disabled, Permissions: interfaces.UserPermission(Permissions)})
+	}
+
+	return ToReturn, MaxResults, nil
 }

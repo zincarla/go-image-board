@@ -43,6 +43,8 @@ type DBInterface interface {
 	SetImageSource(ID uint64, Source string) error
 	//GetUserFilter returns the raw string of the user's filter
 	GetUserFilter(UserID uint64) (string, error)
+	//SearchUsers performs a search for users (Returns a list of UserInfos, or error)
+	SearchUsers(searchString string, PageStart uint64, PageStride uint64) ([]UserInformation, uint64, error)
 
 	//Image operations
 	//NewImage adds an image with the provided information and returns the id, or error

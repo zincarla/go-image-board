@@ -107,6 +107,7 @@ func main() {
 		requestRouter.HandleFunc("/mod", routers.ModRouter)
 		//API
 		requestRouter.HandleFunc("/api/Collection", api.CollectionAPIRouter)
+		requestRouter.HandleFunc("/api/User", api.UserAPIRouter)
 	} else {
 		requestRouter.HandleFunc("/", routers.BadConfigRouter)
 		requestRouter.HandleFunc("/resources/{file}", routers.ResourceRouter) /*Required for CSS*/

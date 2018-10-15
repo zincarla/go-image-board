@@ -20,79 +20,95 @@
 							<input type="text" name="userName" value="" placeholder="UserName"/><br>
 							<label>Permissions</label>
 							<input type="number" name="permissions" value="" placeholder="Permissions"/><br>
-							<input type="hidden" name="command" value="editUserPerms" />
-							<input type="submit" value="Update" />
-							<h5>Reference</h5>
-							<p>From the table below, select the permissions you want to grab. Add their corresponding numbers together to get your final permission. Example: Upload(16) + Tag Image(1) = 17</p>
-							<p>Note that this server is set to {{if .UserControlsOwn}}allow users to modify their own contributions without explicit permissions.{{else}}require users to have explicit permission to modify any contribution.{{end}} 
-								If a user is allowed to modify their own contributions without explicit permission, they can do things like, change the source or score of their own uploads, add/remove members to/from their 
-								own collections or delete their own contributions; all without explicit score/delete/etc permissions. They cannot perform these functions on things they did not directly contribute however.</p>
 							<table>
 								<tr>
 									<th>Description</th>
 									<th>Number</th>
+									<th>Set</th>
 								</tr>
 								<tr>
 									<td>Allows a user to add and remove tags to/from an image, but not create or delete tags themselves</td>
 									<td>1</td>
+									<td><input type="checkbox" name="permCheckbox" value="1" onchange="UpdatePermissionBox();"></td>
 								</tr>
 									<tr>
 									<td>Allows a user to add a new tag to the system (But not delete)</td>
 									<td>2</td>
+									<td><input type="checkbox" name="permCheckbox" value="2" onchange="UpdatePermissionBox();"></td>
 								</tr>
 								<tr>
 									<td>Allows a user to modify a tag from the system</td>
 									<td>4</td>
+									<td><input type="checkbox" name="permCheckbox" value="4" onchange="UpdatePermissionBox();"></td>
 								</tr>
 								<tr>
 									<td>Allows a user to remove a tag from the system</td>
 									<td>8</td>
+									<td><input type="checkbox" name="permCheckbox" value="8" onchange="UpdatePermissionBox();"></td>
 								</tr>
 								<tr>
 									<td>Allows a user to upload an image</td>
 									<td>16</td>
+									<td><input type="checkbox" name="permCheckbox" value="16" onchange="UpdatePermissionBox();"></td>
 								</tr>
 								<tr>
 									<td>Allows a user to remove an uploaded image. (Note that we can short circuit this in other code to allow a user to remove their own images)</td>
 									<td>32</td>
+									<td><input type="checkbox" name="permCheckbox" value="32" onchange="UpdatePermissionBox();"></td>
 								</tr>
 								<tr>
 									<td>Allows a user to disable another user</td>
 									<td>64</td>
+									<td><input type="checkbox" name="permCheckbox" value="64" onchange="UpdatePermissionBox();"></td>
 								</tr>
 								<tr>
 									<td>Allows a user to edit permissions of another user</td>
 									<td>128</td>
+									<td><input type="checkbox" name="permCheckbox" value="128" onchange="UpdatePermissionBox();"></td>
 								</tr>
 								<tr>
 									<td>BulkTagOperations</td>
 									<td>256</td>
+									<td><input type="checkbox" name="permCheckbox" value="256" onchange="UpdatePermissionBox();"></td>
 								</tr>
 								<tr>
 									<td>Set score on images</td>
 									<td>512</td>
+									<td><input type="checkbox" name="permCheckbox" value="512" onchange="UpdatePermissionBox();"></td>
 								</tr>
 								<tr>
 									<td>Set source on images</td>
 									<td>1024</td>
+									<td><input type="checkbox" name="permCheckbox" value="1024" onchange="UpdatePermissionBox();"></td>
 								</tr>
 								<tr>
 									<td>Create Collections</td>
 									<td>2048</td>
+									<td><input type="checkbox" name="permCheckbox" value="2048" onchange="UpdatePermissionBox();"></td>
 								</tr>
 								<tr>
 									<td>Modify Collections</td>
 									<td>4096</td>
+									<td><input type="checkbox" name="permCheckbox" value="4096" onchange="UpdatePermissionBox();"></td>
 								</tr>
 								<tr>
 									<td>Delete Collections</td>
 									<td>8192</td>
+									<td><input type="checkbox" name="permCheckbox" value="8192" onchange="UpdatePermissionBox();"></td>
 								</tr>
 								<tr>
 									<td>Add/Remove members to/from Collections</td>
 									<td>16384</td>
+									<td><input type="checkbox" name="permCheckbox" value="16384" onchange="UpdatePermissionBox();"></td>
 								</tr>
 							</table>
+							<h5>Reference</h5>
+							<p>From the table above, select the permissions you want to grant. Their corresponding numbers will be added together to get your final permission. Example: Upload(16) + Tag Image(1) = 17</p>
+							<p>Note that this server is set to {{if .UserControlsOwn}}allow users to modify their own contributions without explicit permissions.{{else}}require users to have explicit permission to modify any contribution.{{end}} 
+								If a user is allowed to modify their own contributions without explicit permission, they can do things like, change the source or rating of their own uploads, add/remove members to/from their 
+								own collections or delete their own contributions; all without explicit score/delete/etc permissions. They cannot perform these functions on things they did not directly contribute however.</p>
+							<input type="hidden" name="command" value="editUserPerms" />
+							<input type="submit" value="Update" />
 						</form>
 						{{end}}
 						{{if $DisableAccount}}
@@ -106,6 +122,24 @@
 							<input type="submit" value="Set" />
 						</form>
 						{{end}}
+						<h3>Search for a user</h3>
+						<form method="get" action="#" onsubmit="return SearchUsers('searchUserForm', 0);" id="searchUserForm">
+							<label>UserName</label>
+							<input type="text" name="userName" value="" placeholder="User Name"/><br>
+							<input type="submit" value="Search" />
+							<h5>Results</h5>
+							<table id="userResultTable">
+								<tr>
+									<th>Name</th>
+									<th>ID</th>
+									<th>Permissions</th>
+									<th>Disabled</th>
+									<th>Created</th>
+								</tr>
+							</table>
+							<div id="userResultPageMenu" style="text-align: center;"></div>
+							<div id="userResultCount" style="text-align: center;"></div>
+						</form>
 					{{else}}
 					<p>This page is for moderators. Try navigating somewhere else.</p>
 					{{end}}
