@@ -1,5 +1,7 @@
 {{template "header.html" .}}
-	<body>
+{{$EditPermissions := .UserPermissions.HasPermission 128}}
+{{$DisableAccount := .UserPermissions.HasPermission 64}}
+	<body {{if or $EditPermissions $DisableAccount}}onload="SearchUsers('searchUserForm', 0);"{{end}}>
 		{{template "headMenu.html" .}}
 		<div id="BodyContent">
 			<div id="SideMenu" class="cellDefaultHidden">
@@ -10,8 +12,7 @@
 			</div>
 			<div id="ImageGridContainer">
 				<div class="narrowCenteredContainer">
-					{{$EditPermissions := .UserPermissions.HasPermission 128}}
-					{{$DisableAccount := .UserPermissions.HasPermission 64}}
+					
 					{{if or $EditPermissions $DisableAccount}}
 						{{if $EditPermissions}}
 						<h3>Edit a User's Permissions</h3>
