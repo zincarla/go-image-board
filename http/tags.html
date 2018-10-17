@@ -3,6 +3,10 @@
 		{{template "headMenu.html" .}}
 		<div id="BodyContent">
 			<div id="SideMenu" class="cellDefaultHidden">
+				<form action="/tags" method="post">
+					<input type="text" name="SearchTags" placeholder="Search Tags" value="">
+					<input type="submit" value="Go">
+				</form>
 				<form action="/images" method="post">
 					<input type="text" name="SearchTerms" placeholder="Search Images" value="{{.OldQuery}}">
 					<input type="submit" value="Go">
@@ -28,5 +32,9 @@
 					{{end}}
 				</table> 
 			</div>
+		</div>
+		<div id="PageMenu">
+			{{.PageMenu}}<br>
+			<span id="ImageCount">{{.TotalResults}} Tags!</span>
 		</div>
 {{template "footer.html" .}}

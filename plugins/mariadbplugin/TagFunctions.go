@@ -193,3 +193,62 @@ func (DBConnection *MariaDBPlugin) UpdateTag(TagID uint64, Name string, Descript
 
 	return nil
 }
+
+//SearchTags returns a list of tags like the provided name, but only the ID, Name, Description, and IsAlias
+func (DBConnection *MariaDBPlugin) SearchTags(name string, PageStart uint64, PageStride uint64) ([]interfaces.TagInformation, uint64, error) {
+	var ToReturn []interfaces.TagInformation
+	queryArray := []interface{}{}
+	sqlQuery := "SELECT ID, Name, Description, IsAlias FROM Tags ORDER BY Name LIMIT ? OFFSET ?"
+	sqlCountQuery := "SELECT Count(*) FROM Tags"
+
+	//Cleanup Query
+	name = strings.TrimSpace(name)
+	name = strings.Replace(name, "%", "", -1)
+	if name != "" {
+		name = "%" + name + "%"
+		sqlQuery = "SELECT ID, Name, Description, IsAlias FROM Tags WHERE Name like %?% ORDER BY Name LIMIT ? OFFSET ?"
+		sqlCountQuery = "SELECT Count(*) FROM Tags WHERE Name like %?%"
+		queryArray = append(queryArray, name)
+	}
+
+	//Query Count
+	//Run the count query (Count query does not use start/stride, so run this before we add those)
+	var MaxResults uint64
+	err := DBConnection.DBHandle.QueryRow(sqlCountQuery, queryArray...).Scan(&MaxResults)
+	if err != nil {
+		logging.LogInterface.WriteLog("MariaDBPlugin", "SearchTags", "*", "ERROR", []string{"Error running count query", sqlCountQuery, err.Error()})
+		return nil, 0, err
+	}
+	//
+
+	queryArray = append(queryArray, PageStride)
+	queryArray = append(queryArray, PageStart)
+
+	//Pass the sql query to DB
+	rows, err := DBConnection.DBHandle.Query(sqlQuery, queryArray...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	//Placeholders for data returned by each row
+	var Description sql.NullString
+	var ID uint64
+	var Name string
+	var IsAlias bool
+	//For each row
+	for rows.Next() {
+		//Parse out the data
+		err := rows.Scan(&ID, &Name, &Description, &IsAlias)
+		if err != nil {
+			return nil, err
+		}
+		//If description is a valid non-null value, use it, else, use ""
+		var SDescription string
+		if Description.Valid {
+			SDescription = Description.String
+		}
+		//Add this result to ToReturn
+		ToReturn = append(ToReturn, interfaces.TagInformation{Name: Name, ID: ID, Description: SDescription, Exists: true, Exclude: false, IsAlias: IsAlias})
+	}
+	return ToReturn, MaxResults, nil
+}

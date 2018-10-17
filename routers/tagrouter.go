@@ -15,14 +15,23 @@ import (
 func TagsRouter(responseWriter http.ResponseWriter, request *http.Request) {
 	TemplateInput := getNewTemplateInput(request)
 
+	TagSearch := strings.TrimSpace(request.FormValue("SearchTags"))
+
+	//Get the page offset
+	pageStartS := request.FormValue("PageStart")
+	pageStart, _ := strconv.ParseUint(pageStartS, 10, 32) // Defaults to 0 on error, which is fine
+	pageStride := config.Configuration.PageStride
+
 	//Populate Tags
-	tag, err := database.DBInterface.GetAllTags()
+	tag, TemplateInput.TotalResults, err := database.DBInterface.SearchTags(TagSearch, pageStart, pageStride)
 	if err != nil {
 		TemplateInput.Message = "Error pulling tags"
 		logging.LogInterface.WriteLog("TagsRouter", "TagsRouter", "*", "ERROR", []string{"Failed to pull tags ", err.Error()})
 	} else {
 		TemplateInput.Tags = tag
 	}
+
+	TemplateInput.PageMenu, err = generatePageMenu(int64(pageStart), int64(pageStride), int64(TemplateInput.TotalResults), "SearchTags="+url.QueryEscape(TagSearch), "/tags")
 
 	replyWithTemplate("tags.html", TemplateInput, responseWriter)
 }
