@@ -1,14 +1,16 @@
 <h4>Standard Tags</h4>
-<p>Tags are pieces of information that can be associated with an image that makes searching for the image easier. Tags should be short and concise. Consider adding tags for the image's genre, theme, media, author, and important elements contained within the image.</p>
+<p>Tags are pieces of information that can be associated with an image or collection that makes searching for the image/collection easier. Tags should be short and concise. Consider adding tags for the image's genre, theme, media, author, and important elements contained within the image.</p>
 <h4>MetaTags</h4>
 <p>These are special tags that are automatically associated with an image. These are built into Go! Imageboard, and not uploaded by users.</p>
 <p>MetaTags follow the same general format. [TagName]:[comparator][value]. comparator is defaulted to "=" if not provided. Example, rating:everyone is converted to rating:=everyone in the background. Not all tags support the same comparators.</p>
+<p>Collections are tagged automatically by their member images. When an image is added or removed from a collection or when an image in a collection is tagged or untagged, the same tag operations are performed on a collection. Collections cannot be directly tagged.</p>
 <table>
     <tr>
         <th>Name</th>
         <th>Usage</th>
         <th>Description</th>
         <th>Valid Comparators</th>
+        <th>Valid Queries</th>
         <th>Example</th>
     </tr>
     <tr>
@@ -16,6 +18,7 @@
         <td>uploader:[uploaderName]</td>
         <td>Returns only images which were uploaded by [uploadername]</td>
         <td>=</td>
+        <td>Images, Collections</td>
         <td>uploader:johnsmith</td>
     </tr>
     <tr>
@@ -23,6 +26,7 @@
         <td>rating:[someRating]</td>
         <td>Returns only images which are rated [someRating]. "unrated" is the default rating for all images.</td>
         <td>=</td>
+        <td>Images</td>
         <td>rating:everyone</td>
     </tr>
     <tr>
@@ -30,6 +34,7 @@
         <td>score:[someScore]</td>
         <td>Returns only images which are scored [someScore]. 0 is the default score for all images.</td>
         <td>=, &gt;, &lt;, &gt;=, &lt;=,</td>
+        <td>Images</td>
         <td>score:&gt;5</td>
     </tr>
     <tr>
@@ -37,6 +42,7 @@
         <td>AverageScore:[someScore]</td>
         <td>Same as score:[someScore]</td>
         <td>=, &gt;, &lt;, &gt;=, &lt;=,</td>
+        <td>Images</td>
         <td>averagescore:&gt;5</td>
     </tr>
     <tr>
@@ -44,6 +50,7 @@
         <td>totalscore:[someScore]</td>
         <td>Returns only images which have a total score of [someScore]. 0 is the default score for all images.</td>
         <td>=, &gt;, &lt;, &gt;=, &lt;=,</td>
+        <td>Images</td>
         <td>totalscore:&lt;10</td>
     </tr>
     <tr>
@@ -51,6 +58,7 @@
         <td>scorevoters:[voters]</td>
         <td>Returns only images which have had [voters] amount of users vote on it. 0 is the default for all images.</td>
         <td>=, &gt;, &lt;, &gt;=, &lt;=,</td>
+        <td>Images</td>
         <td>scorevoters:&lt;=10</td>
     </tr>
 </table>
