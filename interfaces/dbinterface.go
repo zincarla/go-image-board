@@ -55,9 +55,9 @@ type DBInterface interface {
 	SearchImages(Tags []TagInformation, PageStart uint64, PageStride uint64) ([]ImageInformation, uint64, error)
 
 	//GetQueryTags returns a slice of tags based on a query
-	GetQueryTags(UserQuery string) ([]TagInformation, error)
+	GetQueryTags(UserQuery string, CollectionContext bool) ([]TagInformation, error)
 	//GetUserFilterTags returns a slice of tags based on a user's custom filter
-	GetUserFilterTags(UserID uint64) ([]TagInformation, error)
+	GetUserFilterTags(UserID uint64, CollectionContext bool) ([]TagInformation, error)
 	//SetUserQueryTags sets a user's global filter
 	SetUserQueryTags(UserID uint64, Filter string) error
 	//GetImageTags returns a list of TagInformation for all tags that apply to the given image
@@ -120,4 +120,6 @@ type DBInterface interface {
 	GetCollectionMembers(CollectionID uint64, PageStart uint64, PageStride uint64) ([]ImageInformation, uint64, error)
 	//GetCollectionsWithImage returns a slice of collections with a specific image
 	GetCollectionsWithImage(ImageID uint64) ([]CollectionInformation, error)
+	//SearchCollections performs a search for collections (Returns a list of CollectionInformation a result count and an error/nil)
+	SearchCollections(Tags []TagInformation, PageStart uint64, PageStride uint64) ([]CollectionInformation, uint64, error)
 }

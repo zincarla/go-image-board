@@ -67,7 +67,7 @@ func TagRouter(responseWriter http.ResponseWriter, request *http.Request) {
 		var aliasID uint64
 		//Get alias information if needed
 		if request.FormValue("aliasedTagName") != "" {
-			aliasedTags, err = database.DBInterface.GetQueryTags(request.FormValue("aliasedTagName"))
+			aliasedTags, err = database.DBInterface.GetQueryTags(request.FormValue("aliasedTagName"), false)
 			if err != nil || len(aliasedTags) != 1 {
 				TemplateInput.Message += "Error parsing alias information. Ensure you are not putting in multiple tags to alias, and that you are not pointing the alias to an alias."
 				logging.LogInterface.WriteLog("TagsRouter", "TagRouter", "*", "ERROR", []string{"Failed to parse alias id "})
@@ -172,7 +172,7 @@ func TagRouter(responseWriter http.ResponseWriter, request *http.Request) {
 		// /ValidatePermission
 		//Create tags
 		//Get tags
-		userQTags, err := database.DBInterface.GetQueryTags(userQuery)
+		userQTags, err := database.DBInterface.GetQueryTags(userQuery, false)
 		if err != nil {
 			TemplateInput.Message += "Failed to get tags from input"
 			break
@@ -239,8 +239,8 @@ func TagRouter(responseWriter http.ResponseWriter, request *http.Request) {
 			break
 		}
 		//Parse out tag arguments
-		userOldQTags, err := database.DBInterface.GetQueryTags(oldTagQuery)
-		userNewQTags, err2 := database.DBInterface.GetQueryTags(newTagQuery)
+		userOldQTags, err := database.DBInterface.GetQueryTags(oldTagQuery, false)
+		userNewQTags, err2 := database.DBInterface.GetQueryTags(newTagQuery, false)
 		if err != nil || err2 != nil || len(userOldQTags) != 1 || len(userNewQTags) != 1 || userOldQTags[0].Exists == false || userNewQTags[0].Exists == false || userOldQTags[0].ID == userNewQTags[0].ID {
 			TemplateInput.Message += "Failed to get tags from user input. Ensure the tags you entered exist and that you did not enter more than one per field. And that the new and old tags are not the same tag or alias to the same tag. "
 			break
@@ -282,8 +282,8 @@ func TagRouter(responseWriter http.ResponseWriter, request *http.Request) {
 			break
 		}
 		//Parse out tag arguments
-		userOldQTags, err := database.DBInterface.GetQueryTags(oldTagQuery)
-		userNewQTags, err2 := database.DBInterface.GetQueryTags(newTagQuery)
+		userOldQTags, err := database.DBInterface.GetQueryTags(oldTagQuery, false)
+		userNewQTags, err2 := database.DBInterface.GetQueryTags(newTagQuery, false)
 		if err != nil || err2 != nil || len(userOldQTags) != 1 || len(userNewQTags) != 1 || userOldQTags[0].Exists == false || userNewQTags[0].Exists == false || userOldQTags[0].ID == userNewQTags[0].ID {
 			TemplateInput.Message += "Failed to get tags from user input. Ensure the tags you entered exist and that you did not enter more than one per field. And that the new and old tags are not the same tag or alias to the same tag. "
 			break

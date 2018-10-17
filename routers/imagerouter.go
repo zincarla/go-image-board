@@ -349,7 +349,7 @@ func handleImageUpload(request *http.Request, userName string) (uint64, error) {
 			go GenerateThumbnail(hashName)
 
 			//Get tags
-			userQTags, err := database.DBInterface.GetQueryTags(request.FormValue("SearchTags"))
+			userQTags, err := database.DBInterface.GetQueryTags(request.FormValue("SearchTags"), false)
 			for _, tag := range userQTags {
 				if tag.Exists && tag.IsMeta == false {
 					//Assign pre-existing tag

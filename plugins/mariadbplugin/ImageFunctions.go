@@ -44,6 +44,7 @@ func (DBConnection *MariaDBPlugin) DeleteImage(ImageID uint64) error {
 }
 
 //SearchImages performs a search for images (Returns a list of ImageInformations a result count and an error/nil)
+//If you edit this function, consider SearchCollections for a similar change
 func (DBConnection *MariaDBPlugin) SearchImages(Tags []interfaces.TagInformation, PageStart uint64, PageStride uint64) ([]interfaces.ImageInformation, uint64, error) {
 	//Cleanup input for use in code below
 	//Specifically we separate the include, the exclude and metatags into their own lists
@@ -227,117 +228,6 @@ func (DBConnection *MariaDBPlugin) SetImageSource(ID uint64, Source string) erro
 		return err
 	}
 	return nil
-}
-
-//parseMetaTags fills in additional information for MetaTags and vets out non-MetaTags
-func (DBConnection *MariaDBPlugin) parseMetaTags(MetaTags []interfaces.TagInformation) ([]interfaces.TagInformation, []error) {
-	var ToReturn []interfaces.TagInformation
-	var ErrorList []error
-	for _, tag := range MetaTags {
-		ToAdd := tag
-		switch ToAdd.Name {
-		//TODO: Add additional metatags here
-		case "uploader":
-			ToAdd.Name = "UploaderID"
-			ToAdd.Description = "The uploaded of the image"
-			//Get uploader ID and set that to value
-			name, isString := ToAdd.MetaValue.(string)
-			if isString {
-				value, err := DBConnection.GetUserID(name)
-				if err != nil {
-					ErrorList = append(ErrorList, err)
-				} else {
-					ToAdd.MetaValue = value
-					ToAdd.Exists = true
-				}
-				ToAdd.Comparator = "=" //Clobber any other comparator requested. This one will only support equals
-			} else {
-				ErrorList = append(ErrorList, errors.New("Could not convert metatag value to string as expected"))
-			}
-		case "rating":
-			ToAdd.Name = "Rating"
-			ToAdd.Description = "The rating of the image"
-			ToAdd.Exists = true
-			ToAdd.Comparator = "=" //Clobber any other comparator requested. This one will only support equals
-			//Since rating is a string, no futher processing needed!
-		case "score":
-			ToAdd.Name = "ScoreAverage"
-			ToAdd.Description = "The average voted score of the image"
-			sscore, isString := ToAdd.MetaValue.(string)
-			if isString {
-				score, err := strconv.ParseInt(sscore, 10, 64)
-				if err == nil {
-					ToAdd.MetaValue = score
-				}
-			}
-			//Must be an int64
-			_, isInt := ToAdd.MetaValue.(int64)
-			if isInt {
-				ToAdd.Exists = true
-			} else {
-				ErrorList = append(ErrorList, errors.New("could not parse requested score, ensure it is a number"))
-			}
-			//All comparators valid
-		case "averagescore":
-			ToAdd.Name = "ScoreAverage"
-			ToAdd.Description = "The average voted score of the image"
-			sscore, isString := ToAdd.MetaValue.(string)
-			if isString {
-				score, err := strconv.ParseInt(sscore, 10, 64)
-				if err == nil {
-					ToAdd.MetaValue = score
-				}
-			}
-			//Must be an int64
-			_, isInt := ToAdd.MetaValue.(int64)
-			if isInt {
-				ToAdd.Exists = true
-			} else {
-				ErrorList = append(ErrorList, errors.New("could not parse requested score, ensure it is a number"))
-			}
-			//All comparators valid
-		case "totalscore":
-			ToAdd.Name = "ScoreTotal"
-			ToAdd.Description = "The total sum of all voted scores for the image"
-			sscore, isString := ToAdd.MetaValue.(string)
-			if isString {
-				score, err := strconv.ParseInt(sscore, 10, 64)
-				if err == nil {
-					ToAdd.MetaValue = score
-				}
-			}
-			//Must be an int64
-			_, isInt := ToAdd.MetaValue.(int64)
-			if isInt {
-				ToAdd.Exists = true
-			} else {
-				ErrorList = append(ErrorList, errors.New("could not parse requested score, ensure it is a number"))
-			}
-			//All comparators valid
-		case "scorevoters":
-			ToAdd.Name = "ScoreVoters"
-			ToAdd.Description = "The count of all users that voted on the image"
-			sscore, isString := ToAdd.MetaValue.(string)
-			if isString {
-				score, err := strconv.ParseInt(sscore, 10, 64)
-				if err == nil {
-					ToAdd.MetaValue = score
-				}
-			}
-			//Must be an int64
-			_, isInt := ToAdd.MetaValue.(int64)
-			if isInt {
-				ToAdd.Exists = true
-			} else {
-				ErrorList = append(ErrorList, errors.New("could not parse requested score, ensure it is a number"))
-			}
-			//All comparators valid
-		default:
-			ErrorList = append(ErrorList, errors.New("MetaTag does not exist"))
-		}
-		ToReturn = append(ToReturn, ToAdd)
-	}
-	return ToReturn, ErrorList
 }
 
 /*

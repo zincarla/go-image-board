@@ -3,6 +3,10 @@
 		{{template "headMenu.html" .}}
 		<div id="BodyContent">
 			<div id="SideMenu" class="cellDefaultHidden">
+				<form action="/collections" method="post">
+					<input type="text" name="SearchTerms" placeholder="Search Collections" value="{{.OldQuery}}">
+					<input type="submit" value="Go">
+				</form>
 				<form action="/images" method="post">
 					<input type="text" name="SearchTerms" placeholder="Search Images" value="{{.OldQuery}}">
 					<input type="submit" value="Go">
