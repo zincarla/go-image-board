@@ -13,6 +13,7 @@ import (
 //CollectionsRouter serves requests to /collections
 func CollectionsRouter(responseWriter http.ResponseWriter, request *http.Request) {
 	TemplateInput := getNewTemplateInput(request)
+	TemplateInput.TotalResults = 0
 
 	switch cmd := request.FormValue("command"); cmd {
 	case "delete":

@@ -102,15 +102,13 @@ func (DBConnection *MariaDBPlugin) SearchCollections(Tags []interfaces.TagInform
 		sqlQuery = sqlQuery + sqlWhereClause + `GROUP BY CollectionID) InnerStatement ` + previewCountPortion + `WHERE MatchingTags = ? `
 		sqlCountQuery = sqlCountQuery + sqlWhereClause + `GROUP BY CollectionID) InnerStatement WHERE MatchingTags = ? `
 	} else {
-		sqlQuery = sqlQuery + sqlWhereClause + previewCountPortion
+		sqlQuery = sqlQuery + previewCountPortion + sqlWhereClause
 		sqlCountQuery = sqlCountQuery + sqlWhereClause
 	}
 
 	//Add Order
 	sqlQuery = sqlQuery + `ORDER BY ID
 		DESC LIMIT ? OFFSET ?;`
-
-	logging.LogInterface.WriteLog("DEBUG", "DEBUG", "*", "DEBUG", []string{sqlQuery})
 
 	//Now construct arguments list. Order must follow query order
 	/*
