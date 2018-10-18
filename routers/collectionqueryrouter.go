@@ -13,6 +13,7 @@ import (
 //CollectionsRouter serves requests to /collections
 func CollectionsRouter(responseWriter http.ResponseWriter, request *http.Request) {
 	TemplateInput := getNewTemplateInput(request)
+	TemplateInput.TotalResults = 0
 
 	switch cmd := request.FormValue("command"); cmd {
 	case "delete":
@@ -66,16 +67,53 @@ func CollectionsRouter(responseWriter http.ResponseWriter, request *http.Request
 		pageStart = upageStart
 	}
 
-	//Parse tag results for next query
-	collectionInfo, MaxCount, err := database.DBInterface.GetCollections(pageStart, pageStride)
-	if err != nil {
-		logging.LogInterface.WriteLog("CollectionQueryRouter", "CollectionsRouter", TemplateInput.UserName, "ERROR", []string{"Error getting collection list", err.Error()})
-		TemplateInput.Message += "Error getting collections."
+	userQTags, err := database.DBInterface.GetQueryTags(TemplateInput.OldQuery, true)
+	if err == nil {
+		//if signed in, add user's global filters to query
+		if TemplateInput.UserName != "" {
+			userFilterTags, err := database.DBInterface.GetUserFilterTags(TemplateInput.UserID, true)
+			if err != nil {
+				logging.LogInterface.WriteLog("CollectionQueryRouter", "CollectionsRouter", TemplateInput.UserName, "ERROR", []string{"Failed to load user's filter", err.Error()})
+				TemplateInput.Message += "Failed to add your global filter to this query. Internal error. "
+			} else {
+				userQTags = append(userQTags, userFilterTags...)
+			}
+		}
+
+		//Perform Query
+		collectionInfo, MaxCount, err := database.DBInterface.SearchCollections(userQTags, pageStart, pageStride)
+		if err == nil {
+			TemplateInput.CollectionInfoList = collectionInfo
+			TemplateInput.TotalResults = MaxCount
+		} else {
+			parsed := ""
+			for _, tag := range userQTags {
+				if tag.Exclude {
+					parsed += "-"
+				}
+				if !tag.Exists {
+					parsed += "!"
+				}
+				parsed += tag.Name + " "
+			}
+			logging.LogInterface.WriteLog("CollectionQueryRouter", "CollectionsRouter", "*", "ERROR", []string{"Failed to search images", TemplateInput.OldQuery, parsed, err.Error()})
+		}
 	} else {
-		TemplateInput.CollectionInfoList = collectionInfo
-		TemplateInput.TotalResults = MaxCount
+		logging.LogInterface.WriteLog("CollectionQueryRouter", "CollectionsRouter", "*", "ERROR", []string{"Failed to validate tags", TemplateInput.OldQuery, err.Error()})
 	}
 
+	/*
+		collectionInfo, MaxCount, err := database.DBInterface.GetCollections(pageStart, pageStride)
+		if err != nil {
+			logging.LogInterface.WriteLog("CollectionQueryRouter", "CollectionsRouter", TemplateInput.UserName, "ERROR", []string{"Error getting collection list", err.Error()})
+			TemplateInput.Message += "Error getting collections."
+		} else {
+			TemplateInput.CollectionInfoList = collectionInfo
+			TemplateInput.TotalResults = MaxCount
+		}
+	*/
+
+	TemplateInput.Tags = userQTags
 	TemplateInput.PageMenu, err = generatePageMenu(int64(pageStart), int64(pageStride), int64(TemplateInput.TotalResults), "SearchTerms="+url.QueryEscape(TemplateInput.OldQuery), "/collections")
 
 	replyWithTemplate("collections.html", TemplateInput, responseWriter)

@@ -2,16 +2,38 @@ package mariadbplugin
 
 import (
 	"database/sql"
+	"errors"
 	"go-image-board/interfaces"
 	"go-image-board/logging"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/go-sql-driver/mysql"
 )
 
-//GetQueryTags returns a slice of tags based on a query string
-func (DBConnection *MariaDBPlugin) GetQueryTags(UserQuery string) ([]interfaces.TagInformation, error) {
+//GetUserFilterTags returns a slice of tags based on a user's custom filter
+func (DBConnection *MariaDBPlugin) GetUserFilterTags(UserID uint64, CollectionContext bool) ([]interfaces.TagInformation, error) {
+	var userFilter string
+	err := DBConnection.DBHandle.QueryRow("SELECT SearchFilter FROM Users WHERE ID = ?", UserID).Scan(&userFilter)
+	if err != nil {
+		logging.LogInterface.WriteLog("MariaDBPlugin", "GetUserQueryTags", "*", "ERROR", []string{"Failed to get user filter", err.Error()})
+		return nil, err
+	}
+	tags, err := DBConnection.GetQueryTags(userFilter, CollectionContext)
+	if err != nil {
+		logging.LogInterface.WriteLog("MariaDBPlugin", "GetUserQueryTags", "*", "ERROR", []string{"Failed to get tags from user filter", err.Error()})
+		return nil, err
+	}
+	//Loop through the tags and ensure we have them set as FromUserFilter
+	for i := 0; i < len(tags); i++ {
+		tags[i].FromUserFilter = true
+	}
+	return tags, nil
+}
+
+//GetQueryTags returns a slice of tags based on a query string, CollectionContext should be true if these tags are being parsed for a collection
+func (DBConnection *MariaDBPlugin) GetQueryTags(UserQuery string, CollectionContext bool) ([]interfaces.TagInformation, error) {
 	//What we want to return
 	var ToReturn []interfaces.TagInformation
 	//If the user query is blank, just short circuit outta here
@@ -121,7 +143,7 @@ func (DBConnection *MariaDBPlugin) GetQueryTags(UserQuery string) ([]interfaces.
 	//If we have exclude tags
 	if len(ExcludeQueryTags) > 0 {
 		//Get more info on them and update querymap with new info
-		returnedTags, err := DBConnection.getTagsInfo(ExcludeQueryTags, true)
+		returnedTags, err := DBConnection.getTagsInfo(ExcludeQueryTags, true, CollectionContext)
 		if err != nil {
 			return ToReturn, err
 		}
@@ -132,7 +154,7 @@ func (DBConnection *MariaDBPlugin) GetQueryTags(UserQuery string) ([]interfaces.
 	//If we have include tags
 	if len(IncludeQueryTags) > 0 {
 		//Get more info on them and add them to the map
-		returnedTags, err := DBConnection.getTagsInfo(IncludeQueryTags, false)
+		returnedTags, err := DBConnection.getTagsInfo(IncludeQueryTags, false, CollectionContext)
 		if err != nil {
 			return ToReturn, err
 		}
@@ -164,8 +186,8 @@ func getTagComparator(TagValue string) (string, string) {
 }
 
 //getTagsInfo is a helper function to get more details on a set of tags by name, note that the names should be cleaned up before passing to this function.
-//This function will also parse Alias mapping and return those as well.
-func (DBConnection *MariaDBPlugin) getTagsInfo(Tags []string, Exclude bool) ([]interfaces.TagInformation, error) {
+//This function will also parse Alias mapping and return those, as well as parse meta tags
+func (DBConnection *MariaDBPlugin) getTagsInfo(Tags []string, Exclude bool, CollectionContext bool) ([]interfaces.TagInformation, error) {
 	//What we will return
 	var ToReturn []interfaces.TagInformation
 	if len(Tags) == 0 {
@@ -194,7 +216,7 @@ func (DBConnection *MariaDBPlugin) getTagsInfo(Tags []string, Exclude bool) ([]i
 	//Parse meta tags further
 	//Need to ensure column names are correct, and values too
 	if len(ToReturn) > 0 {
-		ToReturn, _ = DBConnection.parseMetaTags(ToReturn)
+		ToReturn, _ = DBConnection.parseMetaTags(ToReturn, CollectionContext)
 	}
 
 	Tags = NonMetaTags
@@ -312,22 +334,113 @@ func (DBConnection *MariaDBPlugin) getTagsInfo(Tags []string, Exclude bool) ([]i
 	return ToReturn, nil
 }
 
-//GetUserFilterTags returns a slice of tags based on a user's custom filter
-func (DBConnection *MariaDBPlugin) GetUserFilterTags(UserID uint64) ([]interfaces.TagInformation, error) {
-	var userFilter string
-	err := DBConnection.DBHandle.QueryRow("SELECT SearchFilter FROM Users WHERE ID = ?", UserID).Scan(&userFilter)
-	if err != nil {
-		logging.LogInterface.WriteLog("MariaDBPlugin", "GetUserQueryTags", "*", "ERROR", []string{"Failed to get user filter", err.Error()})
-		return nil, err
+//parseMetaTags fills in additional information for MetaTags and vets out non-MetaTags
+func (DBConnection *MariaDBPlugin) parseMetaTags(MetaTags []interfaces.TagInformation, CollectionContext bool) ([]interfaces.TagInformation, []error) {
+	var ToReturn []interfaces.TagInformation
+	var ErrorList []error
+	for _, tag := range MetaTags {
+		ToAdd := tag
+		switch {
+		//TODO: Add additional metatags here
+		case ToAdd.Name == "uploader":
+			ToAdd.Name = "UploaderID"
+			ToAdd.Description = "The uploaded of the image"
+			//Get uploader ID and set that to value
+			name, isString := ToAdd.MetaValue.(string)
+			if isString {
+				value, err := DBConnection.GetUserID(name)
+				if err != nil {
+					ErrorList = append(ErrorList, err)
+				} else {
+					ToAdd.MetaValue = value
+					ToAdd.Exists = true
+				}
+				ToAdd.Comparator = "=" //Clobber any other comparator requested. This one will only support equals
+			} else {
+				ErrorList = append(ErrorList, errors.New("Could not convert metatag value to string as expected"))
+			}
+		case ToAdd.Name == "rating" && CollectionContext == false:
+			ToAdd.Name = "Rating"
+			ToAdd.Description = "The rating of the image"
+			ToAdd.Exists = true
+			ToAdd.Comparator = "=" //Clobber any other comparator requested. This one will only support equals
+			//Since rating is a string, no futher processing needed!
+		case ToAdd.Name == "score" && CollectionContext == false:
+			ToAdd.Name = "ScoreAverage"
+			ToAdd.Description = "The average voted score of the image"
+			sscore, isString := ToAdd.MetaValue.(string)
+			if isString {
+				score, err := strconv.ParseInt(sscore, 10, 64)
+				if err == nil {
+					ToAdd.MetaValue = score
+				}
+			}
+			//Must be an int64
+			_, isInt := ToAdd.MetaValue.(int64)
+			if isInt {
+				ToAdd.Exists = true
+			} else {
+				ErrorList = append(ErrorList, errors.New("could not parse requested score, ensure it is a number"))
+			}
+			//All comparators valid
+		case ToAdd.Name == "averagescore" && CollectionContext == false:
+			ToAdd.Name = "ScoreAverage"
+			ToAdd.Description = "The average voted score of the image"
+			sscore, isString := ToAdd.MetaValue.(string)
+			if isString {
+				score, err := strconv.ParseInt(sscore, 10, 64)
+				if err == nil {
+					ToAdd.MetaValue = score
+				}
+			}
+			//Must be an int64
+			_, isInt := ToAdd.MetaValue.(int64)
+			if isInt {
+				ToAdd.Exists = true
+			} else {
+				ErrorList = append(ErrorList, errors.New("could not parse requested score, ensure it is a number"))
+			}
+			//All comparators valid
+		case ToAdd.Name == "totalscore" && CollectionContext == false:
+			ToAdd.Name = "ScoreTotal"
+			ToAdd.Description = "The total sum of all voted scores for the image"
+			sscore, isString := ToAdd.MetaValue.(string)
+			if isString {
+				score, err := strconv.ParseInt(sscore, 10, 64)
+				if err == nil {
+					ToAdd.MetaValue = score
+				}
+			}
+			//Must be an int64
+			_, isInt := ToAdd.MetaValue.(int64)
+			if isInt {
+				ToAdd.Exists = true
+			} else {
+				ErrorList = append(ErrorList, errors.New("could not parse requested score, ensure it is a number"))
+			}
+			//All comparators valid
+		case ToAdd.Name == "scorevoters" && CollectionContext == false:
+			ToAdd.Name = "ScoreVoters"
+			ToAdd.Description = "The count of all users that voted on the image"
+			sscore, isString := ToAdd.MetaValue.(string)
+			if isString {
+				score, err := strconv.ParseInt(sscore, 10, 64)
+				if err == nil {
+					ToAdd.MetaValue = score
+				}
+			}
+			//Must be an int64
+			_, isInt := ToAdd.MetaValue.(int64)
+			if isInt {
+				ToAdd.Exists = true
+			} else {
+				ErrorList = append(ErrorList, errors.New("could not parse requested score, ensure it is a number"))
+			}
+			//All comparators valid
+		default:
+			ErrorList = append(ErrorList, errors.New("MetaTag does not exist"))
+		}
+		ToReturn = append(ToReturn, ToAdd)
 	}
-	tags, err := DBConnection.GetQueryTags(userFilter)
-	if err != nil {
-		logging.LogInterface.WriteLog("MariaDBPlugin", "GetUserQueryTags", "*", "ERROR", []string{"Failed to get tags from user filter", err.Error()})
-		return nil, err
-	}
-	//Loop through the tags and ensure we have them set as FromUserFilter
-	for i := 0; i < len(tags); i++ {
-		tags[i].FromUserFilter = true
-	}
-	return tags, nil
+	return ToReturn, ErrorList
 }

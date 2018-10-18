@@ -45,16 +45,21 @@
 						{{end}}
 						<input type="hidden" name="command" value="resetpassword" />
 						<input type="submit" value="Submit" />
-						<a href="#createForm" onclick="ToggleDIVDisplay('createForm'); ToggleDIVDisplay('resetPasswordForm');">Create an account</a>
+						{{if ne .AllowAccountCreation false}}<a href="#createForm" onclick="ToggleDIVDisplay('createForm'); ToggleDIVDisplay('resetPasswordForm');">Create an account</a><br>{{end}}
+						<a href="#resetPasswordForm" onclick="ToggleDIVDisplay('logonForm'); ToggleDIVDisplay('resetPasswordForm');">Login instead</a>
 					</form>
 					<form method="post" action="/logon" id="createForm" class="displayHidden">
 						<h2>Create Account</h2><br>
+						{{if .AllowAccountCreation}}
 						UserName: <input type="text" name="userName"/><br>
 						Password: <input type="password" name="password"/><br>
 						Confirm Password: <input type="password" name="confirmpassword"/><br>
 						Email: <input type="text" name="eMail"/>
 						<input type="hidden" name="command" value="create" />
 						<input type="submit" value="Create Account" />
+						{{else}}
+						<p>The owner of this server has disabled account creations.</p>
+						{{end}}
 						Already have an account? <a href="#createForm" onclick="ToggleDIVDisplay('logonForm'); ToggleDIVDisplay('createForm');">Login</a>
 					</form>
 					{{else}}

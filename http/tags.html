@@ -3,16 +3,16 @@
 		{{template "headMenu.html" .}}
 		<div id="BodyContent">
 			<div id="SideMenu" class="cellDefaultHidden">
+				<form action="/tags" method="post">
+					<input type="text" name="SearchTags" placeholder="Search Tags" value="">
+					<input type="submit" value="Search Tags">
+				</form>
 				<form action="/images" method="post">
 					<input type="text" name="SearchTerms" placeholder="Search Images" value="{{.OldQuery}}">
-					<input type="submit" value="Go">
+					<input type="submit" value="Search Images">
 				</form>
 			</div>
 			<div id="ImageGridContainer">
-				<form id="filterForm">
-					<input type="text" name="query" placeholder="Tags containing">
-					<input type="submit" value="Filter Table" OnClick="return SearchTagTable('tagTable','filterForm');">
-				</form>
 				<table class="narrowCenteredContainer" id="tagTable">
 					<tr>
 						<th style="width:25%;">Name</th>
@@ -28,5 +28,9 @@
 					{{end}}
 				</table> 
 			</div>
+		</div>
+		<div id="PageMenu">
+			{{.PageMenu}}<br>
+			<span id="ImageCount">{{.TotalResults}} Tags!</span>
 		</div>
 {{template "footer.html" .}}

@@ -10,6 +10,7 @@
 			</div>
 			<div id="ImageGridContainer">
 				<div class="narrowCenteredContainer">
+					{{$CanCreateCollection := .UserPermissions.HasPermission 2048}}
 					{{if eq .UserName ""}}
 						<p>You must be logged in, in order to upload files.</p>
 					{{else}}
@@ -19,7 +20,11 @@
 						<input type="text" name="SearchTags" placeholder="Tags for the new image(s)" value="">
 						<label>Source</label>
 						<input type="text" name="Source" placeholder="Source of the image" value="">
-						<input type="hidden" name="uploadFile" value="true" /><br>
+						{{if or $CanCreateCollection .UserControlsOwn}}
+						<label id="addCollectionLabel">Add to Collection</label>
+						<input type="text" name="CollectionName" placeholder="Collection Name" value="" oninput="CheckCollectionName(this.parentNode,'addCollectionLabel')" >
+						{{end}}
+						<input type="hidden" name="command" value="uploadFile" /><br>
 						<input type="submit" value="Upload">
 					</form>
 					{{end}}

@@ -73,14 +73,14 @@ func ImageQueryRouter(responseWriter http.ResponseWriter, request *http.Request)
 	}
 	//logging.LogInterface.WriteLog("ImageRouter", "ImageQueryRouter", "*", "INFO", []string{"User attempting a query", userQuery})
 	//Cleanup and format tags for use with SearchImages
-	userQTags, err := database.DBInterface.GetQueryTags(userQuery)
+	userQTags, err := database.DBInterface.GetQueryTags(userQuery, false)
 	if err == nil {
 		//if signed in, add user's global filters to query
 		if TemplateInput.UserName != "" {
-			userFilterTags, err := database.DBInterface.GetUserFilterTags(TemplateInput.UserID)
+			userFilterTags, err := database.DBInterface.GetUserFilterTags(TemplateInput.UserID, false)
 			if err != nil {
 				logging.LogInterface.WriteLog("ImageRouter", "ImageQueryRouter", TemplateInput.UserName, "ERROR", []string{"Failed to load user's filter", err.Error()})
-				TemplateInput.Message += "Failed to add your global filter to this query. Internall error. "
+				TemplateInput.Message += "Failed to add your global filter to this query. Internal error. "
 			} else {
 				userQTags = append(userQTags, userFilterTags...)
 			}

@@ -11,7 +11,7 @@ import (
 )
 
 //TODO: Increment this whenever we alter the DB Schema, ensure you attempt to add update code below
-var currentDBVersion int64 = 5
+var currentDBVersion int64 = 7
 
 //TODO: Increment this when we alter the db schema and don't add update code to compensate
 var minSupportedDBVersion int64 // 0 by default
@@ -40,6 +40,17 @@ func (DBConnection *MariaDBPlugin) InitDatabase() error {
 						return err
 					}
 				}
+				//Validate Events
+				var EventsEnabled string
+				row := DBConnection.DBHandle.QueryRow("SELECT @@global.event_scheduler")
+				err := row.Scan(&EventsEnabled)
+				if err != nil {
+					logging.LogInterface.WriteLog("MariaDBPlugin", "InitDatabase", "*", "WARNING", []string{"Failed to get event scheduler setting", err.Error()})
+				} else {
+					if EventsEnabled != "ON" {
+						logging.LogInterface.WriteLog("MariaDBPlugin", "InitDatabase", "*", "WARNING", []string{"Event scheduler is set to", EventsEnabled, "this may prevent automatic maitenance tasks from running"})
+					}
+				}
 			} else {
 				logging.LogInterface.WriteLog("MariaDBPlugin", "InitDatabase", "*", "WARNING", []string{"Failed to get database version, assuming not installed. Will attempt to perform install.", err.Error()})
 				//Assume no database installed. Perform fresh install
@@ -53,7 +64,7 @@ func (DBConnection *MariaDBPlugin) InitDatabase() error {
 
 //GetPluginInformation Return plugin info as string
 func (DBConnection *MariaDBPlugin) GetPluginInformation() string {
-	return "MariaDBPlugin 0.0.0.6"
+	return "MariaDBPlugin 0.0.0.8"
 }
 
 func (DBConnection *MariaDBPlugin) getDatabaseVersion() (int64, error) {
@@ -110,7 +121,7 @@ func (DBConnection *MariaDBPlugin) performFreshDBInstall() error {
 		return err
 	}
 	//Auditing
-	_, err = DBConnection.DBHandle.Exec("CREATE TABLE AuditLogs (ID BIGINT UNSIGNED NOT NULL AUTO_INCREMENT UNIQUE, UserID BIGINT UNSIGNED NOT NULL, Type VARCHAR(40), Info VARCHAR(255));")
+	_, err = DBConnection.DBHandle.Exec("CREATE TABLE AuditLogs (ID BIGINT UNSIGNED NOT NULL AUTO_INCREMENT UNIQUE, UserID BIGINT UNSIGNED NOT NULL, Type VARCHAR(40), Info VARCHAR(10240) NOT NULL DEFAULT '', LogTime TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL);")
 	if err != nil {
 		logging.LogInterface.WriteLog("MariaDBPlugin", "performFreshDBInstall", "*", "ERROR", []string{"Failed to install database", err.Error()})
 		return err
@@ -123,6 +134,127 @@ func (DBConnection *MariaDBPlugin) performFreshDBInstall() error {
 	}
 	_, err = DBConnection.DBHandle.Exec("CREATE TABLE CollectionMembers (ID BIGINT UNSIGNED NOT NULL AUTO_INCREMENT UNIQUE, ImageID BIGINT UNSIGNED NOT NULL, CollectionID BIGINT UNSIGNED NOT NULL, LinkerID BIGINT UNSIGNED NOT NULL, LinkTime TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL, UNIQUE INDEX ImageCollectionPair (CollectionID,ImageID), OrderWeight BIGINT UNSIGNED NOT NULL);")
 	if err != nil {
+		logging.LogInterface.WriteLog("MariaDBPlugin", "performFreshDBInstall", "*", "ERROR", []string{"Failed to install database", err.Error()})
+		return err
+	}
+	//Stored Procedures, Triggers, Events
+	sqlQuery := `CREATE PROCEDURE LinkCollTags(IN collID BIGINT UNSIGNED)
+	BEGIN
+	-- Insert missing tags
+	INSERT INTO CollectionTags (TagID, CollectionID, LinkerID)
+	SELECT DISTINCT(ImageTags.TagID), collID, ImageTags.LinkerID
+	FROM ImageTags
+	INNER JOIN CollectionMembers on CollectionMembers.ImageID = ImageTags.ImageID
+	WHERE CollectionMembers.CollectionID = collID
+	AND TagID NOT IN (SELECT TagID from CollectionTags WHERE CollectionID = collID);
+	-- Remove extra tags
+	DELETE FROM CollectionTags
+	WHERE TagID NOT IN ( SELECT TagID 
+							FROM ImageTags 
+							INNER JOIN CollectionMembers on CollectionMembers.ImageID = ImageTags.ImageID
+							WHERE CollectionMembers.CollectionID = collID
+						)
+	AND CollectionID=collID;
+	END`
+
+	if _, err := DBConnection.DBHandle.Exec(sqlQuery); err != nil {
+		logging.LogInterface.WriteLog("MariaDBPlugin", "performFreshDBInstall", "*", "ERROR", []string{"Failed to install database", err.Error()})
+		return err
+	}
+	sqlQuery = `CREATE EVENT auditCleanup 
+	ON SCHEDULE EVERY 1 DAY 
+	DO 
+	DELETE FROM AuditLogs WHERE LogTime < DATE_SUB(current_timestamp(), INTERVAL 30 DAY);`
+	if _, err := DBConnection.DBHandle.Exec(sqlQuery); err != nil {
+		logging.LogInterface.WriteLog("MariaDBPlugin", "performFreshDBInstall", "*", "ERROR", []string{"Failed to install database", err.Error()})
+		return err
+	}
+
+	sqlQuery = `CREATE TRIGGER onCollectionDelete BEFORE DELETE ON Collections
+	FOR EACH ROW BEGIN
+		DELETE FROM CollectionMembers WHERE CollectionID=OLD.ID;
+		DELETE FROM CollectionTags WHERE CollectionID=OLD.ID;
+	END`
+	if _, err := DBConnection.DBHandle.Exec(sqlQuery); err != nil {
+		logging.LogInterface.WriteLog("MariaDBPlugin", "performFreshDBInstall", "*", "ERROR", []string{"Failed to install database", err.Error()})
+		return err
+	}
+
+	sqlQuery = `CREATE TRIGGER onCollectionMemberAdd AFTER INSERT ON CollectionMembers
+	FOR EACH ROW BEGIN
+		CALL LinkCollTags(NEW.CollectionID);
+	END`
+	if _, err := DBConnection.DBHandle.Exec(sqlQuery); err != nil {
+		logging.LogInterface.WriteLog("MariaDBPlugin", "performFreshDBInstall", "*", "ERROR", []string{"Failed to install database", err.Error()})
+		return err
+	}
+
+	sqlQuery = `CREATE TRIGGER onCollectionMemberDelete AFTER DELETE ON CollectionMembers
+	FOR EACH ROW BEGIN
+		CALL LinkCollTags(OLD.CollectionID);
+	END`
+	if _, err := DBConnection.DBHandle.Exec(sqlQuery); err != nil {
+		logging.LogInterface.WriteLog("MariaDBPlugin", "performFreshDBInstall", "*", "ERROR", []string{"Failed to install database", err.Error()})
+		return err
+	}
+
+	sqlQuery = `CREATE TRIGGER onImageTagDelete AFTER DELETE ON ImageTags
+	FOR EACH ROW BEGIN
+		DECLARE collID BIGINT UNSIGNED;
+		DECLARE cursorDone BOOL DEFAULT FALSE;
+		DECLARE collCursor CURSOR FOR SELECT CollectionID FROM CollectionMembers WHERE ImageID = OLD.ImageID;
+		DECLARE CONTINUE HANDLER FOR NOT FOUND SET cursorDone = TRUE;
+		OPEN collCursor;
+		collLoop: LOOP
+			FETCH collCursor INTO collID;
+			IF cursorDone THEN
+				LEAVE collLoop;
+			END IF;
+			CALL LinkCollTags(collID);
+		END LOOP;
+	END`
+	if _, err := DBConnection.DBHandle.Exec(sqlQuery); err != nil {
+		logging.LogInterface.WriteLog("MariaDBPlugin", "performFreshDBInstall", "*", "ERROR", []string{"Failed to install database", err.Error()})
+		return err
+	}
+
+	sqlQuery = `CREATE TRIGGER onImageDelete BEFORE DELETE ON Images
+	FOR EACH ROW BEGIN
+		DELETE FROM ImageTags WHERE ImageID=OLD.ID;
+		DELETE FROM ImageUserScores WHERE ImageID=OLD.ID;
+		DELETE FROM CollectionMembers WHERE ImageID=OLD.ID;
+	END`
+	if _, err := DBConnection.DBHandle.Exec(sqlQuery); err != nil {
+		logging.LogInterface.WriteLog("MariaDBPlugin", "performFreshDBInstall", "*", "ERROR", []string{"Failed to install database", err.Error()})
+		return err
+	}
+
+	sqlQuery = `CREATE TRIGGER onImageTagInsert AFTER INSERT ON ImageTags
+	FOR EACH ROW BEGIN
+		DECLARE collID BIGINT UNSIGNED;
+		DECLARE cursorDone BOOL DEFAULT FALSE;
+		DECLARE collCursor CURSOR FOR SELECT CollectionID FROM CollectionMembers WHERE ImageID = NEW.ImageID;
+		DECLARE CONTINUE HANDLER FOR NOT FOUND SET cursorDone = TRUE;
+		OPEN collCursor;
+		collLoop: LOOP
+			FETCH collCursor INTO collID;
+			IF cursorDone THEN
+				LEAVE collLoop;
+			END IF;
+			CALL LinkCollTags(collID);
+		END LOOP;
+	END`
+	if _, err := DBConnection.DBHandle.Exec(sqlQuery); err != nil {
+		logging.LogInterface.WriteLog("MariaDBPlugin", "performFreshDBInstall", "*", "ERROR", []string{"Failed to install database", err.Error()})
+		return err
+	}
+
+	sqlQuery = `CREATE TRIGGER onTagDelete BEFORE DELETE ON Tags
+	FOR EACH ROW BEGIN
+		DELETE FROM ImageTags WHERE TagID=OLD.ID;
+		DELETE FROM CollectionTags WHERE TagID=OLD.ID;
+	END`
+	if _, err := DBConnection.DBHandle.Exec(sqlQuery); err != nil {
 		logging.LogInterface.WriteLog("MariaDBPlugin", "performFreshDBInstall", "*", "ERROR", []string{"Failed to install database", err.Error()})
 		return err
 	}
@@ -221,6 +353,155 @@ func (DBConnection *MariaDBPlugin) upgradeDatabase(version int64) (int64, error)
 			return version, err
 		}
 		version = 5
+		logging.LogInterface.WriteLog("MariaDBPlugin", "InitDatabase", "*", "INFO", []string{"Database schema updated to version", strconv.FormatInt(version, 10)})
+	}
+	//Update version 5->6
+	if version == 5 {
+		_, err := DBConnection.DBHandle.Exec("ALTER TABLE AuditLogs ADD COLUMN (LogTime TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL);")
+		if err != nil {
+			logging.LogInterface.WriteLog("MariaDBPlugin", "InitDatabase", "*", "ERROR", []string{"Failed to update database version", err.Error()})
+			return version, err
+		}
+		_, err = DBConnection.DBHandle.Exec("ALTER TABLE AuditLogs CHANGE COLUMN Info Info VARCHAR(10240) NOT NULL DEFAULT '';")
+		if err != nil {
+			logging.LogInterface.WriteLog("MariaDBPlugin", "InitDatabase", "*", "ERROR", []string{"Failed to update database version", err.Error()})
+			return version, err
+		}
+		_, err = DBConnection.DBHandle.Exec("UPDATE DBVersion SET version = 6;")
+		if err != nil {
+			logging.LogInterface.WriteLog("MariaDBPlugin", "InitDatabase", "*", "ERROR", []string{"Failed to update database version", err.Error()})
+			return version, err
+		}
+		version = 6
+		logging.LogInterface.WriteLog("MariaDBPlugin", "InitDatabase", "*", "INFO", []string{"Database schema updated to version", strconv.FormatInt(version, 10)})
+	}
+	//Update version 6->7
+	if version == 6 {
+		sqlQuery := `CREATE PROCEDURE LinkCollTags(IN collID BIGINT UNSIGNED)
+		BEGIN
+		-- Insert missing tags
+		INSERT INTO CollectionTags (TagID, CollectionID, LinkerID)
+		SELECT DISTINCT(ImageTags.TagID), collID, ImageTags.LinkerID
+		FROM ImageTags
+		INNER JOIN CollectionMembers on CollectionMembers.ImageID = ImageTags.ImageID
+		WHERE CollectionMembers.CollectionID = collID
+		AND TagID NOT IN (SELECT TagID from CollectionTags WHERE CollectionID = collID);
+		-- Remove extra tags
+		DELETE FROM CollectionTags
+		WHERE TagID NOT IN ( SELECT TagID 
+							 FROM ImageTags 
+							 INNER JOIN CollectionMembers on CollectionMembers.ImageID = ImageTags.ImageID
+							 WHERE CollectionMembers.CollectionID = collID
+						   )
+		AND CollectionID=collID;
+		END`
+
+		if _, err := DBConnection.DBHandle.Exec(sqlQuery); err != nil {
+			logging.LogInterface.WriteLog("MariaDBPlugin", "InitDatabase", "*", "ERROR", []string{"Failed to update database version", err.Error()})
+			return version, err
+		}
+		sqlQuery = `CREATE EVENT auditCleanup 
+		ON SCHEDULE EVERY 1 DAY 
+		DO 
+		DELETE FROM AuditLogs WHERE LogTime < DATE_SUB(current_timestamp(), INTERVAL 30 DAY);`
+		if _, err := DBConnection.DBHandle.Exec(sqlQuery); err != nil {
+			logging.LogInterface.WriteLog("MariaDBPlugin", "InitDatabase", "*", "ERROR", []string{"Failed to update database version", err.Error()})
+			return version, err
+		}
+
+		sqlQuery = `CREATE TRIGGER onCollectionDelete BEFORE DELETE ON Collections
+		FOR EACH ROW BEGIN
+			DELETE FROM CollectionMembers WHERE CollectionID=OLD.ID;
+			DELETE FROM CollectionTags WHERE CollectionID=OLD.ID;
+		END`
+		if _, err := DBConnection.DBHandle.Exec(sqlQuery); err != nil {
+			logging.LogInterface.WriteLog("MariaDBPlugin", "InitDatabase", "*", "ERROR", []string{"Failed to update database version", err.Error()})
+			return version, err
+		}
+
+		sqlQuery = `CREATE TRIGGER onCollectionMemberAdd AFTER INSERT ON CollectionMembers
+		FOR EACH ROW BEGIN
+			CALL LinkCollTags(NEW.CollectionID);
+		END`
+		if _, err := DBConnection.DBHandle.Exec(sqlQuery); err != nil {
+			logging.LogInterface.WriteLog("MariaDBPlugin", "InitDatabase", "*", "ERROR", []string{"Failed to update database version", err.Error()})
+			return version, err
+		}
+
+		sqlQuery = `CREATE TRIGGER onCollectionMemberDelete AFTER DELETE ON CollectionMembers
+		FOR EACH ROW BEGIN
+			CALL LinkCollTags(OLD.CollectionID);
+		END`
+		if _, err := DBConnection.DBHandle.Exec(sqlQuery); err != nil {
+			logging.LogInterface.WriteLog("MariaDBPlugin", "InitDatabase", "*", "ERROR", []string{"Failed to update database version", err.Error()})
+			return version, err
+		}
+
+		sqlQuery = `CREATE TRIGGER onImageTagDelete AFTER DELETE ON ImageTags
+		FOR EACH ROW BEGIN
+			DECLARE collID BIGINT UNSIGNED;
+			DECLARE cursorDone BOOL DEFAULT FALSE;
+			DECLARE collCursor CURSOR FOR SELECT CollectionID FROM CollectionMembers WHERE ImageID = OLD.ImageID;
+			DECLARE CONTINUE HANDLER FOR NOT FOUND SET cursorDone = TRUE;
+			OPEN collCursor;
+			collLoop: LOOP
+				FETCH collCursor INTO collID;
+				IF cursorDone THEN
+					LEAVE collLoop;
+				END IF;
+				CALL LinkCollTags(collID);
+			END LOOP;
+		END`
+		if _, err := DBConnection.DBHandle.Exec(sqlQuery); err != nil {
+			logging.LogInterface.WriteLog("MariaDBPlugin", "InitDatabase", "*", "ERROR", []string{"Failed to update database version", err.Error()})
+			return version, err
+		}
+
+		sqlQuery = `CREATE TRIGGER onImageDelete BEFORE DELETE ON Images
+		FOR EACH ROW BEGIN
+			DELETE FROM ImageTags WHERE ImageID=OLD.ID;
+			DELETE FROM ImageUserScores WHERE ImageID=OLD.ID;
+			DELETE FROM CollectionMembers WHERE ImageID=OLD.ID;
+		END`
+		if _, err := DBConnection.DBHandle.Exec(sqlQuery); err != nil {
+			logging.LogInterface.WriteLog("MariaDBPlugin", "InitDatabase", "*", "ERROR", []string{"Failed to update database version", err.Error()})
+			return version, err
+		}
+
+		sqlQuery = `CREATE TRIGGER onImageTagInsert AFTER INSERT ON ImageTags
+		FOR EACH ROW BEGIN
+			DECLARE collID BIGINT UNSIGNED;
+			DECLARE cursorDone BOOL DEFAULT FALSE;
+			DECLARE collCursor CURSOR FOR SELECT CollectionID FROM CollectionMembers WHERE ImageID = NEW.ImageID;
+			DECLARE CONTINUE HANDLER FOR NOT FOUND SET cursorDone = TRUE;
+			OPEN collCursor;
+			collLoop: LOOP
+				FETCH collCursor INTO collID;
+				IF cursorDone THEN
+					LEAVE collLoop;
+				END IF;
+				CALL LinkCollTags(collID);
+			END LOOP;
+		END`
+		if _, err := DBConnection.DBHandle.Exec(sqlQuery); err != nil {
+			logging.LogInterface.WriteLog("MariaDBPlugin", "InitDatabase", "*", "ERROR", []string{"Failed to update database version", err.Error()})
+			return version, err
+		}
+
+		sqlQuery = `CREATE TRIGGER onTagDelete BEFORE DELETE ON Tags
+		FOR EACH ROW BEGIN
+			DELETE FROM ImageTags WHERE TagID=OLD.ID;
+			DELETE FROM CollectionTags WHERE TagID=OLD.ID;
+		END`
+		if _, err := DBConnection.DBHandle.Exec(sqlQuery); err != nil {
+			logging.LogInterface.WriteLog("MariaDBPlugin", "InitDatabase", "*", "ERROR", []string{"Failed to update database version", err.Error()})
+			return version, err
+		}
+		if _, err := DBConnection.DBHandle.Exec("UPDATE DBVersion SET version = 7;"); err != nil {
+			logging.LogInterface.WriteLog("MariaDBPlugin", "InitDatabase", "*", "ERROR", []string{"Failed to update database version", err.Error()})
+			return version, err
+		}
+		version = 7
 		logging.LogInterface.WriteLog("MariaDBPlugin", "InitDatabase", "*", "INFO", []string{"Database schema updated to version", strconv.FormatInt(version, 10)})
 	}
 	return version, nil

@@ -44,6 +44,7 @@ func (DBConnection *MariaDBPlugin) DeleteImage(ImageID uint64) error {
 }
 
 //SearchImages performs a search for images (Returns a list of ImageInformations a result count and an error/nil)
+//If you edit this function, consider SearchCollections for a similar change
 func (DBConnection *MariaDBPlugin) SearchImages(Tags []interfaces.TagInformation, PageStart uint64, PageStride uint64) ([]interfaces.ImageInformation, uint64, error) {
 	//Cleanup input for use in code below
 	//Specifically we separate the include, the exclude and metatags into their own lists
@@ -62,148 +63,49 @@ func (DBConnection *MariaDBPlugin) SearchImages(Tags []interfaces.TagInformation
 		}
 	}
 
-	//Short circuit if we have no inclusive tags
-	//This makes the query and function simpler to handle
+	//Initialize output
+	var ToReturn []interfaces.ImageInformation
+	var MaxResults uint64
+
+	//Construct SQL Query
+
+	//This is the start of the query we want
+	sqlQuery := `SELECT ID, Name, Location `
+	sqlCountQuery := `SELECT COUNT(*) `
 	if len(IncludeTags) == 0 {
-		return DBConnection.searchImagesExclusive(ExcludeTags, MetaTags, PageStart, PageStride)
+		sqlQuery = sqlQuery + `FROM Images `
+		sqlCountQuery = sqlCountQuery + `FROM Images `
+	} else {
+		sqlQuery = sqlQuery + `FROM (
+			SELECT ImageID as ID, Name, Location, COUNT(*) as MatchingTags
+			FROM ImageTags 
+			INNER JOIN Images ON ImageTags.ImageID=Images.ID `
+		sqlCountQuery = sqlCountQuery + `FROM ( 
+			SELECT ImageID as ID, Name, Location, COUNT(*) as MatchingTags
+			FROM ImageTags 
+			INNER JOIN Images ON ImageTags.ImageID=Images.ID `
 	}
-	//Initialize output
-	var ToReturn []interfaces.ImageInformation
-	var MaxResults uint64
-
-	//Construct SQL Query
-
-	//This is the start of the query we want
-	sqlQuery := `SELECT ImageID, Name, Location FROM (
-	SELECT ImageID, Name, Location, COUNT(*) as MatchingTags
-	FROM ImageTags 
-	INNER JOIN Images ON ImageTags.ImageID=Images.ID `
-
-	sqlCountQuery := `SELECT COUNT(ImageID) FROM ( 
-	SELECT ImageID, Name, Location, COUNT(*) as MatchingTags
-	FROM ImageTags 
-	INNER JOIN Images ON ImageTags.ImageID=Images.ID `
-
-	//Now for the variable piece
-	sqlWhereClause := "WHERE TagID IN (?" + strings.Repeat(",?", len(IncludeTags)-1) + ") "
-	if len(ExcludeTags) > 0 {
-		sqlWhereClause += "AND ImageID NOT IN (SELECT DISTINCT ImageID FROM ImageTags WHERE TagID IN (?" + strings.Repeat(",?", len(ExcludeTags)-1) + ")) "
-	}
-
-	//And add any metatags
-	if len(MetaTags) > 0 {
-		for _, tag := range MetaTags {
-			metaTagQuery := "AND Images." + tag.Name + " "
-			comparator := tag.Comparator
-			if tag.Exclude {
-				comparator = getInvertedComparator(comparator)
-			}
-			if comparator == "" {
-				return ToReturn, 0, errors.New("Failed to invert query to negate on " + tag.Name)
-			}
-			metaTagQuery = metaTagQuery + comparator + " ? "
-
-			sqlWhereClause = sqlWhereClause + metaTagQuery
-		}
-	}
-
-	//Count of tags, so we only match images that have all the tags we are looking for
-	var matchingTagsFilter = "WHERE MatchingTags = ?"
-
-	//Finish off query
-	sqlQuery = sqlQuery + sqlWhereClause + `GROUP BY ImageID) InnerStatement ` + matchingTagsFilter + ` ORDER BY ImageID DESC LIMIT ? OFFSET ?;`
-	sqlCountQuery = sqlCountQuery + sqlWhereClause + `GROUP BY ImageID) InnerStatement ` + matchingTagsFilter
-
-	//Now construct arguments list. Order must follow query order
-	/*
-		Inclusive Tags
-		Exclusive Tags
-		Inclusive Tag Count
-		<However we pause here to run count query, as that one does not have limits>
-		Max Amount of results to return
-		Offset
-	*/
-	queryArray := []interface{}{}
-	//Add inclusive tags to our queryArray
-	for _, tag := range IncludeTags {
-		queryArray = append(queryArray, tag)
-	}
-	//Add the exclusive tags
-	for _, tag := range ExcludeTags {
-		queryArray = append(queryArray, tag)
-	}
-
-	//Add values for metatags
-	if len(MetaTags) > 0 {
-		for _, tag := range MetaTags {
-			queryArray = append(queryArray, tag.MetaValue)
-		}
-	}
-
-	//Add inclusive tag count
-	queryArray = append(queryArray, len(IncludeTags))
-
-	//Run the count query (Count query does not use start/stride)
-	err := DBConnection.DBHandle.QueryRow(sqlCountQuery, queryArray...).Scan(&MaxResults)
-	if err != nil {
-		logging.LogInterface.WriteLog("MariaDBPlugin", "SearchImages", "*", "ERROR", []string{"Error running search query", sqlCountQuery, err.Error()})
-		return nil, 0, err
-	}
-
-	//Add rest of arguments now that we have max result count
-	queryArray = append(queryArray, PageStride)
-	queryArray = append(queryArray, PageStart)
-
-	//Now we have query and args, run the query
-	rows, err := DBConnection.DBHandle.Query(sqlQuery, queryArray...)
-	if err != nil {
-		return nil, 0, err
-	}
-	defer rows.Close()
-	//Placeholders for data returned by each row
-	var ImageID uint64
-	var Name string
-	var Location string
-	//For each row
-	for rows.Next() {
-		//Parse out the data
-		err := rows.Scan(&ImageID, &Name, &Location)
-		if err != nil {
-			return nil, 0, err
-		}
-		//Add this result to ToReturn
-		ToReturn = append(ToReturn, interfaces.ImageInformation{Name: Name, ID: ImageID, Location: Location})
-	}
-	return ToReturn, MaxResults, nil
-}
-
-//SearchImages performs a search for images (Returns a list of ImageInformations a result count and an error/nil)
-func (DBConnection *MariaDBPlugin) searchImagesExclusive(ExcludeTags []uint64, MetaTags []interfaces.TagInformation, PageStart uint64, PageStride uint64) ([]interfaces.ImageInformation, uint64, error) {
-
-	//Initialize output
-	var ToReturn []interfaces.ImageInformation
-	var MaxResults uint64
-
-	//Construct SQL Query
-
-	//This is the start of the query we want
-	sqlQuery := `SELECT ID, Name, Location FROM Images `
-
-	sqlCountQuery := `SELECT COUNT(*) FROM Images `
 
 	//Now for the variable piece
 	sqlWhereClause := ""
+	if len(IncludeTags) > 0 {
+		sqlWhereClause = sqlWhereClause + "WHERE TagID IN (?" + strings.Repeat(",?", len(IncludeTags)-1) + ") "
+	}
 	if len(ExcludeTags) > 0 {
-		sqlWhereClause += "WHERE ID NOT IN (SELECT DISTINCT ImageID FROM ImageTags WHERE TagID IN (?" + strings.Repeat(",?", len(ExcludeTags)-1) + ")) "
+		if len(IncludeTags) > 0 {
+			sqlWhereClause += "AND "
+		} else {
+			sqlWhereClause += "WHERE "
+		}
+		sqlWhereClause += "Images.ID NOT IN (SELECT DISTINCT ImageID FROM ImageTags WHERE TagID IN (?" + strings.Repeat(",?", len(ExcludeTags)-1) + ")) "
 	}
 
 	//And add any metatags
 	if len(MetaTags) > 0 {
-		firstPass := true
 		for _, tag := range MetaTags {
 			metaTagQuery := "AND "
-			if firstPass && len(ExcludeTags) == 0 {
-				metaTagQuery = "WHERE " //If we are processing a query only containing a metatag, then we need the where here, otherwise is added above
+			if sqlWhereClause == "" {
+				metaTagQuery = "WHERE "
 			}
 			metaTagQuery = metaTagQuery + "Images." + tag.Name + " "
 			comparator := tag.Comparator
@@ -216,35 +118,50 @@ func (DBConnection *MariaDBPlugin) searchImagesExclusive(ExcludeTags []uint64, M
 			metaTagQuery = metaTagQuery + comparator + " ? "
 
 			sqlWhereClause = sqlWhereClause + metaTagQuery
-			firstPass = false
 		}
 	}
 
-	//Finish off query
-	sqlQuery = sqlQuery + sqlWhereClause + ` ORDER BY ID DESC LIMIT ? OFFSET ?;`
-	sqlCountQuery = sqlCountQuery + sqlWhereClause
+	if len(IncludeTags) > 0 {
+		sqlQuery = sqlQuery + sqlWhereClause + `GROUP BY ImageID) InnerStatement WHERE MatchingTags = ? `
+		sqlCountQuery = sqlCountQuery + sqlWhereClause + `GROUP BY ImageID) InnerStatement WHERE MatchingTags = ? `
+	} else {
+		sqlQuery = sqlQuery + sqlWhereClause
+		sqlCountQuery = sqlCountQuery + sqlWhereClause
+	}
+
+	//Add Order
+	sqlQuery = sqlQuery + `ORDER BY ID
+		DESC LIMIT ? OFFSET ?;`
 
 	//Now construct arguments list. Order must follow query order
 	/*
+		Inclusive Tags
 		Exclusive Tags
+		Inclusive Tag Count
 		<However we pause here to run count query, as that one does not have limits>
-		Max Amount of results to return
-		Offset
+		Max Amount of results to return (Stride)
+		Offset (Start)
 	*/
 	queryArray := []interface{}{}
+	//Add inclusive tags to our queryArray
+	for _, tag := range IncludeTags {
+		queryArray = append(queryArray, tag)
+	}
 	//Add the exclusive tags
 	for _, tag := range ExcludeTags {
 		queryArray = append(queryArray, tag)
 	}
-
 	//Add values for metatags
-	if len(MetaTags) > 0 {
-		for _, tag := range MetaTags {
-			queryArray = append(queryArray, tag.MetaValue)
-		}
+	for _, tag := range MetaTags {
+		queryArray = append(queryArray, tag.MetaValue)
 	}
 
-	//Run the count query (Count query does not use start/stride)
+	//Add inclusive tag count, but only if we have any
+	if len(IncludeTags) > 0 {
+		queryArray = append(queryArray, len(IncludeTags))
+	}
+
+	//Run the count query (Count query does not use start/stride, so run this before we add those)
 	err := DBConnection.DBHandle.QueryRow(sqlCountQuery, queryArray...).Scan(&MaxResults)
 	if err != nil {
 		logging.LogInterface.WriteLog("MariaDBPlugin", "SearchImages", "*", "ERROR", []string{"Error running search query", sqlCountQuery, err.Error()})
@@ -311,117 +228,6 @@ func (DBConnection *MariaDBPlugin) SetImageSource(ID uint64, Source string) erro
 		return err
 	}
 	return nil
-}
-
-//parseMetaTags fills in additional information for MetaTags and vets out non-MetaTags
-func (DBConnection *MariaDBPlugin) parseMetaTags(MetaTags []interfaces.TagInformation) ([]interfaces.TagInformation, []error) {
-	var ToReturn []interfaces.TagInformation
-	var ErrorList []error
-	for _, tag := range MetaTags {
-		ToAdd := tag
-		switch ToAdd.Name {
-		//TODO: Add additional metatags here
-		case "uploader":
-			ToAdd.Name = "UploaderID"
-			ToAdd.Description = "The uploaded of the image"
-			//Get uploader ID and set that to value
-			name, isString := ToAdd.MetaValue.(string)
-			if isString {
-				value, err := DBConnection.GetUserID(name)
-				if err != nil {
-					ErrorList = append(ErrorList, err)
-				} else {
-					ToAdd.MetaValue = value
-					ToAdd.Exists = true
-				}
-				ToAdd.Comparator = "=" //Clobber any other comparator requested. This one will only support equals
-			} else {
-				ErrorList = append(ErrorList, errors.New("Could not convert metatag value to string as expected"))
-			}
-		case "rating":
-			ToAdd.Name = "Rating"
-			ToAdd.Description = "The rating of the image"
-			ToAdd.Exists = true
-			ToAdd.Comparator = "=" //Clobber any other comparator requested. This one will only support equals
-			//Since rating is a string, no futher processing needed!
-		case "score":
-			ToAdd.Name = "ScoreAverage"
-			ToAdd.Description = "The average voted score of the image"
-			sscore, isString := ToAdd.MetaValue.(string)
-			if isString {
-				score, err := strconv.ParseInt(sscore, 10, 64)
-				if err == nil {
-					ToAdd.MetaValue = score
-				}
-			}
-			//Must be an int64
-			_, isInt := ToAdd.MetaValue.(int64)
-			if isInt {
-				ToAdd.Exists = true
-			} else {
-				ErrorList = append(ErrorList, errors.New("could not parse requested score, ensure it is a number"))
-			}
-			//All comparators valid
-		case "averagescore":
-			ToAdd.Name = "ScoreAverage"
-			ToAdd.Description = "The average voted score of the image"
-			sscore, isString := ToAdd.MetaValue.(string)
-			if isString {
-				score, err := strconv.ParseInt(sscore, 10, 64)
-				if err == nil {
-					ToAdd.MetaValue = score
-				}
-			}
-			//Must be an int64
-			_, isInt := ToAdd.MetaValue.(int64)
-			if isInt {
-				ToAdd.Exists = true
-			} else {
-				ErrorList = append(ErrorList, errors.New("could not parse requested score, ensure it is a number"))
-			}
-			//All comparators valid
-		case "totalscore":
-			ToAdd.Name = "ScoreTotal"
-			ToAdd.Description = "The total sum of all voted scores for the image"
-			sscore, isString := ToAdd.MetaValue.(string)
-			if isString {
-				score, err := strconv.ParseInt(sscore, 10, 64)
-				if err == nil {
-					ToAdd.MetaValue = score
-				}
-			}
-			//Must be an int64
-			_, isInt := ToAdd.MetaValue.(int64)
-			if isInt {
-				ToAdd.Exists = true
-			} else {
-				ErrorList = append(ErrorList, errors.New("could not parse requested score, ensure it is a number"))
-			}
-			//All comparators valid
-		case "scorevoters":
-			ToAdd.Name = "ScoreVoters"
-			ToAdd.Description = "The count of all users that voted on the image"
-			sscore, isString := ToAdd.MetaValue.(string)
-			if isString {
-				score, err := strconv.ParseInt(sscore, 10, 64)
-				if err == nil {
-					ToAdd.MetaValue = score
-				}
-			}
-			//Must be an int64
-			_, isInt := ToAdd.MetaValue.(int64)
-			if isInt {
-				ToAdd.Exists = true
-			} else {
-				ErrorList = append(ErrorList, errors.New("could not parse requested score, ensure it is a number"))
-			}
-			//All comparators valid
-		default:
-			ErrorList = append(ErrorList, errors.New("MetaTag does not exist"))
-		}
-		ToReturn = append(ToReturn, ToAdd)
-	}
-	return ToReturn, ErrorList
 }
 
 /*

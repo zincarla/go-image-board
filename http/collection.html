@@ -7,6 +7,7 @@
 					<input type="text" name="SearchTerms" placeholder="Search Images" value="{{.OldQuery}}">
 					<input type="submit" value="Go">
 				</form>
+				{{$CanModifyCollection := .UserPermissions.HasPermission 4096}}
 				{{$CanDeleteCollection := .UserPermissions.HasPermission 8192}}
 				{{$CanRemoveFromCollection:= .UserPermissions.HasPermission 16384}}
 				{{$CollectionID := .CollectionInfo.ID}}
@@ -17,6 +18,7 @@
 
 				{{$HasDeletePermissions := or $CanDeleteCollection $CanModifyOwn}}
 				{{$HasRemoveFromPermissions := or $CanRemoveFromCollection $CanModifyOwn}}
+				{{$HasModifyPermissions := or $CanModifyCollection $CanModifyOwn}}
 
 				{{$OldQuery := .OldQuery}}
 				<h5>Commands</h5>
@@ -26,6 +28,25 @@
 				{{if and $UserNotNull $HasRemoveFromPermissions}}
 				<br><a href="/collectionorder?ID={{$CollectionID}}&SearchTerms={{$OldQuery}}">Reorder Members</a>
 				{{end}}
+				{{if and $UserNotNull $HasModifyPermissions}}
+				<br><a href="#" onclick="return ToggleFormDisplay('changeNameForm');">Modify Collection</a>
+				<form action="/collectionimages" method="POST" id="changeNameForm" class="displayHidden">
+					<h5>Modify Collection</h5>
+					<input type="text" name="NewName" placeholder="New Name" value="{{.CollectionInfo.Name}}">
+					<input type="text" name="NewDescription" placeholder="New Description" value="{{.CollectionInfo.Description}}">
+					<input type="hidden" name="ID" value="{{.CollectionInfo.ID}}">
+					<input type="hidden" name="command" value="modify" />
+					<input type="submit" value="Change">
+				</form>
+				{{end}}
+				<h5>Description</h5>
+				{{.CollectionInfo.Description}}
+				<h5>Associated Tags <a href="/about/tags.html?SearchTerms={{$OldQuery}}">?</a></h5>
+				<ul>
+					{{range .Tags}}
+					<li>{{.Name}}</li>
+					{{end}}
+				</ul>
 			</div>
 			<div id="ImageGridContainer">
 				<div id="collectionTitle">
@@ -39,7 +60,7 @@
 						<div class="imageResultOverlay overlay{{.Location | getimagetype}}"></div>
 					</a>
 					{{if and $UserNotNull $HasRemoveFromPermissions}}
-					<a href="/collectionimages?command=delete&ID={{$CollectionID}}&ImageID={{.ID}}&SearchTerms={{$OldQuery}}" onclick="return confirm('Are you sure you want to remove this from the collection?');"><div class="removeCollectionButton">X</div></a>
+					<a href="/collectionimages?command=delete&ID={{$CollectionID}}&ImageID={{.ID}}&SearchTerms={{$OldQuery}}" onclick="return confirm('Are you sure you want to remove this from the collection?');"><div class="removeCollectionButton"><span></span></div></a>
 					{{end}}
 				</div>
 				{{end}}

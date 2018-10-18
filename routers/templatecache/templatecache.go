@@ -6,6 +6,7 @@ import (
 	"html/template"
 	"io/ioutil"
 	"path/filepath"
+	"strconv"
 	"strings"
 )
 
@@ -81,6 +82,6 @@ func CacheTemplates() error {
 		return err
 	}
 	TemplateCache = templates
-	logging.LogInterface.WriteLog("TemplateCache", "CacheTemplates", "*", "INFO", append([]string{"Added Templates"}, allFiles...))
+	logging.LogInterface.WriteLog("TemplateCache", "CacheTemplates", "*", "INFO", []string{"Added Templates", strconv.Itoa(len(allFiles))})
 	return nil
 }

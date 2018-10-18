@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"go-image-board/config"
 	"go-image-board/database"
 	"go-image-board/logging"
@@ -66,7 +65,7 @@ func main() {
 	config.SaveConfiguration(configPath)
 
 	//If we can, start the database
-	logging.LogInterface.WriteLog("MAIN", "SERVER", "*", "Information", []string{fmt.Sprintf("%+v", config.Configuration)})
+	//logging.LogInterface.WriteLog("MAIN", "SERVER", "*", "Information", []string{fmt.Sprintf("%+v", config.Configuration)})
 	if config.Configuration.DBName == "" || config.Configuration.DBPassword == "" || config.Configuration.DBUser == "" || config.Configuration.DBHost == "" {
 		logging.LogInterface.WriteLog("MAIN", "SERVER", "*", "Warning", []string{"Missing database information. (Instance, User, Password?)"})
 	} else {
@@ -107,6 +106,7 @@ func main() {
 		requestRouter.HandleFunc("/mod", routers.ModRouter)
 		//API
 		requestRouter.HandleFunc("/api/Collection", api.CollectionAPIRouter)
+		requestRouter.HandleFunc("/api/User", api.UserAPIRouter)
 	} else {
 		requestRouter.HandleFunc("/", routers.BadConfigRouter)
 		requestRouter.HandleFunc("/resources/{file}", routers.ResourceRouter) /*Required for CSS*/
