@@ -411,3 +411,35 @@ func (DBConnection *MariaDBPlugin) GetCollectionsWithImage(ImageID uint64) ([]in
 
 	return ToReturn, nil
 }
+
+//GetCollectionTags returns a list of TagInformation for all tags that apply to the given collection
+func (DBConnection *MariaDBPlugin) GetCollectionTags(CollectionID uint64) ([]interfaces.TagInformation, error) {
+	var ToReturn []interfaces.TagInformation
+	sqlQuery := "SELECT Tags.ID, Tags.Name, Tags.Description FROM CollectionTags INNER JOIN Tags ON Tags.ID = CollectionTags.TagID WHERE CollectionID=?"
+	//Pass the sql query to DB
+	rows, err := DBConnection.DBHandle.Query(sqlQuery, CollectionID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	//Placeholders for data returned by each row
+	var Description sql.NullString
+	var ID uint64
+	var Name string
+	//For each row
+	for rows.Next() {
+		//Parse out the data
+		err := rows.Scan(&ID, &Name, &Description)
+		if err != nil {
+			return nil, err
+		}
+		//If description is a valid non-null value, use it, else, use ""
+		var SDescription string
+		if Description.Valid {
+			SDescription = Description.String
+		}
+		//Add this result to ToReturn
+		ToReturn = append(ToReturn, interfaces.TagInformation{Name: Name, ID: ID, Description: SDescription, Exists: true, Exclude: false})
+	}
+	return ToReturn, nil
+}

@@ -23,3 +23,6 @@ tr:nth-child(odd) {
 h1, h2, h3, h4 {
 	border-bottom-color: #cccccc;
 }
+input {
+	background-color: #cccccc;
+}

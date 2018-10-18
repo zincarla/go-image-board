@@ -206,8 +206,8 @@ func (DBConnection *MariaDBPlugin) SearchTags(name string, PageStart uint64, Pag
 	name = strings.Replace(name, "%", "", -1)
 	if name != "" {
 		name = "%" + name + "%"
-		sqlQuery = "SELECT ID, Name, Description, IsAlias FROM Tags WHERE Name like %?% ORDER BY Name LIMIT ? OFFSET ?"
-		sqlCountQuery = "SELECT Count(*) FROM Tags WHERE Name like %?%"
+		sqlQuery = "SELECT ID, Name, Description, IsAlias FROM Tags WHERE Name like ? ORDER BY Name LIMIT ? OFFSET ?"
+		sqlCountQuery = "SELECT Count(*) FROM Tags WHERE Name like ?"
 		queryArray = append(queryArray, name)
 	}
 
@@ -227,7 +227,7 @@ func (DBConnection *MariaDBPlugin) SearchTags(name string, PageStart uint64, Pag
 	//Pass the sql query to DB
 	rows, err := DBConnection.DBHandle.Query(sqlQuery, queryArray...)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	defer rows.Close()
 	//Placeholders for data returned by each row
@@ -240,7 +240,7 @@ func (DBConnection *MariaDBPlugin) SearchTags(name string, PageStart uint64, Pag
 		//Parse out the data
 		err := rows.Scan(&ID, &Name, &Description, &IsAlias)
 		if err != nil {
-			return nil, err
+			return nil, 0, err
 		}
 		//If description is a valid non-null value, use it, else, use ""
 		var SDescription string

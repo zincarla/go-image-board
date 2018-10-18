@@ -82,7 +82,7 @@ type DBInterface interface {
 	//ReplaceImageTags Replaces an old tag, with the new tag
 	ReplaceImageTags(OldTagID uint64, NewTagID uint64, LinkerID uint64) error
 	//SearchTags returns a list of tags like the provided name, but only the ID, Name, Description, and IsAlias
-	SearchTags(name string, PageStart uint64, PageStride uint64) ([]TagInformation, error)
+	SearchTags(name string, PageStart uint64, PageStride uint64) ([]TagInformation, uint64, error)
 
 	//UpdateUserVoteScore Either creates or changes a user's vote on an image
 	UpdateUserVoteScore(UserID uint64, ImageID uint64, Score int64) error
@@ -124,4 +124,6 @@ type DBInterface interface {
 	GetCollectionsWithImage(ImageID uint64) ([]CollectionInformation, error)
 	//SearchCollections performs a search for collections (Returns a list of CollectionInformation a result count and an error/nil)
 	SearchCollections(Tags []TagInformation, PageStart uint64, PageStride uint64) ([]CollectionInformation, uint64, error)
+	//GetCollectionTags returns a list of TagInformation for all tags that apply to the given collection
+	GetCollectionTags(CollectionID uint64) ([]TagInformation, error)
 }

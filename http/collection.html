@@ -41,6 +41,12 @@
 				{{end}}
 				<h5>Description</h5>
 				{{.CollectionInfo.Description}}
+				<h5>Associated Tags <a href="/about/tags.html?SearchTerms={{$OldQuery}}">?</a></h5>
+				<ul>
+					{{range .Tags}}
+					<li>{{.Name}}</li>
+					{{end}}
+				</ul>
 			</div>
 			<div id="ImageGridContainer">
 				<div id="collectionTitle">

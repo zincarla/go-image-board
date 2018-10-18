@@ -14,6 +14,7 @@ import (
 //TagsRouter serves requests to /tags (Big tag list)
 func TagsRouter(responseWriter http.ResponseWriter, request *http.Request) {
 	TemplateInput := getNewTemplateInput(request)
+	TemplateInput.TotalResults = 0
 
 	TagSearch := strings.TrimSpace(request.FormValue("SearchTags"))
 
@@ -23,12 +24,13 @@ func TagsRouter(responseWriter http.ResponseWriter, request *http.Request) {
 	pageStride := config.Configuration.PageStride
 
 	//Populate Tags
-	tag, TemplateInput.TotalResults, err := database.DBInterface.SearchTags(TagSearch, pageStart, pageStride)
+	tag, totalResults, err := database.DBInterface.SearchTags(TagSearch, pageStart, pageStride)
 	if err != nil {
 		TemplateInput.Message = "Error pulling tags"
 		logging.LogInterface.WriteLog("TagsRouter", "TagsRouter", "*", "ERROR", []string{"Failed to pull tags ", err.Error()})
 	} else {
 		TemplateInput.Tags = tag
+		TemplateInput.TotalResults = totalResults
 	}
 
 	TemplateInput.PageMenu, err = generatePageMenu(int64(pageStart), int64(pageStride), int64(TemplateInput.TotalResults), "SearchTags="+url.QueryEscape(TagSearch), "/tags")

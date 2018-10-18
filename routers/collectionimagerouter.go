@@ -225,6 +225,11 @@ func CollectionImageRouter(responseWriter http.ResponseWriter, request *http.Req
 				TemplateInput.ImageInfo = imageInfo
 				TemplateInput.TotalResults = MaxCount
 				TemplateInput.PageMenu, err = generatePageMenu(int64(pageStart), int64(pageStride), int64(TemplateInput.TotalResults), "SearchTerms="+url.QueryEscape(userQuery)+"&ID="+strconv.FormatUint(collectionInfo.ID, 10), "/collectionimages")
+				TemplateInput.Tags, err = database.DBInterface.GetCollectionTags(collectionInfo.ID)
+				if err != nil {
+					TemplateInput.Message += "Failed to get collection tags."
+					logging.LogInterface.WriteLog("CollectionRouter", "CollectionRouter", "*", "ERROR", []string{"Failed to get collection tags", strconv.FormatUint(collectionID, 10), err.Error()})
+				}
 			} else {
 				logging.LogInterface.WriteLog("CollectionRouter", "CollectionRouter", "*", "ERROR", []string{"Failed to get collection images", strconv.FormatUint(collectionID, 10), err.Error()})
 				TemplateInput.Message += "Failed to get collection members."

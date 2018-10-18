@@ -28,23 +28,6 @@ function ToggleFormDisplay(id) {
     return false;
 }
 
-//
-function SearchTagTable(tagTableID, formID) {
-    parent = document.getElementById(tagTableID);
-    query = document.getElementById(formID).query.value.toLowerCase();
-    children = parent.getElementsByTagName("tr");
-    for (i = 0; i < children.length; i++) { 
-        if (children[i].innerText.toLowerCase().includes(query)) {
-            if (children[i].classList.contains("displayHidden") && children[i].innerText.includes(query)) {
-                children[i].classList.remove("displayHidden");
-            }
-        } else if (children[i].classList.contains("displayHidden") == false) {
-            children[i].classList.add("displayHidden");
-        }
-    }
-    return false;
-}
-
 //Expand Image or not
 function ExpandImage() {
     parent = document.getElementById("ImageGridContainer");
