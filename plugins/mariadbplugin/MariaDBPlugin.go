@@ -137,6 +137,11 @@ func (DBConnection *MariaDBPlugin) performFreshDBInstall() error {
 		logging.LogInterface.WriteLog("MariaDBPlugin", "performFreshDBInstall", "*", "ERROR", []string{"Failed to install database", err.Error()})
 		return err
 	}
+	_, err = DBConnection.DBHandle.Exec("CREATE TABLE CollectionTags (ID BIGINT UNSIGNED NOT NULL AUTO_INCREMENT UNIQUE, CollectionID BIGINT UNSIGNED NOT NULL, TagID BIGINT UNSIGNED NOT NULL, LinkerID BIGINT UNSIGNED NOT NULL, LinkTime TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL, UNIQUE INDEX CollectionTagPair (TagID,CollectionID));")
+	if err != nil {
+		logging.LogInterface.WriteLog("MariaDBPlugin", "performFreshDBInstall", "*", "ERROR", []string{"Failed to install database", err.Error()})
+		return err
+	}
 	//Stored Procedures, Triggers, Events
 	sqlQuery := `CREATE PROCEDURE LinkCollTags(IN collID BIGINT UNSIGNED)
 	BEGIN
@@ -377,6 +382,11 @@ func (DBConnection *MariaDBPlugin) upgradeDatabase(version int64) (int64, error)
 	}
 	//Update version 6->7
 	if version == 6 {
+		_, err := DBConnection.DBHandle.Exec("CREATE TABLE CollectionTags (ID BIGINT UNSIGNED NOT NULL AUTO_INCREMENT UNIQUE, CollectionID BIGINT UNSIGNED NOT NULL, TagID BIGINT UNSIGNED NOT NULL, LinkerID BIGINT UNSIGNED NOT NULL, LinkTime TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL, UNIQUE INDEX CollectionTagPair (TagID,CollectionID));")
+		if err != nil {
+			logging.LogInterface.WriteLog("MariaDBPlugin", "InitDatabase", "*", "ERROR", []string{"Failed to update database version", err.Error()})
+			return version, err
+		}
 		sqlQuery := `CREATE PROCEDURE LinkCollTags(IN collID BIGINT UNSIGNED)
 		BEGIN
 		-- Insert missing tags
