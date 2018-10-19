@@ -26,7 +26,7 @@
 				</ul>
 			</div>
 			<div id="ImageGridContainer" style="text-align:center;">
-				{{if ne .RedirectLink ""}}<strong>Warning</strong> you are leaving this site. If you are sure you want to continue, click the link below<br> <a href="{{.RedirectLink}}">{{.RedirectLink}}</a>{{else}}You should only reach this page when you click on an external link, we are not sure where you inteded to go. Please click back and try again.{{end}}
+				{{if ne .RedirectLink ""}}<div class="card"><h2>Warning</h2> You are leaving this site. If you are sure you want to continue, click the link below<br> <a href="{{.RedirectLink}}">{{.RedirectLink}}</a></div>{{else}}You should only reach this page when you click on an external link, we are not sure where you intended to go. Please click back and try again.{{end}}
 			</div>
 		</div>
 {{template "footer.html" .}}

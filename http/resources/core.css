@@ -280,6 +280,16 @@ video, audio {
 .removeCollectionButton:hover span:after {
 	content: "Remove";
 }
+.card {
+	width: 50%;
+	margin-left: auto;
+	margin-right: auto;
+	border-radius: 8px;
+	padding-bottom: 1em;
+	border: solid 1px #cccccc;
+	margin-top: 1em;
+	background-color: #8080801a;
+}
 /*Drag n drop stuff*/
 .ImageResultContainer.dragging {
 	position: fixed;
