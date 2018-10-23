@@ -31,6 +31,9 @@ input {
 	padding: 2px 5px;
 	font-size: 1em;
 }
+input[type="file"] {
+	background-color: initial;
+}
 #splashForm input {
 	margin: 8px 0;
 	padding: 7px 20px;
