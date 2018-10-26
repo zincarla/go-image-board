@@ -330,7 +330,7 @@ func handleImageUpload(request *http.Request, userName string) (uint64, error) {
 			saveStream.Close()
 			//Add image to Database
 
-			lastID, err = database.DBInterface.NewImage(originalName, hashName, userID, source)
+			lastID, err = database.DBInterface.NewImage(hashName, hashName, userID, source)
 			if err != nil {
 				logging.LogInterface.WriteLog("ImageRouter", "handleImageUpload", userName, "ERROR", []string{"error attempting to add file to database", err.Error(), filePath})
 				errorCompilation += fileHeader.Filename + " could not be added to database, internal error. "
@@ -341,7 +341,7 @@ func handleImageUpload(request *http.Request, userName string) (uint64, error) {
 				continue
 			}
 
-			uploadedIDs = append(uploadedIDs, uploadData{Name: originalName, ID: lastID})
+			uploadedIDs = append(uploadedIDs, uploadData{Name: hashName, ID: lastID})
 
 			//Log success
 			go writeAuditLog(userID, "IMAGE-UPLOAD", userName+" successfully uploaded an image. "+strconv.FormatUint(lastID, 10))
