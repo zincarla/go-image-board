@@ -15,7 +15,10 @@ import (
 //CollectionImageRouter serves requests to /collectionimages
 func CollectionImageRouter(responseWriter http.ResponseWriter, request *http.Request) {
 	TemplateInput := getNewTemplateInput(request)
-
+	if TemplateInput.UserName == "" && config.Configuration.AccountRequiredToView {
+		http.Redirect(responseWriter, request, "/logon?prevMessage="+url.QueryEscape("Access to this server requires an account"), 302)
+		return
+	}
 	userQuery := TemplateInput.OldQuery
 	var collectionID uint64
 	var err error
@@ -243,7 +246,10 @@ func CollectionImageRouter(responseWriter http.ResponseWriter, request *http.Req
 //CollectionImageOrderRouter serves requests to /collectionorder
 func CollectionImageOrderRouter(responseWriter http.ResponseWriter, request *http.Request) {
 	TemplateInput := getNewTemplateInput(request)
-
+	if TemplateInput.UserName == "" && config.Configuration.AccountRequiredToView {
+		http.Redirect(responseWriter, request, "/logon?prevMessage="+url.QueryEscape("Access to this server requires an account"), 302)
+		return
+	}
 	var collectionID uint64
 	var err error
 

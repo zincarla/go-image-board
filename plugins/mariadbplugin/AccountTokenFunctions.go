@@ -28,7 +28,7 @@ func (DBConnection *MariaDBPlugin) ValidateToken(userName string, tokenID string
 	UUIDBytes := uuid.FromStringOrNil(tokenID)
 	if uuid.Equal(UUIDBytes, uuid.UUID{}) == true {
 		//Token provided is blank
-		logging.LogInterface.WriteLog("MariaDBPlugin", "ValidateToken", userName, "ERROR", []string{"Blank token provided", userName, tokenID, ip})
+		//logging.LogInterface.WriteLog("MariaDBPlugin", "ValidateToken", userName, "ERROR", []string{"Blank token provided", userName, tokenID, ip}) //This happens for ALL unauth users. Log spam.
 		return errors.New("Token provided is blank")
 	}
 

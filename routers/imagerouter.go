@@ -22,7 +22,10 @@ import (
 //ImageRouter serves requests to /image
 func ImageRouter(responseWriter http.ResponseWriter, request *http.Request) {
 	TemplateInput := getNewTemplateInput(request)
-
+	if TemplateInput.UserName == "" && config.Configuration.AccountRequiredToView {
+		http.Redirect(responseWriter, request, "/logon?prevMessage="+url.QueryEscape("Access to this server requires an account"), 302)
+		return
+	}
 	var requestedID uint64
 	var err error
 	//If we are just now uploading the file, then we need to get ID from upload function
@@ -429,6 +432,9 @@ func handleImageUpload(request *http.Request, userName string) (uint64, error) {
 //UploadFormRouter shows the upload form upon request
 func UploadFormRouter(responseWriter http.ResponseWriter, request *http.Request) {
 	TemplateInput := getNewTemplateInput(request)
-
+	if TemplateInput.UserName == "" && config.Configuration.AccountRequiredToView {
+		http.Redirect(responseWriter, request, "/logon?prevMessage="+url.QueryEscape("Access to this server requires an account"), 302)
+		return
+	}
 	replyWithTemplate("uploadform.html", TemplateInput, responseWriter)
 }

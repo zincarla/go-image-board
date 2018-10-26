@@ -13,30 +13,31 @@ import (
 )
 
 type templateInput struct {
-	PageTitle            string
-	GIBVersion           string
-	ImageInfo            []interfaces.ImageInformation
-	CollectionInfo       interfaces.CollectionInformation
-	CollectionInfoList   []interfaces.CollectionInformation
-	OldQuery             string
-	PageMenu             template.HTML
-	TotalResults         uint64
-	Tags                 []interfaces.TagInformation
-	ImageContent         template.HTML
-	ImageContentInfo     interfaces.ImageInformation
-	TagContentInfo       interfaces.TagInformation
-	AliasTagInfo         interfaces.TagInformation
-	UserName             string
-	UserID               uint64
-	Message              string
-	AllowAccountCreation bool
-	QuestionOne          string
-	QuestionTwo          string
-	QuestionThree        string
-	UserPermissions      interfaces.UserPermission
-	UserControlsOwn      bool
-	RedirectLink         string
-	UserFilter           string
+	PageTitle             string
+	GIBVersion            string
+	ImageInfo             []interfaces.ImageInformation
+	CollectionInfo        interfaces.CollectionInformation
+	CollectionInfoList    []interfaces.CollectionInformation
+	OldQuery              string
+	PageMenu              template.HTML
+	TotalResults          uint64
+	Tags                  []interfaces.TagInformation
+	ImageContent          template.HTML
+	ImageContentInfo      interfaces.ImageInformation
+	TagContentInfo        interfaces.TagInformation
+	AliasTagInfo          interfaces.TagInformation
+	UserName              string
+	UserID                uint64
+	Message               string
+	AllowAccountCreation  bool
+	AccountRequiredToView bool
+	QuestionOne           string
+	QuestionTwo           string
+	QuestionThree         string
+	UserPermissions       interfaces.UserPermission
+	UserControlsOwn       bool
+	RedirectLink          string
+	UserFilter            string
 }
 
 var totalImages uint64
@@ -71,9 +72,10 @@ func ValidateUserLogon(request *http.Request) (uint64, string, string) {
 //getNewTemplateInput helper function initiliazes a new templateInput with common information
 func getNewTemplateInput(request *http.Request) templateInput {
 	TemplateInput := templateInput{PageTitle: "GIB",
-		GIBVersion:           config.ApplicationVersion,
-		AllowAccountCreation: config.Configuration.AllowAccountCreation,
-		UserControlsOwn:      config.Configuration.UsersControlOwnObjects}
+		GIBVersion:            config.ApplicationVersion,
+		AllowAccountCreation:  config.Configuration.AllowAccountCreation,
+		UserControlsOwn:       config.Configuration.UsersControlOwnObjects,
+		AccountRequiredToView: config.Configuration.AccountRequiredToView}
 
 	//Verify user is logged in by validating token
 	userNameT, tokenIDT, _ := getSessionInformation(request)

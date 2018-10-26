@@ -14,7 +14,10 @@ import (
 func CollectionsRouter(responseWriter http.ResponseWriter, request *http.Request) {
 	TemplateInput := getNewTemplateInput(request)
 	TemplateInput.TotalResults = 0
-
+	if TemplateInput.UserName == "" && config.Configuration.AccountRequiredToView {
+		http.Redirect(responseWriter, request, "/logon?prevMessage="+url.QueryEscape("Access to this server requires an account"), 302)
+		return
+	}
 	switch cmd := request.FormValue("command"); cmd {
 	case "delete":
 		if TemplateInput.UserName == "" {

@@ -1,16 +1,21 @@
 package routers
 
 import (
+	"go-image-board/config"
 	"go-image-board/database"
 	"go-image-board/interfaces"
 	"net/http"
+	"net/url"
 	"strconv"
 )
 
 //ModRouter serves requests to /mod
 func ModRouter(responseWriter http.ResponseWriter, request *http.Request) {
 	TemplateInput := getNewTemplateInput(request)
-
+	if TemplateInput.UserName == "" && config.Configuration.AccountRequiredToView {
+		http.Redirect(responseWriter, request, "/logon?prevMessage="+url.QueryEscape("Access to this server requires an account"), 302)
+		return
+	}
 	//Get Command
 	switch cmd := request.FormValue("command"); cmd {
 	case "editUserPerms":

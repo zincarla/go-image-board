@@ -16,6 +16,11 @@ func TagsRouter(responseWriter http.ResponseWriter, request *http.Request) {
 	TemplateInput := getNewTemplateInput(request)
 	TemplateInput.TotalResults = 0
 
+	if TemplateInput.UserName == "" && config.Configuration.AccountRequiredToView {
+		http.Redirect(responseWriter, request, "/logon?prevMessage="+url.QueryEscape("Access to this server requires an account"), 302)
+		return
+	}
+
 	TagSearch := strings.TrimSpace(request.FormValue("SearchTags"))
 
 	//Get the page offset
@@ -41,6 +46,10 @@ func TagsRouter(responseWriter http.ResponseWriter, request *http.Request) {
 //TagRouter serves requests to /tag (single tag information)
 func TagRouter(responseWriter http.ResponseWriter, request *http.Request) {
 	TemplateInput := getNewTemplateInput(request)
+	if TemplateInput.UserName == "" && config.Configuration.AccountRequiredToView {
+		http.Redirect(responseWriter, request, "/logon?prevMessage="+url.QueryEscape("Access to this server requires an account"), 302)
+		return
+	}
 	ID := request.FormValue("ID")
 
 	switch cmd := request.FormValue("command"); cmd {

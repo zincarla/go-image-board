@@ -5,6 +5,7 @@ import (
 	"go-image-board/database"
 	"go-image-board/logging"
 	"net/http"
+	"net/url"
 	"path/filepath"
 	"strconv"
 )
@@ -12,6 +13,10 @@ import (
 //RootRouter serves requests to the root (/)
 func RootRouter(responseWriter http.ResponseWriter, request *http.Request) {
 	TemplateInput := getNewTemplateInput(request)
+	if TemplateInput.UserName == "" && config.Configuration.AccountRequiredToView {
+		http.Redirect(responseWriter, request, "/logon?prevMessage="+url.QueryEscape("Access to this server requires an account"), 302)
+		return
+	}
 	replyWithTemplate("indextemplate.html", TemplateInput, responseWriter)
 }
 

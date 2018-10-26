@@ -18,7 +18,10 @@ import (
 //ImageQueryRouter serves requests to /images
 func ImageQueryRouter(responseWriter http.ResponseWriter, request *http.Request) {
 	TemplateInput := getNewTemplateInput(request)
-
+	if TemplateInput.UserName == "" && config.Configuration.AccountRequiredToView {
+		http.Redirect(responseWriter, request, "/logon?prevMessage="+url.QueryEscape("Access to this server requires an account"), 302)
+		return
+	}
 	userQuery := TemplateInput.OldQuery
 
 	switch cmd := request.FormValue("command"); cmd {

@@ -27,6 +27,7 @@ type ConfigurationSettings struct {
 	HTTPRoot               string
 	MaxUploadBytes         int64
 	AllowAccountCreation   bool
+	AccountRequiredToView  bool
 	MaxThumbnailWidth      uint
 	MaxThumbnailHeight     uint
 	DefaultPermissions     uint64
