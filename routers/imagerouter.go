@@ -344,7 +344,7 @@ func handleImageUpload(request *http.Request, userName string) (uint64, error) {
 				continue
 			}
 
-			uploadedIDs = append(uploadedIDs, uploadData{Name: hashName, ID: lastID})
+			uploadedIDs = append(uploadedIDs, uploadData{Name: originalName, ID: lastID})
 
 			//Log success
 			go writeAuditLog(userID, "IMAGE-UPLOAD", userName+" successfully uploaded an image. "+strconv.FormatUint(lastID, 10))
