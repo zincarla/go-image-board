@@ -24,9 +24,9 @@
 				{{$HasSourcePermissions := or $CanSourceImage $CanModifyOwn}}
 
 				<h5>Collections{{if or $CanCreateCollection $CanModifyCollectionMembers}}{{if $UserNotNull}} (<a href="#" onclick="return ToggleFormDisplay('addCollectionForm');">add</a>){{end}}{{end}}</h5>
-				<ul>
+				<ul class="CollectionList">
 					{{range .ImageContentInfo.MemberCollections}}
-					<li>{{if ne .PreviousMemberID 0}}<a href="/image?ID={{.PreviousMemberID}}&SearchTerms={{$OldQuery}}">&lt;</a>{{end}} <a href="/collectionimages?ID={{.ID}}">{{.Name}}</a> ({{.OrderInCollection | inc}}/{{.Members}}) {{if ne .NextMemberID 0}}<a href="/image?ID={{.NextMemberID}}&SearchTerms={{$OldQuery}}">&gt;</a>{{end}} </li>
+					<li>{{if ne .PreviousMemberID 0}}<a href="/image?ID={{.PreviousMemberID}}&SearchTerms={{$OldQuery}}"><div class="previousInCollection">&lt;</div></a>{{end}} <a href="/collectionimages?ID={{.ID}}">{{.Name}}</a><br>({{.OrderInCollection | inc}}/{{.Members}}) {{if ne .NextMemberID 0}}<a href="/image?ID={{.NextMemberID}}&SearchTerms={{$OldQuery}}"><div class="nextInCollection">&gt;</div></a>{{end}} </li>
 					{{end}}
 				</ul>
 				<form action="/collectionimages" method="POST" id="addCollectionForm" class="displayHidden">

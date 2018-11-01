@@ -293,6 +293,42 @@ video, audio {
 	margin-top: 1em;
 	background-color: #8080801a;
 }
+/*Collection List Stuff*/
+.CollectionList {
+	margin: 0px;
+	padding: 0px;
+}
+
+.CollectionList li {
+	border-radius: 2px;
+	background-color: lightgreen;
+	width: 100%;
+	margin-bottom: .2em;
+	height: 2.5em;
+	box-sizing: border-box;
+	text-align: center;
+	position: relative;
+}
+
+.nextInCollection, .previousInCollection {
+	position: absolute;
+	top: 0px;
+	vertical-align: middle;
+	text-align: center;
+	width: 1.2em;
+	height:100%;
+	border-radius: 2px;
+	padding-top: .75em; /*Half of the height which is from .CollectionList li, - .5em*/
+}
+.previousInCollection {
+	left:0px;
+	border-right: 1px solid #aaaaaaff;
+}
+.nextInCollection {
+	right: 0px;
+	border-left: 1px solid #aaaaaaff;
+}
+
 /*Drag n drop stuff*/
 .ImageResultContainer.dragging {
 	position: fixed;

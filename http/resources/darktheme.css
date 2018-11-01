@@ -18,11 +18,14 @@ body {
 	background-color: #242475;
 }
 tr:nth-child(odd) {
-	background-color: #2f2f91
+	background-color: #2f2f91;
 }
 h1, h2, h3, h4 {
 	border-bottom-color: #cccccc;
 }
 input {
 	background-color: #cccccc;
+}
+.CollectionList li {
+	background-color: #2f2f91;
 }
