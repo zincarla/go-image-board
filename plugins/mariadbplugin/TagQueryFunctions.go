@@ -437,6 +437,23 @@ func (DBConnection *MariaDBPlugin) parseMetaTags(MetaTags []interfaces.TagInform
 				ErrorList = append(ErrorList, errors.New("could not parse requested score, ensure it is a number"))
 			}
 			//All comparators valid
+		case ToAdd.Name == "incollection" && CollectionContext == false:
+			ToAdd.Name = "InCollection"
+			ToAdd.Description = "Whether the image is in a collection or not"
+			ToAdd.IsComplexMeta = true
+			inCollOption, isString := ToAdd.MetaValue.(string)
+			if isString {
+				if inCollOption == "Y" || inCollOption == "y" || inCollOption == "true" {
+					ToAdd.MetaValue = true
+					ToAdd.Exists = true
+				} else if inCollOption == "N" || inCollOption == "n" || inCollOption == "false" {
+					ToAdd.MetaValue = false
+					ToAdd.Exists = true
+				} else {
+					ErrorList = append(ErrorList, errors.New("could not parse incollection tag"))
+				}
+			}
+			ToAdd.Comparator = "=" //Clobber any other comparator requested. This one will only support equals
 		default:
 			ErrorList = append(ErrorList, errors.New("MetaTag does not exist"))
 		}

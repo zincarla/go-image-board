@@ -196,7 +196,7 @@ Since the database is based on an interface someone could program another databa
 
 ### To add a new metatag
 Metatags directly query the Images table. parseMetaTags() converts the query name to the database column name and if needed, converts the queried value to something the column would expect. (Like a username to id)
-1. Update parseMetaTags() in ImageFunctions.go, note that the tag.Name should be the same named used in the database, not the name used in the query
+1. Update parseMetaTags() in TagQueryFunctions.go, note that the tag.Name should be the same named used in the database, not the name used in the query
 As long as the limitations are adhered to, then this is the only change necessary outside of the schema changes
 2. To add to form though, need to update ImageInformation struct and add a new property for metatag
 3. Update GetImage() function to return new information as part of ImageInformation object it returns

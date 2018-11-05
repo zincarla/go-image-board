@@ -107,7 +107,8 @@ func (DBConnection *MariaDBPlugin) SearchImages(Tags []interfaces.TagInformation
 			if sqlWhereClause == "" {
 				metaTagQuery = "WHERE "
 			}
-			metaTagQuery = metaTagQuery + "Images." + tag.Name + " "
+
+			//Handle Comparator transforms
 			comparator := tag.Comparator
 			if tag.Exclude {
 				comparator = getInvertedComparator(comparator)
@@ -115,8 +116,25 @@ func (DBConnection *MariaDBPlugin) SearchImages(Tags []interfaces.TagInformation
 			if comparator == "" {
 				return ToReturn, 0, errors.New("Failed to invert query to negate on " + tag.Name)
 			}
-			metaTagQuery = metaTagQuery + comparator + " ? "
 
+			//Handle Complex Tags Here
+			if tag.Name == "InCollection" { //Special Exception for InCollection
+				tagBoolValue, isTagValued := tag.MetaValue.(bool)
+				if isTagValued == false {
+					return ToReturn, 0, errors.New("Failed get value of " + tag.Name)
+				}
+				if (comparator == "=" && tagBoolValue == true) || (comparator == "!=" && tagBoolValue == false) {
+					comparator = " IN "
+				} else {
+					comparator = " NOT IN "
+				}
+				metaTagQuery += "Images.ID" + comparator + "(SELECT DISTINCT ImageID FROM CollectionMembers) "
+				sqlWhereClause = sqlWhereClause + metaTagQuery
+				continue //Skip over rest of code for this tag
+			}
+
+			metaTagQuery = metaTagQuery + "Images." + tag.Name + " "
+			metaTagQuery = metaTagQuery + comparator + " ? "
 			sqlWhereClause = sqlWhereClause + metaTagQuery
 		}
 	}
@@ -153,6 +171,11 @@ func (DBConnection *MariaDBPlugin) SearchImages(Tags []interfaces.TagInformation
 	}
 	//Add values for metatags
 	for _, tag := range MetaTags {
+		//Handle Complex Tags Here
+		if tag.Name == "InCollection" { //Special Exception for InCollection
+			continue
+		}
+		//Otherwise use default
 		queryArray = append(queryArray, tag.MetaValue)
 	}
 
