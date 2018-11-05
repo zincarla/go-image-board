@@ -53,6 +53,8 @@ type DBInterface interface {
 	DeleteImage(ImageID uint64) error
 	//SearchImages performs a search for images (Returns a list of imageIDs, or error)
 	SearchImages(Tags []TagInformation, PageStart uint64, PageStride uint64) ([]ImageInformation, uint64, error)
+	//GetPrevNexImages performs a search for images (Returns a list of ImageInformations (Up to 2) and an error/nil)
+	GetPrevNexImages(Tags []TagInformation, TargetID uint64) ([]ImageInformation, error)
 
 	//GetQueryTags returns a slice of tags based on a query
 	GetQueryTags(UserQuery string, CollectionContext bool) ([]TagInformation, error)

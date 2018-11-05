@@ -38,6 +38,10 @@ type templateInput struct {
 	UserControlsOwn       bool
 	RedirectLink          string
 	UserFilter            string
+	//PreviousMemberID When in a single image view, this should be set to the ID of the previous image in the search (For prev button)
+	PreviousMemberID uint64
+	//NextMemberID When in a single image view, this should be set to the ID of the next image in the search (For next button)
+	NextMemberID uint64
 }
 
 var totalImages uint64

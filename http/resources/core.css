@@ -329,6 +329,20 @@ video, audio {
 	border-left: 1px solid #aaaaaaff;
 }
 
+#mainImageSearchForm {
+	position: relative;
+	text-align: center;
+}
+
+#mainImageSearchForm form {
+	display: inline-block;
+	width: calc(100% - 2.4em); /*Minus next and prev*/
+}
+
+#mainImageSearchForm .nextInCollection, #mainImageSearchForm .previousInCollection {
+	padding-top: 1.5em;
+}
+
 /*Drag n drop stuff*/
 .ImageResultContainer.dragging {
 	position: fixed;

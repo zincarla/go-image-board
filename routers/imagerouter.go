@@ -156,6 +156,37 @@ func ImageRouter(responseWriter http.ResponseWriter, request *http.Request) {
 		logging.LogInterface.WriteLog("ImageRouter", "ImageRouter", "*", "ERROR", []string{"Failed to get collection info for", strconv.FormatUint(requestedID, 10), err.Error()})
 	}
 
+	if TemplateInput.OldQuery != "" {
+		//Get next and previous image based on query
+
+		userQTags, err := database.DBInterface.GetQueryTags(TemplateInput.OldQuery, false)
+		if err == nil {
+			//if signed in, add user's global filters to query
+			if TemplateInput.UserName != "" {
+				userFilterTags, err := database.DBInterface.GetUserFilterTags(TemplateInput.UserID, false)
+				if err != nil {
+					logging.LogInterface.WriteLog("ImageRouter", "ImageQueryRouter", TemplateInput.UserName, "ERROR", []string{"Failed to load user's filter", err.Error()})
+					TemplateInput.Message += "Failed to add your global filter to this query. Internal error. "
+				} else {
+					userQTags = append(userQTags, userFilterTags...)
+				}
+			}
+			prevNextImage, err := database.DBInterface.GetPrevNexImages(userQTags, requestedID)
+			if err == nil {
+				if len(prevNextImage) == 2 {
+					TemplateInput.NextMemberID = prevNextImage[1].ID
+					TemplateInput.PreviousMemberID = prevNextImage[0].ID
+				} else if len(prevNextImage) == 1 {
+					if prevNextImage[0].ID > requestedID {
+						TemplateInput.PreviousMemberID = prevNextImage[0].ID
+					} else {
+						TemplateInput.NextMemberID = prevNextImage[0].ID
+					}
+				}
+			}
+		}
+	}
+
 	//Set Template with imageInfo
 	TemplateInput.ImageContentInfo = imageInfo
 

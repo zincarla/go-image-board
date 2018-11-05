@@ -3,10 +3,7 @@
 		{{template "headMenu.html" .}}
 		<div id="BodyContent">
 			<div id="SideMenu" class="cellDefaultHidden">
-				<form action="/images" method="post">
-					<input type="text" name="SearchTerms" placeholder="Search Images" value="{{.OldQuery}}">
-					<input type="submit" value="Go">
-				</form>
+				{{template "mainSearchForm.html" .}}
 				{{if ne .UserID 0}}
 				<a href="/logon?command=logout">Logout</a>
 				{{end}}

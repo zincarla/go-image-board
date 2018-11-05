@@ -3,10 +3,7 @@
 		{{template "headMenu.html" .}}
 		<div id="BodyContent">
 			<div id="SideMenu">
-				<form action="/images" method="post">
-					<input type="text" name="SearchTerms" placeholder="Search Images" value="{{.OldQuery}}">
-					<input type="submit" value="Go">
-				</form>
+				{{template "mainSearchForm.html" .}}
 			</div>
 			<div id="ImageGridContainer">
 				{{.ImageContent}}

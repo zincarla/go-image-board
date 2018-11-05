@@ -7,10 +7,7 @@
 					<input type="text" name="SearchTerms" placeholder="Search Collections" value="{{.OldQuery}}">
 					<input type="submit" value="Search Collections">
 				</form>
-				<form action="/images" method="post">
-					<input type="text" name="SearchTerms" placeholder="Search Images" value="{{.OldQuery}}">
-					<input type="submit" value="Search Images">
-				</form>
+				{{template "mainSearchForm.html" .}}
 			</div>
 			<div id="ImageGridContainer">
 				{{$OldQuery := .OldQuery}}

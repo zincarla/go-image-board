@@ -3,10 +3,8 @@
 		{{template "headMenu.html" .}}
 		<div id="BodyContent">
 			<div id="SideMenu" class="cellDefaultHidden">
-				<form action="/images" method="post">
-					<input type="text" name="SearchTerms" placeholder="Search Images" value="{{.OldQuery}}">
-					<input type="submit" value="Go">
-				</form>
+				{{template "mainSearchForm.html" .}}
+
 				{{$CanDeleteCollection := .UserPermissions.HasPermission 8192}}
 				{{$CanRemoveFromCollection:= .UserPermissions.HasPermission 16384}}
 				{{$CollectionID := .CollectionInfo.ID}}
