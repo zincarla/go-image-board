@@ -42,6 +42,8 @@ type templateInput struct {
 	PreviousMemberID uint64
 	//NextMemberID When in a single image view, this should be set to the ID of the next image in the search (For next button)
 	NextMemberID uint64
+	//StreamView changes view from icons to pages of full content
+	StreamView bool
 }
 
 var totalImages uint64

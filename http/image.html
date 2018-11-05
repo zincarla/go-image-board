@@ -92,8 +92,14 @@
 			</div>
 			<div id="ImageGridContainer" style="text-align: center;">
 				{{$type := .ImageContentInfo.Location | getimagetype}}
-				{{.ImageContent}} {{if eq $type "image"}}<a onclick="return ExpandImage();" class="cellDefaultHidden" style="cursor:pointer;">&#8597;</a>{{end}}
-				{{if .ImageContentInfo.Location}}<div id="downloadButton"><a href="/images/{{.ImageContentInfo.Location}}">Download</a></div> {{end}}
+
+				{{.ImageContent}}
+				{{if eq $type "image"}}
+					<a onclick="return ExpandImage();" class="cellDefaultHidden" style="cursor:pointer;">&#8597;</a>
+				{{end}}
+				{{if .ImageContentInfo.Location}}
+					<div id="downloadButton"><a href="/images/{{.ImageContentInfo.Location}}">Download</a></div>
+				{{end}}
 			</div>
 		</div>
 {{template "footer.html" .}}

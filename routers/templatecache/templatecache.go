@@ -71,10 +71,14 @@ func CacheTemplates() error {
 		}
 		return value
 	}
+	getEmbed := func(value interface{}) template.HTML {
+		return GetEmbedForContent(fmt.Sprintf("%v", value))
+	}
 	templates := template.New("")
 	templates = templates.Funcs(template.FuncMap{"getimagetype": getImageType})
 	templates = templates.Funcs(template.FuncMap{"inc": increment})
 	templates = templates.Funcs(template.FuncMap{"dec": decrement})
+	templates = templates.Funcs(template.FuncMap{"getEmbed": GetEmbedForContent})
 
 	templates, err = templates.ParseFiles(allFiles...)
 	if err != nil {
@@ -84,4 +88,23 @@ func CacheTemplates() error {
 	TemplateCache = templates
 	logging.LogInterface.WriteLog("TemplateCache", "CacheTemplates", "*", "INFO", []string{"Added Templates", strconv.Itoa(len(allFiles))})
 	return nil
+}
+
+//Returns the html necessary to embed the specified file
+func GetEmbedForContent(imageLocation string) template.HTML {
+	ToReturn := ""
+
+	switch ext := filepath.Ext(strings.ToLower(imageLocation)); ext {
+	case ".jpg", ".jpeg", ".bmp", ".gif", ".png", ".svg", ".webp":
+		ToReturn = "<img src=\"/images/" + imageLocation + "\" alt=\"" + imageLocation + "\" />"
+	case ".mpg", ".mov", ".webm", ".avi", ".mp4", ".mp3", ".ogg":
+		ToReturn = "<video controls> <source src=\"/images/" + imageLocation + "\" type=\"" + getMIME(ext, "video/mp4") + "\">Your browser does not support the video tag.</video>"
+	case ".wav":
+		ToReturn = "<audio controls> <source src=\"/images/" + imageLocation + "\" type=\"" + getMIME(ext, "audio/wav") + "\">Your browser does not support the audio tag.</audio>"
+	default:
+		logging.LogInterface.WriteLog("ImageRouter", "getEmbedForConent", "*", "WARN", []string{"File uploaded, but did not match a filter during download", imageLocation})
+		ToReturn = "<p>File format not supported. Click download.</p>"
+	}
+
+	return template.HTML(ToReturn)
 }

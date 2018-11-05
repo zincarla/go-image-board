@@ -34,8 +34,18 @@
 			</div>
 			<div id="ImageGridContainer">
 				{{$OldQuery := .OldQuery}}
+				{{$StreamView := .StreamView}}
 				{{range .ImageInfo}}
+					{{if $StreamView}}
+					<div class="Full ImageResultContainer">
+						{{.Location | getEmbed}}
+						<a href="/image?ID={{.ID}}&SearchTerms={{$OldQuery}}">
+							Go to this post
+						</a>
+					</div>
+					{{else}}
 					<div class="ImageResultContainer"><a href="/image?ID={{.ID}}&SearchTerms={{$OldQuery}}"><img alt="Preview image of {{.Name}}" title="{{.Name}}" src="/thumbs/{{.Location}}" /><div class="imageResultOverlay overlay{{.Location | getimagetype}}"></div></a></div>
+					{{end}}
 				{{end}}
 			</div>
 		</div>

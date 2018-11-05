@@ -8,6 +8,7 @@ import (
 	"go-image-board/database"
 	"go-image-board/interfaces"
 	"go-image-board/logging"
+	"go-image-board/routers/templatecache"
 	"html/template"
 	"io"
 	"net/http"
@@ -203,7 +204,7 @@ func ImageRouter(responseWriter http.ResponseWriter, request *http.Request) {
 	}
 
 	//Get the image content information based on type (Img, vs video vs...)
-	TemplateInput.ImageContent = getEmbedForContent(imageInfo.Location)
+	TemplateInput.ImageContent = templatecache.GetEmbedForContent(imageInfo.Location)
 
 	TemplateInput.Tags, err = database.DBInterface.GetImageTags(imageInfo.ID)
 	if err != nil {
@@ -236,25 +237,6 @@ func getMIME(extension string, fallback string) string {
 	default:
 		return fallback
 	}
-}
-
-//Returns the html necessary to embed the specified file
-func getEmbedForContent(imageLocation string) template.HTML {
-	ToReturn := ""
-
-	switch ext := filepath.Ext(strings.ToLower(imageLocation)); ext {
-	case ".jpg", ".jpeg", ".bmp", ".gif", ".png", ".svg", ".webp":
-		ToReturn = "<img src=\"/images/" + imageLocation + "\" alt=\"" + imageLocation + "\" />"
-	case ".mpg", ".mov", ".webm", ".avi", ".mp4", ".mp3", ".ogg":
-		ToReturn = "<video controls> <source src=\"/images/" + imageLocation + "\" type=\"" + getMIME(ext, "video/mp4") + "\">Your browser does not support the video tag.</video>"
-	case ".wav":
-		ToReturn = "<audio controls> <source src=\"/images/" + imageLocation + "\" type=\"" + getMIME(ext, "audio/wav") + "\">Your browser does not support the audio tag.</audio>"
-	default:
-		logging.LogInterface.WriteLog("ImageRouter", "getEmbedForConent", "*", "WARN", []string{"File uploaded, but did not match a filter during download", imageLocation})
-		ToReturn = "<p>File format not supported. Click download.</p>"
-	}
-
-	return template.HTML(ToReturn)
 }
 
 type uploadData struct {
