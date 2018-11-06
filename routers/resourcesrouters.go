@@ -22,6 +22,7 @@ import (
 
 	//Because all image processing will happen in this file
 	_ "golang.org/x/image/bmp"
+	_ "golang.org/x/image/tiff"
 	_ "golang.org/x/image/webp"
 )
 
@@ -67,7 +68,7 @@ func ThumbnailRouter(responseWriter http.ResponseWriter, request *http.Request) 
 	if _, err := os.Stat(thumbnailPath); err != nil {
 		switch ext := filepath.Ext(strings.ToLower(urlVariables["file"])); ext {
 		//If it does not, and it is an image, return the original image, more bandwidth but better looking site
-		case ".jpg", ".jpeg", ".bmp", ".gif", ".png", ".svg", ".webp":
+		case ".jpg", ".jpeg", ".bmp", ".gif", ".png", ".svg", ".webp", ".tiff", ".tif":
 			thumbnailPath = config.JoinPath(config.Configuration.ImageDirectory, string(filepath.Separator)+urlVariables["file"])
 		//If a video or music file, pull up a play icon
 		case ".mpg", ".mov", ".webm", ".avi", ".mp4", ".mp3", ".ogg", ".wav":
@@ -89,7 +90,7 @@ func GenerateThumbnail(Name string) error {
 	//In future for example, could load a random frame from a video file and use that.
 	//ATM, just images are supported
 	switch ext := filepath.Ext(strings.ToLower(Name)); ext {
-	case ".jpg", ".jpeg", ".bmp", ".gif", ".png", ".webp":
+	case ".jpg", ".jpeg", ".bmp", ".gif", ".png", ".webp", ".tiff", ".tif":
 		File, err := os.Open(config.JoinPath(config.Configuration.ImageDirectory, Name))
 		defer File.Close()
 		if err != nil {
