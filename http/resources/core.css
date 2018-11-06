@@ -261,7 +261,7 @@ tr:nth-child(odd) {
 	background-color: #e4e4e4
 }
 video, audio {
-	display: inline-block;
+	margin: auto;
 }
 .removeCollectionButton {
 	position: absolute;
@@ -293,6 +293,20 @@ video, audio {
 	margin-top: 1em;
 	background-color: #8080801a;
 }
+/*StreamView Stuff*/
+.Full.ImageResultContainer {
+	width: 80%;
+	margin-left: auto;
+	margin-right: auto;
+	height: initial;
+	float:none;
+}
+.Full.ImageResultContainer img {
+    max-width: 100%;
+    max-height: 100vh;
+}
+
+
 /*Collection List Stuff*/
 .CollectionList {
 	margin: 0px;
@@ -384,16 +398,16 @@ video, audio {
 		display:block;
 		margin-bottom: 20px;
 		padding: 20px;
-		width: 100%;
+		width: 100% !important;
 		border-radius: 4px;
 		height: auto;
 	}
 	.ImageResultContainer img {
-		max-width: 100%; /*ImageResultContainer width - padding*2 */
+		max-width: 100%;
 		display: block;
 		margin: auto;
 		width: 100%;
-		max-height: unset;
+		max-height: 100% !important;
 	}
 	#SideMenu {
 		float: none;
@@ -429,9 +443,13 @@ video, audio {
 	}
 	#CellMenuButton {
 		display: block;
-		padding: .25em;
+		padding: .1em;
 		width: 1.8em;
 		height: 1.8em;
+	}
+	#CellMenuButton img {
+		width: 100%;
+		height: auto;
 	}
 	video, audio {
 		width: 100%;

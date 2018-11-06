@@ -84,7 +84,7 @@ func getNewTemplateInput(request *http.Request) templateInput {
 		AccountRequiredToView: config.Configuration.AccountRequiredToView}
 
 	//Verify user is logged in by validating token
-	userNameT, tokenIDT, _ := getSessionInformation(request)
+	userNameT, tokenIDT, session := getSessionInformation(request)
 	if tokenIDT != "" && userNameT != "" {
 		TemplateInput.UserName = userNameT
 		permissions, _ := database.DBInterface.GetUserPermissionSet(userNameT)
@@ -96,6 +96,12 @@ func getNewTemplateInput(request *http.Request) templateInput {
 		} else {
 			logging.LogInterface.WriteLog("routertemplate", "getNewTemplateInput", userNameT, "ERROR", []string{"Failed to get UserID: ", err.Error()})
 		}
+	}
+
+	//Keep view preference
+	sessionStreamView, isOk := session.Values["StreamView"].(string)
+	if isOk && strings.ToLower(sessionStreamView) == "true" {
+		TemplateInput.StreamView = true
 	}
 
 	//Grab user query information

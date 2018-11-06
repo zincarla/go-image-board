@@ -4,6 +4,15 @@
 		<div id="BodyContent">
 			<div id="SideMenu" class="cellDefaultHidden">
 				{{template "mainSearchForm.html" .}}
+				{{if .StreamView}}
+				<a href="/images?SearchTerms={{.OldQuery}}&StreamViewPreference=false">
+					Grid View
+				</a>
+				{{else}}
+				<a href="/images?SearchTerms={{.OldQuery}}&StreamViewPreference=true">
+					Stream View
+				</a>
+				{{end}}
 				<ul>
 				{{$OldQuery := .OldQuery}}
 				{{if .Tags}}

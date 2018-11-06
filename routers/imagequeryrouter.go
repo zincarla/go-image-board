@@ -24,6 +24,19 @@ func ImageQueryRouter(responseWriter http.ResponseWriter, request *http.Request)
 	}
 	userQuery := TemplateInput.OldQuery
 
+	//Change StremView if requested
+	if request.FormValue("StreamViewPreference") == "true" {
+		TemplateInput.StreamView = true
+		_, _, session := getSessionInformation(request)
+		session.Values["StreamView"] = "true"
+		session.Save(request, responseWriter)
+	} else if request.FormValue("StreamViewPreference") == "false" {
+		TemplateInput.StreamView = false
+		_, _, session := getSessionInformation(request)
+		session.Values["StreamView"] = ""
+		session.Save(request, responseWriter)
+	}
+
 	switch cmd := request.FormValue("command"); cmd {
 	case "delete":
 		if TemplateInput.UserName == "" {

@@ -1,6 +1,7 @@
 package templatecache
 
 import (
+	"fmt"
 	"go-image-board/config"
 	"go-image-board/logging"
 	"html/template"
@@ -78,7 +79,7 @@ func CacheTemplates() error {
 	templates = templates.Funcs(template.FuncMap{"getimagetype": getImageType})
 	templates = templates.Funcs(template.FuncMap{"inc": increment})
 	templates = templates.Funcs(template.FuncMap{"dec": decrement})
-	templates = templates.Funcs(template.FuncMap{"getEmbed": GetEmbedForContent})
+	templates = templates.Funcs(template.FuncMap{"getEmbed": getEmbed})
 
 	templates, err = templates.ParseFiles(allFiles...)
 	if err != nil {
@@ -90,7 +91,7 @@ func CacheTemplates() error {
 	return nil
 }
 
-//Returns the html necessary to embed the specified file
+//GetEmbedForContent Returns the html necessary to embed the specified file
 func GetEmbedForContent(imageLocation string) template.HTML {
 	ToReturn := ""
 
@@ -107,4 +108,28 @@ func GetEmbedForContent(imageLocation string) template.HTML {
 	}
 
 	return template.HTML(ToReturn)
+}
+
+//returns a mime given a file extension. This is only required for video and audio files so we can embed mime in video/audio element
+func getMIME(extension string, fallback string) string {
+	switch extension {
+	case ".mp4":
+		return "video/mp4"
+	case ".webm":
+		return "video/webm"
+	case ".avi":
+		return "video/avi"
+	case ".mpg":
+		return "video/mpeg"
+	case ".mov":
+		return "video/quicktime"
+	case ".ogg":
+		return "video/ogg"
+	case ".mp3":
+		return "audio/mpeg3"
+	case ".wav":
+		return "audio/wav"
+	default:
+		return fallback
+	}
 }

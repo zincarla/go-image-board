@@ -4,6 +4,16 @@
 		<div id="BodyContent">
 			<div id="SideMenu" class="cellDefaultHidden">
 				{{template "mainSearchForm.html" .}}
+				{{if .StreamView}}
+				<a href="/collectionimages?ID={{.CollectionInfo.ID}}&SearchTerms={{.OldQuery}}&StreamViewPreference=false">
+					Grid View
+				</a>
+				{{else}}
+				<a href="/collectionimages?ID={{.CollectionInfo.ID}}&SearchTerms={{.OldQuery}}&StreamViewPreference=true">
+					Stream View
+				</a>
+				{{end}}
+				
 				
 				{{$CanModifyCollection := .UserPermissions.HasPermission 4096}}
 				{{$CanDeleteCollection := .UserPermissions.HasPermission 8192}}
@@ -51,16 +61,29 @@
 					<h3>{{.CollectionInfo.Name}}</h3>
 				</div>
 				{{$OldQuery := .OldQuery}}
+				{{$StreamView := .StreamView}}
 				{{range .ImageInfo}}
-				<div class="ImageResultContainer">
-					<a href="/image?ID={{.ID}}&SearchTerms={{$OldQuery}}">
-						<img alt="Preview image of {{.Name}}" title="{{.Name}}" src="/thumbs/{{.Location}}" />
-						<div class="imageResultOverlay overlay{{.Location | getimagetype}}"></div>
-					</a>
-					{{if and $UserNotNull $HasRemoveFromPermissions}}
-					<a href="/collectionimages?command=delete&ID={{$CollectionID}}&ImageID={{.ID}}&SearchTerms={{$OldQuery}}" onclick="return confirm('Are you sure you want to remove this from the collection?');"><div class="removeCollectionButton"><span></span></div></a>
+				{{if $StreamView}}
+					<div class="Full ImageResultContainer">
+						{{.Location | getEmbed}}
+						<a href="/image?ID={{.ID}}&SearchTerms={{$OldQuery}}">
+							Go to this post
+						</a>
+						{{if and $UserNotNull $HasRemoveFromPermissions}}
+						<a href="/collectionimages?command=delete&ID={{$CollectionID}}&ImageID={{.ID}}&SearchTerms={{$OldQuery}}" onclick="return confirm('Are you sure you want to remove this from the collection?');"><div class="removeCollectionButton"><span></span></div></a>
+						{{end}}
+					</div>
+					{{else}}
+					<div class="ImageResultContainer">
+						<a href="/image?ID={{.ID}}&SearchTerms={{$OldQuery}}">
+							<img alt="Preview image of {{.Name}}" title="{{.Name}}" src="/thumbs/{{.Location}}" />
+							<div class="imageResultOverlay overlay{{.Location | getimagetype}}"></div>
+						</a>
+						{{if and $UserNotNull $HasRemoveFromPermissions}}
+						<a href="/collectionimages?command=delete&ID={{$CollectionID}}&ImageID={{.ID}}&SearchTerms={{$OldQuery}}" onclick="return confirm('Are you sure you want to remove this from the collection?');"><div class="removeCollectionButton"><span></span></div></a>
+						{{end}}
+					</div>
 					{{end}}
-				</div>
 				{{end}}
 			</div>
 		</div>

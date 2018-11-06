@@ -9,7 +9,6 @@ import (
 	"go-image-board/interfaces"
 	"go-image-board/logging"
 	"go-image-board/routers/templatecache"
-	"html/template"
 	"io"
 	"net/http"
 	"net/url"
@@ -184,6 +183,8 @@ func ImageRouter(responseWriter http.ResponseWriter, request *http.Request) {
 						TemplateInput.NextMemberID = prevNextImage[0].ID
 					}
 				}
+			} else {
+				logging.LogInterface.WriteLog("ImageRouter", "ImageQueryRouter", TemplateInput.UserName, "WARN", []string{"Failed to get next/prev image", err.Error()})
 			}
 		}
 	}
@@ -213,30 +214,6 @@ func ImageRouter(responseWriter http.ResponseWriter, request *http.Request) {
 	}
 
 	replyWithTemplate("image.html", TemplateInput, responseWriter)
-}
-
-//returns a mime given a file extension. This is only required for video and audio files so we can embed mime in video/audio element
-func getMIME(extension string, fallback string) string {
-	switch extension {
-	case ".mp4":
-		return "video/mp4"
-	case ".webm":
-		return "video/webm"
-	case ".avi":
-		return "video/avi"
-	case ".mpg":
-		return "video/mpeg"
-	case ".mov":
-		return "video/quicktime"
-	case ".ogg":
-		return "video/ogg"
-	case ".mp3":
-		return "audio/mpeg3"
-	case ".wav":
-		return "audio/wav"
-	default:
-		return fallback
-	}
 }
 
 type uploadData struct {
