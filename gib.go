@@ -108,8 +108,17 @@ func main() {
 				}
 				//Loop through this chunk of files in the images directory
 				for fileInfo := range fileInfos {
+					//Get new name
+					newName, err := routers.GetNewImageName(fileInfo.Name(), *fileStream)
+					if err != nil {
+						logging.LogInterface.WriteLog("MAIN", "SERVER", "*", "ERROR", []string{"Error generating new name", err.Error())})
+						return //On error cancel out to keep db and image in sync
+					}
+					if newName != fileInfo.Name() {
+						continue //Skip if same name
+					}
+					os.Rename()//TODO
 					//Rename them
-					////On error cancel out to keep db and image in sync
 					//Rename thumbnail
 					//Update database
 					////If this fails, revert name changes for current iteration and fail
