@@ -23,6 +23,7 @@ import (
 func main() {
 	//Commands
 	generateThumbsOnly := flag.Bool("thumbsonly", false, "Regenerates all thumbnails. You should run this if you change your thumbnail size or enable ffmpeg.")
+	renameFilesOnly := flag.Bool("renameonly", false, "Renames all posts and corrects the names in the database. Use if changing naming convention of files.")
 	flag.Parse()
 
 	//Load succeeded
@@ -87,6 +88,12 @@ func main() {
 
 	//Add router paths
 	if configConfirmed == true {
+		//Placing the rename function here, we need a validated connection to database for this to work
+		if *renameFilesOnly {
+			renameAllImages()
+
+			return //We only wanted to rename
+		}
 		requestRouter.HandleFunc("/resources/{file}", routers.ResourceRouter)
 		requestRouter.HandleFunc("/", routers.RootRouter)
 		requestRouter.HandleFunc("/images", routers.ImageQueryRouter)
