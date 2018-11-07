@@ -23,7 +23,7 @@ import (
 func main() {
 	//Commands
 	generateThumbsOnly := flag.Bool("thumbsonly", false, "Regenerates all thumbnails. You should run this if you change your thumbnail size or enable ffmpeg.")
-	renameFilesOnly := flag.Bool("renameonly", false, "Renames all posts and corrects the names in the database. Use if changing naming convention of files.")	
+	renameFilesOnly := flag.Bool("renameonly", false, "Renames all posts and corrects the names in the database. Use if changing naming convention of files.")
 	flag.Parse()
 
 	//Load succeeded
@@ -90,41 +90,8 @@ func main() {
 	if configConfirmed == true {
 		//Placing the rename function here, we need a validated connection to database for this to work
 		if *renameFilesOnly {
-			dirInfo, err := os.Open(config.Configuration.ImageDirectory)
-			defer dirInfo.Close()
-			if err != nil {
-				logging.LogInterface.WriteLog("MAIN", "SERVER", "*", "ERROR", []string{"Error reading image directory",err.Error()})
-				return
-			}
-			//Loop through all files in images directory
-			for fileInfos, err := dirInfo.Readdir(100) {
-				if fileInfos == nil {
-					if err == io.EOF {
-						logging.LogInterface.WriteLog("MAIN", "SERVER", "*", "SUCCESS", []string{"Finished processing files")})
-					} else {
-						logging.LogInterface.WriteLog("MAIN", "SERVER", "*", "ERROR", []string{err.Error())})
-					}
-					break;
-				}
-				//Loop through this chunk of files in the images directory
-				for fileInfo := range fileInfos {
-					//Get new name
-					newName, err := routers.GetNewImageName(fileInfo.Name(), *fileStream)
-					if err != nil {
-						logging.LogInterface.WriteLog("MAIN", "SERVER", "*", "ERROR", []string{"Error generating new name", err.Error())})
-						return //On error cancel out to keep db and image in sync
-					}
-					if newName != fileInfo.Name() {
-						continue //Skip if same name
-					}
-					os.Rename()//TODO
-					//Rename them
-					//Rename thumbnail
-					//Update database
-					////If this fails, revert name changes for current iteration and fail
-				}
-			}
-			
+			renameAllImages()
+
 			return //We only wanted to rename
 		}
 		requestRouter.HandleFunc("/resources/{file}", routers.ResourceRouter)

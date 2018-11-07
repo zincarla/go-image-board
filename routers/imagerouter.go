@@ -284,13 +284,13 @@ func handleImageUpload(request *http.Request, userName string) (uint64, error) {
 		} else {
 			originalName := fileHeader.Filename
 			//Hash Image
-			hashName, err := GetNewImageName(originalName, *fileStream)
+			hashName, err := GetNewImageName(originalName, fileStream)
 			if err != nil {
 				errorCompilation += err.Error()
 				fileStream.Close()
 				continue
 			}
-			
+
 			filePath := config.JoinPath(config.Configuration.ImageDirectory, hashName)
 			//Check if file exists, if so, skip
 			if _, err := os.Stat(filePath); err == nil {
@@ -417,11 +417,12 @@ func handleImageUpload(request *http.Request, userName string) (uint64, error) {
 	return lastID, nil
 }
 
-func GetNewImageName(originalName string, fileStream *io.Reader) (newName string, error) {
+//GetNewImageName uses the original filename and file contents to create a new name
+func GetNewImageName(originalName string, fileStream io.Reader) (string, error) {
 	hasher := sha256.New()
 	if _, err := io.Copy(hasher, fileStream); err != nil {
-		logging.LogInterface.WriteLog("ImageRouter", "handleImageUpload", userName, "ERROR", []string{"Error during hash", err.Error()})
-		return "", errors.New(originalName+" could not be hashed. Internal error.")
+		logging.LogInterface.WriteLog("ImageRouter", "handleImageUpload", "*", "ERROR", []string{"Error during hash", err.Error()})
+		return "", errors.New(originalName + " could not be hashed. Internal error.")
 	}
 
 	return (fmt.Sprintf("%x", hasher.Sum(nil)) + filepath.Ext(originalName)), nil
