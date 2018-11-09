@@ -195,26 +195,36 @@ func (DBConnection *MariaDBPlugin) GetCollectionByName(Name string) (interfaces.
 //--Collection Members
 
 //AddCollectionMember adds an image to a collection
-func (DBConnection *MariaDBPlugin) AddCollectionMember(CollectionID uint64, ImageID uint64, LinkerID uint64) error {
-	//Ensure image is not already added
-	var useCount uint64
-	if err := DBConnection.DBHandle.QueryRow("SELECT COUNT(*) AS UseCount FROM CollectionMembers WHERE CollectionID = ? AND ImageID = ?", CollectionID, ImageID).Scan(&useCount); err != nil || useCount > 0 {
-		logging.LogInterface.WriteLog("MariaDBPlugin", "AddCollectionMember", "*", "ERROR", []string{"Image is already in the specified collection", strconv.FormatUint(CollectionID, 10), strconv.FormatUint(ImageID, 10)})
-		return errors.New("image is already a member of the specified collection")
+func (DBConnection *MariaDBPlugin) AddCollectionMember(CollectionID uint64, ImageIDs []uint64, LinkerID uint64) error {
+	if len(ImageIDs) == 0 {
+		return errors.New("ImageIDs required")
 	}
-
 	//Get last order
-	if err := DBConnection.DBHandle.QueryRow("SELECT COUNT(*) AS UseCount FROM CollectionMembers WHERE CollectionID = ?", CollectionID).Scan(&useCount); err != nil {
-		logging.LogInterface.WriteLog("MariaDBPlugin", "AddCollectionMember", "*", "ERROR", []string{"Could not get count of members in collection", strconv.FormatUint(CollectionID, 10), strconv.FormatUint(ImageID, 10)})
+	lastOrder := uint64(0)
+	if err := DBConnection.DBHandle.QueryRow("SELECT IFNULL(MAX(OrderWeight),0) AS LastWeight FROM CollectionMembers WHERE CollectionID = ?", CollectionID).Scan(&lastOrder); err != nil {
+		logging.LogInterface.WriteLog("MariaDBPlugin", "AddCollectionMember", "*", "ERROR", []string{"Could not get count of members in collection", strconv.FormatUint(CollectionID, 10)})
 		return errors.New("could not get count of members in collection")
 	}
 
+	queryArray := []interface{}{}
+	values := ""
+	idString := ""
+	for i := 0; i < len(ImageIDs); i++ {
+		lastOrder++
+		values += " ( ?, ?, ?, ?),"
+		queryArray = append(queryArray, CollectionID, ImageIDs[i], LinkerID, lastOrder)
+		idString += strconv.FormatUint(ImageIDs[i], 10) + ", "
+	}
+
+	values = values[:len(values)-1] + ";" //Strip comma add semi
+
 	//Add image
-	if _, err := DBConnection.DBHandle.Exec("INSERT INTO CollectionMembers (CollectionID, ImageID, LinkerID, OrderWeight) VALUES (?, ?, ?, ?);", CollectionID, ImageID, LinkerID, useCount); err != nil {
-		logging.LogInterface.WriteLog("MariaDBPlugin", "AddCollectionMember", "*", "ERROR", []string{"Image not added to collection", strconv.FormatUint(CollectionID, 10), strconv.FormatUint(ImageID, 10), err.Error()})
+	sqlQuery := "INSERT INTO CollectionMembers (CollectionID, ImageID, LinkerID, OrderWeight) VALUES" + values
+	if _, err := DBConnection.DBHandle.Exec(sqlQuery, queryArray...); err != nil {
+		logging.LogInterface.WriteLog("MariaDBPlugin", "AddCollectionMember", "*", "ERROR", []string{"Image not added to collection", strconv.FormatUint(CollectionID, 10), idString, err.Error()})
 		return err
 	}
-	logging.LogInterface.WriteLog("MariaDBPlugin", "AddCollectionMember", "*", "SUCCESS", []string{"Image added to collection", strconv.FormatUint(CollectionID, 10), strconv.FormatUint(ImageID, 10)})
+	logging.LogInterface.WriteLog("MariaDBPlugin", "AddCollectionMember", "*", "SUCCESS", []string{"Image added to collection", strconv.FormatUint(CollectionID, 10), idString})
 	return nil
 }
 

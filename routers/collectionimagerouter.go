@@ -125,7 +125,7 @@ func CollectionImageRouter(responseWriter http.ResponseWriter, request *http.Req
 
 			TemplateInput.Message += "New collection created successfully. "
 
-			if err := database.DBInterface.AddCollectionMember(collectionID, parsedImageID, TemplateInput.UserID); err != nil {
+			if err := database.DBInterface.AddCollectionMember(collectionID, append([]uint64{}, parsedImageID), TemplateInput.UserID); err != nil {
 				logging.LogInterface.WriteLog("CollectionImageRouter", "CollectionImageRouter", TemplateInput.UserName, "ERROR", []string{"failed to add image to new collection", err.Error()})
 				TemplateInput.Message += "Failed to add image to new collection. SQL Error. "
 				break
@@ -151,7 +151,7 @@ func CollectionImageRouter(responseWriter http.ResponseWriter, request *http.Req
 		}
 
 		//Add image to collection
-		if err := database.DBInterface.AddCollectionMember(collection.ID, parsedImageID, TemplateInput.UserID); err != nil {
+		if err := database.DBInterface.AddCollectionMember(collection.ID, append([]uint64{}, parsedImageID), TemplateInput.UserID); err != nil {
 			TemplateInput.Message += "Failed to add image to collection. SQL error. Check if image is already part of the collection. "
 		} else {
 			TemplateInput.Message += "Image added to collection. "

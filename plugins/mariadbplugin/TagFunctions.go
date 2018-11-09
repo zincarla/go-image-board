@@ -73,30 +73,42 @@ func (DBConnection *MariaDBPlugin) DeleteTag(TagID uint64) error {
 }
 
 //AddTag adds an association of a tag to image into the association table
-func (DBConnection *MariaDBPlugin) AddTag(TagID uint64, ImageID uint64, LinkerID uint64) error {
-	//Prevent adding alias
-	tagInfo, err := DBConnection.GetTag(TagID)
-	if err != nil {
-		return errors.New("Failed to validate tag")
+func (DBConnection *MariaDBPlugin) AddTag(TagIDs []uint64, ImageID uint64, LinkerID uint64) error {
+	if len(TagIDs) == 0 {
+		return errors.New("No tags provided")
 	}
-
-	//If this is an alias, then add aliasedid instead
-	if tagInfo.IsAlias {
-		TagID = tagInfo.AliasedID
+	//Validate tags, if some are alias, add alias instead, if a tag does not exist, error out
+	var validatedTagIDs []uint64
+	values := ""
+	queryArray := []interface{}{}
+	for i := 0; i < len(TagIDs); i++ {
+		TagID := TagIDs[i]
+		tagInfo, err := DBConnection.GetTag(TagID)
+		if err != nil {
+			return errors.New("Failed to validate tag " + strconv.FormatUint(TagID, 10))
+		}
+		values += " ("
+		//If this is an alias, then add aliasedid instead
+		if tagInfo.IsAlias {
+			validatedTagIDs = append(validatedTagIDs, tagInfo.AliasedID)
+			values += " ?,"
+			queryArray = append(queryArray, tagInfo.AliasedID)
+		} else {
+			validatedTagIDs = append(validatedTagIDs, TagID)
+			values += " ?,"
+			queryArray = append(queryArray, TagID)
+		}
+		queryArray = append(queryArray, ImageID)
+		queryArray = append(queryArray, LinkerID)
+		values += " ?, ?),"
 	}
-
-	//Ensure image is not already tagged
-	var useCount int
-	if err := DBConnection.DBHandle.QueryRow("SELECT COUNT(*) AS UseCount FROM ImageTags WHERE TagID = ? AND ImageID = ?", TagID, ImageID).Scan(&useCount); err != nil || useCount > 0 {
-		logging.LogInterface.WriteLog("MariaDBPlugin", "AddTag", "*", "ERROR", []string{"Tag to add is already on image", strconv.FormatUint(TagID, 10), strconv.FormatUint(ImageID, 10)})
-		return errors.New("tag to add is already on image")
-	}
-
-	if _, err := DBConnection.DBHandle.Exec("INSERT INTO ImageTags (TagID, ImageID, LinkerID) VALUES (?, ?, ?);", TagID, ImageID, LinkerID); err != nil {
-		logging.LogInterface.WriteLog("MariaDBPlugin", "AddTag", "*", "ERROR", []string{"Tag not added to image", strconv.FormatUint(TagID, 10), strconv.FormatUint(ImageID, 10), err.Error()})
+	values = values[:len(values)-1] + ";" //Strip last comma, add end
+	sqlQuery := "INSERT IGNORE INTO ImageTags (TagID, ImageID, LinkerID) VALUES" + values
+	if _, err := DBConnection.DBHandle.Exec(sqlQuery, queryArray...); err != nil {
+		logging.LogInterface.WriteLog("MariaDBPlugin", "AddTag", "*", "ERROR", []string{"Tags not added to image", strconv.FormatUint(ImageID, 10), sqlQuery, err.Error()})
 		return err
 	}
-	logging.LogInterface.WriteLog("MariaDBPlugin", "AddTag", "*", "SUCCESS", []string{"Tag added", strconv.FormatUint(TagID, 10), strconv.FormatUint(ImageID, 10)})
+	logging.LogInterface.WriteLog("MariaDBPlugin", "AddTag", "*", "SUCCESS", []string{"Tags added", strconv.FormatUint(ImageID, 10)})
 	return nil
 }
 

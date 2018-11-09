@@ -11,7 +11,7 @@ import (
 )
 
 //TODO: Increment this whenever we alter the DB Schema, ensure you attempt to add update code below
-var currentDBVersion int64 = 7
+var currentDBVersion int64 = 8
 
 //TODO: Increment this when we alter the db schema and don't add update code to compensate
 var minSupportedDBVersion int64 // 0 by default
@@ -147,11 +147,11 @@ func (DBConnection *MariaDBPlugin) performFreshDBInstall() error {
 	BEGIN
 	-- Insert missing tags
 	INSERT INTO CollectionTags (TagID, CollectionID, LinkerID)
-	SELECT DISTINCT(ImageTags.TagID), collID, ImageTags.LinkerID
+	SELECT DISTINCT ImageTags.TagID, collID, ImageTags.LinkerID
 	FROM ImageTags
 	INNER JOIN CollectionMembers on CollectionMembers.ImageID = ImageTags.ImageID
-	WHERE CollectionMembers.CollectionID = collID
-	AND TagID NOT IN (SELECT TagID from CollectionTags WHERE CollectionID = collID);
+	LEFT JOIN CollectionTags on CollectionTags.CollectionID = CollectionMembers.CollectionID AND CollectionTags.TagID = ImageTags.TagID
+	WHERE CollectionMembers.CollectionID = collID AND CollectionTags.CollectionID IS NULL;
 	-- Remove extra tags
 	DELETE FROM CollectionTags
 	WHERE TagID NOT IN ( SELECT TagID 
@@ -512,6 +512,43 @@ func (DBConnection *MariaDBPlugin) upgradeDatabase(version int64) (int64, error)
 			return version, err
 		}
 		version = 7
+		logging.LogInterface.WriteLog("MariaDBPlugin", "InitDatabase", "*", "INFO", []string{"Database schema updated to version", strconv.FormatInt(version, 10)})
+	}
+	//Update version 7->8
+	if version == 7 {
+		_, err := DBConnection.DBHandle.Exec("DROP PROCEDURE IF EXISTS LinkCollTags;")
+		if err != nil {
+			logging.LogInterface.WriteLog("MariaDBPlugin", "InitDatabase", "*", "ERROR", []string{"Failed to update database version", err.Error()})
+			return version, err
+		}
+		sqlQuery := `CREATE PROCEDURE LinkCollTags(IN collID BIGINT UNSIGNED)
+		BEGIN
+		-- Insert missing tags
+		INSERT INTO CollectionTags (TagID, CollectionID, LinkerID)
+		SELECT DISTINCT ImageTags.TagID, collID, ImageTags.LinkerID
+		FROM ImageTags
+		INNER JOIN CollectionMembers on CollectionMembers.ImageID = ImageTags.ImageID
+		LEFT JOIN CollectionTags on CollectionTags.CollectionID = CollectionMembers.CollectionID AND CollectionTags.TagID = ImageTags.TagID
+		WHERE CollectionMembers.CollectionID = collID AND CollectionTags.CollectionID IS NULL;
+		-- Remove extra tags
+		DELETE FROM CollectionTags
+		WHERE TagID NOT IN ( SELECT TagID 
+								FROM ImageTags 
+								INNER JOIN CollectionMembers on CollectionMembers.ImageID = ImageTags.ImageID
+								WHERE CollectionMembers.CollectionID = collID
+							)
+		AND CollectionID=collID;
+		END`
+		if _, err := DBConnection.DBHandle.Exec(sqlQuery); err != nil {
+			logging.LogInterface.WriteLog("MariaDBPlugin", "InitDatabase", "*", "ERROR", []string{"Failed to update database version", err.Error()})
+			return version, err
+		}
+
+		if _, err := DBConnection.DBHandle.Exec("UPDATE DBVersion SET version = 8;"); err != nil {
+			logging.LogInterface.WriteLog("MariaDBPlugin", "InitDatabase", "*", "ERROR", []string{"Failed to update database version", err.Error()})
+			return version, err
+		}
+		version = 8
 		logging.LogInterface.WriteLog("MariaDBPlugin", "InitDatabase", "*", "INFO", []string{"Database schema updated to version", strconv.FormatInt(version, 10)})
 	}
 	return version, nil

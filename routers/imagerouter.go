@@ -263,6 +263,47 @@ func handleImageUpload(request *http.Request, userName string) (uint64, error) {
 
 	errorCompilation := ""
 
+	//Cache tags first, improves speed to calculate this once than for each image
+	//Get tags
+	var validatedUserTags []uint64 //Will contain tags the user is allowed to use
+	tagIDString := ""
+	userQTags, err := database.DBInterface.GetQueryTags(request.FormValue("SearchTags"), false)
+	if err != nil {
+		errorCompilation += "Failed to get tags from input"
+	}
+	for _, tag := range userQTags {
+		if tag.Exists && tag.IsMeta == false {
+			//Assign pre-existing tag
+			//Validate permission to modify tags
+			if interfaces.UserPermission(userPermission).HasPermission(interfaces.ModifyImageTags) != true && (config.Configuration.UsersControlOwnObjects != true) {
+				logging.LogInterface.WriteLog("ImageRouter", "handleImageUpload", userName, "ERROR", []string{"Does not have modify tag permission"})
+				errorCompilation += "Unable to use tag " + tag.Name + " due to insufficient permissions of user to tag images. "
+				// /ValidatePermission
+			} else {
+				validatedUserTags = append(validatedUserTags, tag.ID)
+				tagIDString = tagIDString + ", " + strconv.FormatUint(tag.ID, 10)
+			}
+		} else if tag.IsMeta == false {
+			//Create Tag
+			//Validate permissions to create tags
+			if interfaces.UserPermission(userPermission).HasPermission(interfaces.AddTags) != true {
+				logging.LogInterface.WriteLog("ImageRouter", "handleImageUpload", userName, "ERROR", []string{"Does not have create tag permission"})
+				errorCompilation += "Unable to use tag " + tag.Name + " due to insufficient permissions of user to create tags. "
+				// /ValidatePermission
+			} else {
+				tagID, err := database.DBInterface.NewTag(tag.Name, tag.Description, userID)
+				if err != nil {
+					logging.LogInterface.WriteLog("ImageRouter", "handleImageUpload", userName, "WARNING", []string{"error attempting to create tag", err.Error(), tag.Name})
+					errorCompilation += "Unable to use tag " + tag.Name + " due to a database error. "
+				} else {
+					go writeAuditLog(userID, "CREATE-TAG", userName+" created a new tag. "+tag.Name)
+					validatedUserTags = append(validatedUserTags, tagID)
+					tagIDString = tagIDString + ", " + strconv.FormatUint(tagID, 10)
+				}
+			}
+		}
+	}
+
 	var lastID uint64
 	var uploadedIDs []uploadData
 	request.ParseMultipartForm(config.Configuration.MaxUploadBytes)
@@ -334,53 +375,19 @@ func handleImageUpload(request *http.Request, userName string) (uint64, error) {
 
 			uploadedIDs = append(uploadedIDs, uploadData{Name: originalName, ID: lastID})
 
+			//Add tags
+			if err := database.DBInterface.AddTag(validatedUserTags, lastID, userID); err != nil {
+				logging.LogInterface.WriteLog("ImageRouter", "handleImageUpload", userName, "ERROR", []string{"failed to add tags", err.Error(), strconv.FormatUint(lastID, 10)})
+				errorCompilation += "Failed to add tags to " + fileHeader.Filename + ". "
+			} else {
+
+				go writeAuditLog(userID, "IMAGE-UPLOAD", userName+" tagged image "+strconv.FormatUint(lastID, 10)+" with "+tagIDString)
+			}
+
 			//Log success
 			go writeAuditLog(userID, "IMAGE-UPLOAD", userName+" successfully uploaded an image. "+strconv.FormatUint(lastID, 10))
 			//Start go routine to generate thumbnail
 			go GenerateThumbnail(hashName)
-
-			//Get tags
-			userQTags, err := database.DBInterface.GetQueryTags(request.FormValue("SearchTags"), false)
-			for _, tag := range userQTags {
-				if tag.Exists && tag.IsMeta == false {
-					//Assign pre-existing tag
-					//Validate permission to modify tags
-					if interfaces.UserPermission(userPermission).HasPermission(interfaces.ModifyImageTags) != true && (config.Configuration.UsersControlOwnObjects != true) {
-						logging.LogInterface.WriteLog("ImageRouter", "handleImageUpload", userName, "ERROR", []string{"Does not have modify tag permission"})
-						errorCompilation += fileHeader.Filename + " could not be tagged with " + tag.Name + " due to insufficient permissions of user to tag. "
-						// /ValidatePermission
-					} else {
-						if err := database.DBInterface.AddTag(tag.ID, lastID, userID); err != nil {
-							logging.LogInterface.WriteLog("ImageRouter", "handleImageUpload", userName, "WARNING", []string{"error attempting to add tag to new file", err.Error(), strconv.FormatUint(lastID, 10), strconv.FormatUint(tag.ID, 10)})
-							errorCompilation += fileHeader.Filename + " could not be tagged with " + tag.Name + ". "
-						} else {
-							go writeAuditLog(userID, "TAG-IMAGE", userName+" tagged an image. "+tag.Name+","+strconv.FormatUint(lastID, 10))
-						}
-					}
-				} else if tag.IsMeta == false {
-					//Create Tag
-					//Validate permissions to create tags
-					if interfaces.UserPermission(userPermission).HasPermission(interfaces.AddTags) != true {
-						logging.LogInterface.WriteLog("ImageRouter", "handleImageUpload", userName, "ERROR", []string{"Does not have create tag permission"})
-						errorCompilation += fileHeader.Filename + " could not be tagged with " + tag.Name + " due to insufficient permissions of user to create tags. "
-						// /ValidatePermission
-					} else {
-						tagID, err := database.DBInterface.NewTag(tag.Name, tag.Description, userID)
-						if err != nil {
-							logging.LogInterface.WriteLog("ImageRouter", "handleImageUpload", userName, "WARNING", []string{"error attempting to create tag for new file", err.Error(), strconv.FormatUint(lastID, 10), tag.Name})
-							errorCompilation += fileHeader.Filename + " could not be tagged with " + tag.Name + ". "
-						} else {
-							go writeAuditLog(userID, "CREATE-TAG", userName+" created a new tag. "+tag.Name)
-							if err := database.DBInterface.AddTag(tagID, lastID, userID); err != nil {
-								logging.LogInterface.WriteLog("ImageRouter", "handleImageUpload", userName, "WARNING", []string{"error attempting to add newly created tag to new file", err.Error(), strconv.FormatUint(lastID, 10), strconv.FormatUint(tagID, 10)})
-								errorCompilation += fileHeader.Filename + " could not be tagged with " + tag.Name + ". "
-							} else {
-								go writeAuditLog(userID, "TAG-IMAGE", userName+" tagged an image. "+tag.Name+","+strconv.FormatUint(lastID, 10))
-							}
-						}
-					}
-				}
-			}
 		}
 		fileStream.Close()
 	}
@@ -400,13 +407,14 @@ func handleImageUpload(request *http.Request, userName string) (uint64, error) {
 			sort.Slice(uploadedIDs, func(i, j int) bool {
 				return uploadedIDs[i].Name < uploadedIDs[j].Name
 			})
-
+			var ids []uint64
 			for _, v := range uploadedIDs {
-				err = database.DBInterface.AddCollectionMember(collectionInfo.ID, v.ID, userID)
-				if err != nil {
-					errorCompilation += "Failed to add " + v.Name + " to collection. "
-					logging.LogInterface.WriteLog("ImageRouter", "handleImageUpload", userName, "ERROR", []string{"error adding image to collection", err.Error()})
-				}
+				ids = append(ids, v.ID)
+			}
+			err = database.DBInterface.AddCollectionMember(collectionInfo.ID, ids, userID)
+			if err != nil {
+				errorCompilation += "Failed to add images to collection. "
+				logging.LogInterface.WriteLog("ImageRouter", "handleImageUpload", userName, "ERROR", []string{"error adding image to collection", err.Error()})
 			}
 		}
 	}

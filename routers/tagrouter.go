@@ -190,45 +190,48 @@ func TagRouter(responseWriter http.ResponseWriter, request *http.Request) {
 			break
 		}
 		// /ValidatePermission
-		//Create tags
+
+		///////////////////
 		//Get tags
-		userQTags, err := database.DBInterface.GetQueryTags(userQuery, false)
+		var validatedUserTags []uint64 //Will contain tags the user is allowed to use
+		tagIDString := ""
+		userQTags, err := database.DBInterface.GetQueryTags(request.FormValue("NewTags"), false)
 		if err != nil {
 			TemplateInput.Message += "Failed to get tags from input"
 			break
 		}
 		for _, tag := range userQTags {
-			if tag.Exists {
-				if tag.IsAlias == false {
-					//Assign pre-existing tag //Permission note, we already validated user has ModifyImageTags
-					if err := database.DBInterface.AddTag(tag.ID, iImageID, userID); err != nil {
-						logging.LogInterface.WriteLog("TagRouter", "AddTags", TemplateInput.UserName, "WARNING", []string{"error attempting to add tag to new file", err.Error(), strconv.FormatUint(iImageID, 10), strconv.FormatUint(tag.ID, 10)})
-						TemplateInput.Message += err.Error()
-					} else {
-						go writeAuditLogByName(TemplateInput.UserName, "ADD-IMAGETAG", TemplateInput.UserName+" successfully added tag to image "+ImageID+". tag "+tag.Name)
-						TemplateInput.Message += "Successfully added " + tag.Name + ". "
-					}
-				}
-			} else {
-				//Create Tag //Permission note, we need to validate if user can add new tags
+			if tag.Exists && tag.IsMeta == false {
+				//Assign pre-existing tag
+				//Permissions to tag validated above
+				validatedUserTags = append(validatedUserTags, tag.ID)
+				tagIDString = tagIDString + ", " + strconv.FormatUint(tag.ID, 10)
+			} else if tag.IsMeta == false {
+				//Create Tag
+				//Validate permissions to create tags
 				if TemplateInput.UserPermissions.HasPermission(interfaces.AddTags) != true {
-					TemplateInput.Message += "User does not have create permission for tags. (" + tag.Name + ") "
+					logging.LogInterface.WriteLog("TagsRouter", "TagRouter", TemplateInput.UserName, "ERROR", []string{"Does not have create tag permission"})
+					TemplateInput.Message += "Unable to use tag " + tag.Name + " due to insufficient permissions of user to create tags. "
+					// /ValidatePermission
 				} else {
 					tagID, err := database.DBInterface.NewTag(tag.Name, tag.Description, userID)
 					if err != nil {
-						TemplateInput.Message += err.Error()
-						logging.LogInterface.WriteLog("TagRouter", "AddTags", TemplateInput.UserName, "WARNING", []string{"error attempting to create tag for new file", err.Error(), strconv.FormatUint(iImageID, 10), tag.Name})
+						logging.LogInterface.WriteLog("TagsRouter", "TagRouter", TemplateInput.UserName, "WARNING", []string{"error attempting to create tag", err.Error(), tag.Name})
+						TemplateInput.Message += "Unable to use tag " + tag.Name + " due to a database error. "
 					} else {
-						if err := database.DBInterface.AddTag(tagID, iImageID, userID); err != nil {
-							TemplateInput.Message += err.Error()
-							logging.LogInterface.WriteLog("TagRouter", "AddTags", TemplateInput.UserName, "WARNING", []string{"error attempting to add newly created tag to new file", err.Error(), strconv.FormatUint(iImageID, 10), strconv.FormatUint(tagID, 10)})
-						} else {
-							TemplateInput.Message += "Successfully added " + tag.Name + ". "
-						}
+						go writeAuditLog(userID, "CREATE-TAG", TemplateInput.UserName+" created a new tag. "+tag.Name)
+						validatedUserTags = append(validatedUserTags, tagID)
+						tagIDString = tagIDString + ", " + strconv.FormatUint(tagID, 10)
 					}
 				}
 			}
 		}
+		///////////////////
+		if err := database.DBInterface.AddTag(validatedUserTags, iImageID, userID); err != nil {
+			TemplateInput.Message += "Failed to add tag due to database error"
+			logging.LogInterface.WriteLog("TagRouter", "AddTags", TemplateInput.UserName, "WARNING", []string{"error attempting to add tags to file", err.Error(), strconv.FormatUint(iImageID, 10), tagIDString})
+		}
+
 		//Link tags
 		//Redirect back to image
 		http.Redirect(responseWriter, request, "/image?ID="+ImageID+"&prevMessage="+url.QueryEscape(TemplateInput.Message), 302)

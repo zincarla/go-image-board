@@ -76,7 +76,7 @@ type DBInterface interface {
 	//DeleteTag removes a tag
 	DeleteTag(TagID uint64) error
 	//AddTag adds an association of a tag to image into the association table
-	AddTag(TagID uint64, ImageID uint64, LinkerID uint64) error
+	AddTag(TagID []uint64, ImageID uint64, LinkerID uint64) error
 	//RemoveTag remove a tag association
 	RemoveTag(TagID uint64, ImageID uint64) error
 	//UpdateTag updates a pre-existing tag
@@ -109,7 +109,7 @@ type DBInterface interface {
 	//UpdateCollection changes a basic property of a collection
 	UpdateCollection(CollectionID uint64, Name string, Description string) error
 	//AddCollectionMember adds an image to a collection
-	AddCollectionMember(CollectionID uint64, ImageID uint64, LinkerID uint64) error
+	AddCollectionMember(CollectionID uint64, ImageID []uint64, LinkerID uint64) error
 	//UpdateCollectionMember updates an image's properties in a collection
 	UpdateCollectionMember(CollectionID uint64, ImageID uint64, Order uint64) error
 	//RemoveCollectionMember removes an image from collection
