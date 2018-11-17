@@ -128,6 +128,45 @@ func ImageRouter(responseWriter http.ResponseWriter, request *http.Request) {
 			break
 		}
 		TemplateInput.Message += "Successfully changed source! "
+	case request.FormValue("command") == "ChangeName":
+		sImageID := request.FormValue("ID")
+		if TemplateInput.UserName == "" || TemplateInput.UserID == 0 {
+			//Redirect to logon
+			http.Redirect(responseWriter, request, "/logon?prevMessage="+url.QueryEscape("You must be logged in to vote on images"), 302)
+			return
+		}
+		logging.LogInterface.WriteLog("ImageRouter", "ImageRouter", TemplateInput.UserName, "INFO", []string{"Attempting to name an image"})
+
+		requestedID, err = strconv.ParseUint(sImageID, 10, 64)
+		if err != nil {
+			logging.LogInterface.WriteLog("ImageRouter", "ImageRouter", TemplateInput.UserName, "WARN", []string{"Failed to parse imageid to change name on"})
+			TemplateInput.Message += "Failed to parse image id. "
+			break
+		}
+		//Validate permission to vote
+		imageInfo, err := database.DBInterface.GetImage(requestedID)
+		if err != nil {
+			TemplateInput.Message += "Failed to get image information. "
+			break
+		}
+
+		if !(TemplateInput.UserPermissions.HasPermission(interfaces.SourceImage) || (imageInfo.UploaderID == TemplateInput.UserID && config.Configuration.UsersControlOwnObjects)) {
+			go writeAuditLog(TemplateInput.UserID, "IMAGE-NAME", TemplateInput.UserName+" failed to name image. No permissions.")
+			TemplateInput.Message += "You do not have permissions to change the name/description of this image. "
+			break
+		}
+		// /ValidatePermission
+
+		//At this point, user is validated
+		Name := request.FormValue("NewName")
+		Description := request.FormValue("NewDescription")
+
+		if err := database.DBInterface.UpdateImage(requestedID, Name, Description, nil, nil, nil, nil); err != nil {
+			logging.LogInterface.WriteLog("ImageRouter", "ImageRouter", TemplateInput.UserName, "WARN", []string{"Failed to set name in database", err.Error()})
+			TemplateInput.Message += "Failed to set name/description in database, internal error. "
+			break
+		}
+		TemplateInput.Message += "Successfully changed name/description! "
 	default:
 		//Otherwise ID should come from request
 		parsedValue, err := strconv.ParseUint(request.FormValue("ID"), 10, 32)

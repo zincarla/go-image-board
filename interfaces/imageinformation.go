@@ -9,6 +9,7 @@ type ImageInformation struct {
 	ID              uint64
 	Name            string
 	Location        string
+	Description     string
 	UploaderID      uint64
 	UploaderName    string
 	UploadTime      time.Time
