@@ -1,4 +1,4 @@
-div {
+div, textarea {
 	box-sizing: border-box;
 }
 video, audio {
@@ -284,7 +284,7 @@ video, audio {
 	content: "Remove";
 }
 .card {
-	width: 50%;
+	width: 66%;
 	margin-left: auto;
 	margin-right: auto;
 	border-radius: 8px;
@@ -292,6 +292,17 @@ video, audio {
 	border: solid 1px #cccccc;
 	margin-top: 1em;
 	background-color: #8080801a;
+}
+.form.card {
+	width: 66%;
+	margin-left: auto;
+	margin-right: auto;
+	border-radius: 8px;
+	padding: 1em;
+	border: solid 1px #cccccc;
+	margin-top: 1em;
+	background-color: #8080801a;
+	margin-bottom: 1em;
 }
 /*StreamView Stuff*/
 .Full.ImageResultContainer {
@@ -384,8 +395,6 @@ video, audio {
 	}
 	#ImageGridContainer > img {
 		max-width: 100%;
-		width: 100%;
-		display: block;
 	}
 	#ImageGridContainer{
 		width:100%;
@@ -456,6 +465,9 @@ video, audio {
 		display: block;
 	}
 	#filterForm {
+		width: 100%;
+	}
+	.card {
 		width: 100%;
 	}
 }

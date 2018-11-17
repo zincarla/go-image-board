@@ -44,9 +44,9 @@ func (DBConnection *MariaDBPlugin) DeleteImage(ImageID uint64) error {
 }
 
 //UpdateImage updates properties of an image
-func (DBConnection *MariaDBPlugin) UpdateImage(ImageID uint64, ImageName interface{}, OwnerID interface{}, Rating interface{}, Source interface{}, Location interface{}) error {
+func (DBConnection *MariaDBPlugin) UpdateImage(ImageID uint64, ImageName interface{}, ImageDescription interface{}, OwnerID interface{}, Rating interface{}, Source interface{}, Location interface{}) error {
 	if _, correctValue := OwnerID.(uint64); OwnerID != nil && correctValue == false {
-		return errors.New("OwernerID, when provided, must be of uint64 type")
+		return errors.New("OwnerID, when provided, must be of uint64 type")
 	}
 
 	//See if image exists
@@ -64,6 +64,13 @@ func (DBConnection *MariaDBPlugin) UpdateImage(ImageID uint64, ImageName interfa
 			sqlQuery += ", "
 		}
 		sqlQuery += "Name = ? "
+	}
+	if ImageDescription != nil {
+		queryArray = append(queryArray, fmt.Sprintf("%v", ImageDescription))
+		if sqlQuery != "" {
+			sqlQuery += ", "
+		}
+		sqlQuery += "Description = ? "
 	}
 	if unwrappedOwnerID, correctValue := OwnerID.(uint64); OwnerID != nil && correctValue {
 		queryArray = append(queryArray, unwrappedOwnerID)
@@ -106,7 +113,7 @@ func (DBConnection *MariaDBPlugin) UpdateImage(ImageID uint64, ImageName interfa
 func (DBConnection *MariaDBPlugin) GetImage(ID uint64) (interfaces.ImageInformation, error) {
 	ToReturn := interfaces.ImageInformation{ID: ID}
 	var UploadTime mysql.NullTime
-	err := DBConnection.DBHandle.QueryRow("Select Images.Name as ImageName, Images.Location, Images.UploaderID, Images.UploadTime, Images.Rating, Users.Name as UploaderName, Images.ScoreAverage, Images.ScoreTotal, Images.ScoreVoters, Images.Source FROM Images LEFT OUTER JOIN Users ON Images.UploaderID = Users.ID WHERE Images.ID=?", ID).Scan(&ToReturn.Name, &ToReturn.Location, &ToReturn.UploaderID, &UploadTime, &ToReturn.Rating, &ToReturn.UploaderName, &ToReturn.ScoreAverage, &ToReturn.ScoreTotal, &ToReturn.ScoreVoters, &ToReturn.Source)
+	err := DBConnection.DBHandle.QueryRow("Select Images.Name, IFNULL(Images.Description,'') AS Description, Images.Location, Images.UploaderID, Images.UploadTime, Images.Rating, Users.Name, Images.ScoreAverage, Images.ScoreTotal, Images.ScoreVoters, Images.Source FROM Images LEFT OUTER JOIN Users ON Images.UploaderID = Users.ID WHERE Images.ID=?", ID).Scan(&ToReturn.Name, &ToReturn.Description, &ToReturn.Location, &ToReturn.UploaderID, &UploadTime, &ToReturn.Rating, &ToReturn.UploaderName, &ToReturn.ScoreAverage, &ToReturn.ScoreTotal, &ToReturn.ScoreVoters, &ToReturn.Source)
 	if err != nil {
 		logging.LogInterface.WriteLog("ImageFunctions", "GetImage", "*", "ERROR", []string{"Failed to get image info from database", err.Error()})
 		return ToReturn, err

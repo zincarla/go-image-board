@@ -92,7 +92,18 @@
 			</div>
 			<div id="ImageGridContainer" style="text-align: center;">
 				{{$type := .ImageContentInfo.Location | getimagetype}}
-
+				<h4>{{.ImageContentInfo.Name}} {{if and $UserNotNull $HasSourcePermissions}} (<a href="#" onclick="return ToggleFormDisplay('changeNameForm');">edit</a>){{end}}</h4>
+				<div class="form card displayHidden" id="changeNameForm">
+					<form action="/image" method="POST">
+						<label>Name</label>
+						<input type="text" name="NewName" placeholder="New Name" value="{{.ImageContentInfo.Name}}">
+						<label>Description</label>
+						<textarea name="NewDescription" style="width:100%">{{.ImageContentInfo.Description}}</textarea>
+						<input type="hidden" name="ID" value="{{.ImageContentInfo.ID}}">
+						<input type="hidden" name="command" value="ChangeName" />
+						<input type="submit" value="Submit">
+					</form>
+				</div>
 				{{.ImageContent}}
 				{{if eq $type "image"}}
 					<a onclick="return ExpandImage();" class="cellDefaultHidden" style="cursor:pointer;">&#8597;</a>
@@ -100,6 +111,7 @@
 				{{if .ImageContentInfo.Location}}
 					<div id="downloadButton"><a href="/images/{{.ImageContentInfo.Location}}">Download</a></div>
 				{{end}}
+				{{if .ImageContentInfo.Description}}<div class="card">{{.ImageContentInfo.Description}}</h4>{{end}}
 			</div>
 		</div>
 {{template "footer.html" .}}

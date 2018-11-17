@@ -55,7 +55,7 @@ func renameAllImages() {
 				logging.LogInterface.WriteLog("MAIN", "SERVER", "*", "WARN", []string{"Error renaming file", err.Error()})
 			}
 			//Update database
-			if err := database.DBInterface.UpdateImage(imageInfo.ID, nil, nil, nil, nil, newName); err != nil {
+			if err := database.DBInterface.UpdateImage(imageInfo.ID, nil, nil, nil, nil, nil, newName); err != nil {
 				//Rollback and cancel on error
 				logging.LogInterface.WriteLog("MAIN", "SERVER", "*", "ERROR", []string{"Error adding renamed image to db, cancelling", err.Error()})
 				//Rename thumbnail

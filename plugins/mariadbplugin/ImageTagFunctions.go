@@ -79,8 +79,7 @@ func (DBConnection *MariaDBPlugin) ReplaceImageTags(OldTagID uint64, NewTagID ui
 	SET TagID = ? , LinkerID=?
 	WHERE TagID=? AND ImageID NOT IN
 	(
-	  SELECT ImageID
-	  FROM (SELECT ImageID from ImageTags WHERE TagID=?) AS InnerTags
+		SELECT ImageID from ImageTags WHERE TagID=?
 	);`
 	_, err := DBConnection.DBHandle.Exec(query, NewTagID, LinkerID, OldTagID, NewTagID)
 	if err != nil {

@@ -102,8 +102,9 @@ func (DBConnection *MariaDBPlugin) AddTag(TagIDs []uint64, ImageID uint64, Linke
 		queryArray = append(queryArray, LinkerID)
 		values += " ?, ?),"
 	}
-	values = values[:len(values)-1] + ";" //Strip last comma, add end
-	sqlQuery := "INSERT IGNORE INTO ImageTags (TagID, ImageID, LinkerID) VALUES" + values
+	values = values[:len(values)-1] + " ON DUPLICATE KEY UPDATE LinkerID=?;" //Strip last comma, add end
+	queryArray = append(queryArray, LinkerID) //For duplicate key update
+	sqlQuery := "INSERT INTO ImageTags (TagID, ImageID, LinkerID) VALUES" + values
 	if _, err := DBConnection.DBHandle.Exec(sqlQuery, queryArray...); err != nil {
 		logging.LogInterface.WriteLog("MariaDBPlugin", "AddTag", "*", "ERROR", []string{"Tags not added to image", strconv.FormatUint(ImageID, 10), sqlQuery, err.Error()})
 		return err

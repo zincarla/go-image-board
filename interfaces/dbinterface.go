@@ -50,7 +50,7 @@ type DBInterface interface {
 	//NewImage adds an image with the provided information and returns the id, or error
 	NewImage(ImageName string, ImageFileName string, OwnerID uint64, Source string) (uint64, error)
 	//UpdateImage updates properties of an image
-	UpdateImage(ImageID uint64, ImageName interface{}, OwnerID interface{}, Rating interface{}, Source interface{}, Location interface{}) error
+	UpdateImage(ImageID uint64, ImageName interface{}, ImageDescription interface{}, OwnerID interface{}, Rating interface{}, Source interface{}, Location interface{}) error
 	//DeleteImage removes an image from the db
 	DeleteImage(ImageID uint64) error
 	//SearchImages performs a search for images (Returns a list of imageIDs, or error)
