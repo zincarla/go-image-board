@@ -201,7 +201,8 @@ func (DBConnection *MariaDBPlugin) AddCollectionMember(CollectionID uint64, Imag
 	}
 	//Get last order
 	lastOrder := uint64(0)
-	if err := DBConnection.DBHandle.QueryRow("SELECT IFNULL(MAX(OrderWeight),0) AS LastWeight FROM CollectionMembers WHERE CollectionID = ?", CollectionID).Scan(&lastOrder); err != nil {
+	memberCount := uint64(0)
+	if err := DBConnection.DBHandle.QueryRow("SELECT IFNULL(MAX(OrderWeight),0) AS LastWeight, COUNT(*) AS MemberCount FROM CollectionMembers WHERE CollectionID = ?", CollectionID).Scan(&lastOrder, &memberCount); err != nil {
 		logging.LogInterface.WriteLog("MariaDBPlugin", "AddCollectionMember", "*", "ERROR", []string{"Could not get count of members in collection", strconv.FormatUint(CollectionID, 10)})
 		return errors.New("could not get count of members in collection")
 	}
@@ -209,11 +210,17 @@ func (DBConnection *MariaDBPlugin) AddCollectionMember(CollectionID uint64, Imag
 	queryArray := []interface{}{}
 	values := ""
 	idString := ""
-	for i := 0; i < len(ImageIDs); i++ {
+	//If we are not an empty collection, increment the number
+	//Otherwise first image will have 0 as it's weight
+	//We have to use a memberCount as a null OrderWeight is treated as 0, and a collection with one image would be 0
+	if memberCount != 0 {
 		lastOrder++
+	}
+	for i := 0; i < len(ImageIDs); i++ {
 		values += " ( ?, ?, ?, ?),"
 		queryArray = append(queryArray, CollectionID, ImageIDs[i], LinkerID, lastOrder)
 		idString += strconv.FormatUint(ImageIDs[i], 10) + ", "
+		lastOrder++
 	}
 
 	values = values[:len(values)-1] + ";" //Strip comma add semi
