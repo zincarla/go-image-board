@@ -85,6 +85,9 @@ ul {
 	width: calc(100% - 192px); /*192 is Same as SideMenu width*/
 	padding: 10px;
 }
+#ImageGridContainer > h4 {
+	word-wrap: break-word; /*For long image titles*/
+}
 #ImageGridContainer > img {
 	max-width: calc(100% - 1em);
 	display:inline-block;

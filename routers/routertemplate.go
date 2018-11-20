@@ -44,15 +44,23 @@ type templateInput struct {
 	NextMemberID uint64
 	//StreamView changes view from icons to pages of full content
 	StreamView bool
+	//RequestStart is start time for a user request
+	RequestStart time.Time
+	//RequestTime is time it took to process a user request in MS
+	RequestTime int64
 }
 
 var totalImages uint64
 var totalCacheTime time.Time
 
-func replyWithTemplate(templateName string, templateInput interface{}, responseWriter http.ResponseWriter) {
+func replyWithTemplate(templateName string, templateInputInterface interface{}, responseWriter http.ResponseWriter) {
 	//Call Template
 	templateToUse := templatecache.TemplateCache
-	err := templateToUse.ExecuteTemplate(responseWriter, templateName, templateInput)
+	if ti, ok := templateInputInterface.(templateInput); ok {
+		ti.RequestTime = time.Now().Sub(ti.RequestStart).Nanoseconds() / 1000000 //Nanosecond to Millisecond
+		templateInputInterface = ti
+	}
+	err := templateToUse.ExecuteTemplate(responseWriter, templateName, templateInputInterface)
 	if err != nil {
 		logging.LogInterface.WriteLog("routertemplate", "replyWithTemplate", "*", "ERROR", []string{"Parse Error", err.Error()})
 		http.Error(responseWriter, "", http.StatusInternalServerError)
@@ -81,7 +89,8 @@ func getNewTemplateInput(request *http.Request) templateInput {
 		GIBVersion:            config.ApplicationVersion,
 		AllowAccountCreation:  config.Configuration.AllowAccountCreation,
 		UserControlsOwn:       config.Configuration.UsersControlOwnObjects,
-		AccountRequiredToView: config.Configuration.AccountRequiredToView}
+		AccountRequiredToView: config.Configuration.AccountRequiredToView,
+		RequestStart:          time.Now()}
 
 	//Verify user is logged in by validating token
 	userNameT, tokenIDT, session := getSessionInformation(request)
