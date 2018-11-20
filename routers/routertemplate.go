@@ -59,7 +59,7 @@ func replyWithTemplate(templateName string, templateInputInterface interface{}, 
 	if ti, ok := templateInputInterface.(templateInput); ok {
 		ti.RequestTime = time.Now().Sub(ti.RequestStart).Nanoseconds() / 1000000 //Nanosecond to Millisecond
 		templateInputInterface = ti
-    }
+	}
 	err := templateToUse.ExecuteTemplate(responseWriter, templateName, templateInputInterface)
 	if err != nil {
 		logging.LogInterface.WriteLog("routertemplate", "replyWithTemplate", "*", "ERROR", []string{"Parse Error", err.Error()})
@@ -89,8 +89,8 @@ func getNewTemplateInput(request *http.Request) templateInput {
 		GIBVersion:            config.ApplicationVersion,
 		AllowAccountCreation:  config.Configuration.AllowAccountCreation,
 		UserControlsOwn:       config.Configuration.UsersControlOwnObjects,
-		AccountRequiredToView: config.Configuration.AccountRequiredToView
-		RequestStart: time.Now()}
+		AccountRequiredToView: config.Configuration.AccountRequiredToView,
+		RequestStart:          time.Now()}
 
 	//Verify user is logged in by validating token
 	userNameT, tokenIDT, session := getSessionInformation(request)
