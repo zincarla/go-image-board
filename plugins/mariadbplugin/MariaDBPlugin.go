@@ -64,7 +64,7 @@ func (DBConnection *MariaDBPlugin) InitDatabase() error {
 
 //GetPluginInformation Return plugin info as string
 func (DBConnection *MariaDBPlugin) GetPluginInformation() string {
-	return "MariaDBPlugin 0.0.0.8"
+	return "MariaDBPlugin 1.0.0.0"
 }
 
 func (DBConnection *MariaDBPlugin) getDatabaseVersion() (int64, error) {
