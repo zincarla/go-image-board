@@ -32,28 +32,31 @@
 					<input type="text" name="CollectionName" placeholder="Collection Name" value="" oninput="CheckCollectionName(this.parentNode,'addCollectionFormTitle')" >
 					<input type="hidden" name="ImageID" value="{{.ImageContentInfo.ID}}">
 					<input type="hidden" name="command" value="addcollectionmember" />
+					<input type="hidden" name="SearchTerms" value="{{$OldQuery}}">
 					<input type="submit" value="Add/Create">
 				</form>
 
 				<h5>Tags{{if and $UserNotNull $HasTagPermissions}} (<a href="#" onclick="return ToggleFormDisplay('addTagForm');">add</a>){{end}}</h5>
-				<form action="/tag" method="POST" id="addTagForm" class="displayHidden">
+				<form action="/image" method="POST" id="addTagForm" class="displayHidden">
 					<h5>Add Tag</h5>
 					<input type="text" name="NewTags" placeholder="New Tags" value="">
-					<input type="hidden" name="ImageID" value="{{.ImageContentInfo.ID}}">
+					<input type="hidden" name="ID" value="{{.ImageContentInfo.ID}}">
 					<input type="hidden" name="command" value="AddTags" />
+					<input type="hidden" name="SearchTerms" value="{{$OldQuery}}">
 					<input type="submit" value="Add">
 				</form>
 				<ul>
 					{{range .Tags}}
-					<li>{{.Name}} {{if $CanModifyTags}}<a href="/tag?ID={{.ID}}&command=remove&ImageID={{$ImageID}}&SearchTerms={{$OldQuery}}" onclick="return confirm('Are you sure you want to remove this tag from this image?');">-</a> {{end}}{{if ne .ID 0}}<a href="/tag?ID={{.ID}}&SearchTerms={{$OldQuery}}">?</a>{{else}}<a href="/about/tags.html?SearchTerms={{$OldQuery}}">?</a>{{end}}</li>
+					<li>{{.Name}} {{if $CanModifyTags}}<a href="/image?ID={{$ImageID}}&command=RemoveTag&TagID={{.ID}}&SearchTerms={{$OldQuery}}" onclick="return confirm('Are you sure you want to remove this tag from this image?');">-</a> {{end}}{{if ne .ID 0}}<a href="/tag?ID={{.ID}}&SearchTerms={{$OldQuery}}">?</a>{{else}}<a href="/about/tags.html?SearchTerms={{$OldQuery}}">?</a>{{end}}</li>
 					{{end}}
 				</ul>
 				<h5>Rating{{if and $UserNotNull $HasTagPermissions}} (<a href="#" onclick="return ToggleFormDisplay('changeRatingForm');">edit</a>){{end}}</h5>
-				<form action="/tag" method="POST" id="changeRatingForm" class="displayHidden">
+				<form action="/image" method="POST" id="changeRatingForm" class="displayHidden">
 					<h5>Change Rating <a href="/about/tags.html?SearchTerms={{$OldQuery}}">?</a></h5>
 					<input type="text" name="NewRating" placeholder="New Rating" value="{{.ImageContentInfo.Rating}}">
-					<input type="hidden" name="ImageID" value="{{.ImageContentInfo.ID}}">
+					<input type="hidden" name="ID" value="{{.ImageContentInfo.ID}}">
 					<input type="hidden" name="command" value="ChangeRating" />
+					<input type="hidden" name="SearchTerms" value="{{$OldQuery}}">
 					<input type="submit" value="Change">
 				</form>
 				{{.ImageContentInfo.Rating}} <a href="/about/tags.html?SearchTerms={{$OldQuery}}">?</a>
@@ -62,6 +65,7 @@
 					<input type="text" name="NewSource" placeholder="Source" value="{{.ImageContentInfo.Source}}">
 					<input type="hidden" name="ID" value="{{.ImageContentInfo.ID}}">
 					<input type="hidden" name="command" value="ChangeSource" />
+					<input type="hidden" name="SearchTerms" value="{{$OldQuery}}">
 					<input type="submit" value="Change Source">
 				</form>
 				{{if .ImageContentInfo.SourceIsURL}}
@@ -74,6 +78,7 @@
 					<input type="number" name="NewVote" placeholder="New Vote" value="{{.ImageContentInfo.UsersVotedScore}}" min="-10" max="10">
 					<input type="hidden" name="ID" value="{{.ImageContentInfo.ID}}">
 					<input type="hidden" name="command" value="ChangeVote" />
+					<input type="hidden" name="SearchTerms" value="{{$OldQuery}}">
 					<input type="submit" value="Score">
 				</form>
 				<ul>
@@ -101,6 +106,7 @@
 						<textarea name="NewDescription" style="width:100%">{{.ImageContentInfo.Description}}</textarea>
 						<input type="hidden" name="ID" value="{{.ImageContentInfo.ID}}">
 						<input type="hidden" name="command" value="ChangeName" />
+						<input type="hidden" name="SearchTerms" value="{{$OldQuery}}">
 						<input type="submit" value="Submit">
 					</form>
 				</div>

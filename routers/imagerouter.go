@@ -29,8 +29,8 @@ func ImageRouter(responseWriter http.ResponseWriter, request *http.Request) {
 	var requestedID uint64
 	var err error
 	//If we are just now uploading the file, then we need to get ID from upload function
-	switch {
-	case request.FormValue("command") == "uploadFile":
+	switch request.FormValue("command") {
+	case "uploadFile":
 		if TemplateInput.UserName == "" {
 			//Redirect to logon
 			http.Redirect(responseWriter, request, "/logon?prevMessage="+url.QueryEscape("You must be logged in to upload images"), 302)
@@ -45,7 +45,7 @@ func ImageRouter(responseWriter http.ResponseWriter, request *http.Request) {
 		//redirect to a GET form of page
 		http.Redirect(responseWriter, request, "/image?ID="+strconv.FormatUint(requestedID, 10)+"&prevMessage="+url.QueryEscape(TemplateInput.Message), 302)
 		return
-	case request.FormValue("command") == "ChangeVote":
+	case "ChangeVote":
 		sImageID := request.FormValue("ID")
 		if TemplateInput.UserName == "" || TemplateInput.UserID == 0 {
 			//Redirect to logon
@@ -90,7 +90,7 @@ func ImageRouter(responseWriter http.ResponseWriter, request *http.Request) {
 			break
 		}
 		TemplateInput.Message += "Successfully changed vote! "
-	case request.FormValue("command") == "ChangeSource":
+	case "ChangeSource":
 		sImageID := request.FormValue("ID")
 		if TemplateInput.UserName == "" || TemplateInput.UserID == 0 {
 			//Redirect to logon
@@ -128,7 +128,7 @@ func ImageRouter(responseWriter http.ResponseWriter, request *http.Request) {
 			break
 		}
 		TemplateInput.Message += "Successfully changed source! "
-	case request.FormValue("command") == "ChangeName":
+	case "ChangeName":
 		sImageID := request.FormValue("ID")
 		if TemplateInput.UserName == "" || TemplateInput.UserID == 0 {
 			//Redirect to logon
@@ -167,6 +167,175 @@ func ImageRouter(responseWriter http.ResponseWriter, request *http.Request) {
 			break
 		}
 		TemplateInput.Message += "Successfully changed name/description! "
+	case "RemoveTag":
+		ImageID := request.FormValue("ID")
+		TagID := request.FormValue("TagID")
+		if TemplateInput.UserName == "" {
+			TemplateInput.Message += "You must be logged in to perform that action"
+			break
+		}
+		if ImageID == "" || TagID == "" {
+			TemplateInput.Message += "No ID provided to remove."
+			break
+		}
+
+		iImageID, err := strconv.ParseUint(ImageID, 10, 32)
+		if err != nil {
+			TemplateInput.Message += "Error parsing tag id or image id"
+			logging.LogInterface.WriteLog("TagsRouter", "TagRouter", "*", "ERROR", []string{"Failed to parse tag or image id ", err.Error()})
+			break
+		}
+		requestedID = iImageID
+
+		imageInfo, err := database.DBInterface.GetImage(iImageID)
+		if err != nil {
+			TemplateInput.Message += "Error parsing image id"
+			logging.LogInterface.WriteLog("TagsRouter", "TagRouter", "*", "ERROR", []string{"Failed to parse image id ", err.Error()})
+			break
+		}
+
+		//Validate permission to upload
+		if TemplateInput.UserPermissions.HasPermission(interfaces.ModifyImageTags) != true && (config.Configuration.UsersControlOwnObjects != true || TemplateInput.UserID != imageInfo.UploaderID) {
+			TemplateInput.Message += "User does not have modify permission for tags on images. "
+			go writeAuditLogByName(TemplateInput.UserName, "REMOVE-IMAGETAG", TemplateInput.UserName+" failed to remove tag from image "+ImageID+". Insufficient permissions. "+TagID)
+			break
+		}
+		// /ValidatePermission
+		iID, err := strconv.ParseUint(TagID, 10, 32)
+		if err != nil {
+			TemplateInput.Message += "Error parsing tag id or image id"
+			logging.LogInterface.WriteLog("TagsRouter", "TagRouter", "*", "ERROR", []string{"Failed to parse tag or image id ", err.Error()})
+			break
+		}
+		//Remove tag
+		if err := database.DBInterface.RemoveTag(iID, iImageID); err != nil {
+			TemplateInput.Message += "Failed to remove tag. Was it attached in the first place?"
+		} else {
+			TemplateInput.Message += "Tag removed successfully"
+			go writeAuditLogByName(TemplateInput.UserName, "REMOVE-IMAGETAG", TemplateInput.UserName+" removed tag from image "+ImageID+". tag "+TagID)
+		}
+
+	case "AddTags":
+		ImageID := request.FormValue("ID")
+		userQuery := request.FormValue("NewTags")
+		if TemplateInput.UserName == "" {
+			TemplateInput.Message += "You must be logged in to perform that action"
+			break
+		}
+		//Translate UserID
+		userID, err := database.DBInterface.GetUserID(TemplateInput.UserName)
+		if err != nil {
+			logging.LogInterface.WriteLog("TagRouter", "AddTags", TemplateInput.UserName, "ERROR", []string{"Could not get valid user id", err.Error()})
+			TemplateInput.Message += "You muse be logged in to perform that action"
+			break
+		}
+		if ImageID == "" {
+			//redirect to images
+			TemplateInput.Message += "Error parsing image id"
+			break
+		}
+
+		iImageID, err := strconv.ParseUint(ImageID, 10, 32)
+		if err != nil {
+			TemplateInput.Message += "Error parsing image id"
+			logging.LogInterface.WriteLog("TagsRouter", "TagRouter", "*", "ERROR", []string{"Failed to parse image id ", err.Error()})
+			break
+		}
+		requestedID = iImageID
+		imageInfo, err := database.DBInterface.GetImage(iImageID)
+		if err != nil {
+			TemplateInput.Message += "Error parsing image id"
+			logging.LogInterface.WriteLog("TagsRouter", "TagRouter", "*", "ERROR", []string{"Failed to parse image id ", err.Error()})
+			break
+		}
+		//Validate permission to modify tags
+		if TemplateInput.UserPermissions.HasPermission(interfaces.ModifyImageTags) != true && (config.Configuration.UsersControlOwnObjects != true || TemplateInput.UserID != imageInfo.UploaderID) {
+			TemplateInput.Message += "User does not have modify permission for tags on images. "
+			go writeAuditLogByName(TemplateInput.UserName, "ADD-IMAGETAG", TemplateInput.UserName+" failed to add tag to image "+ImageID+". Insufficient permissions. "+userQuery)
+			break
+		}
+		// /ValidatePermission
+
+		///////////////////
+		//Get tags
+		var validatedUserTags []uint64 //Will contain tags the user is allowed to use
+		tagIDString := ""
+		userQTags, err := database.DBInterface.GetQueryTags(request.FormValue("NewTags"), false)
+		if err != nil {
+			TemplateInput.Message += "Failed to get tags from input"
+			break
+		}
+		for _, tag := range userQTags {
+			if tag.Exists && tag.IsMeta == false {
+				//Assign pre-existing tag
+				//Permissions to tag validated above
+				validatedUserTags = append(validatedUserTags, tag.ID)
+				tagIDString = tagIDString + ", " + strconv.FormatUint(tag.ID, 10)
+			} else if tag.IsMeta == false {
+				//Create Tag
+				//Validate permissions to create tags
+				if TemplateInput.UserPermissions.HasPermission(interfaces.AddTags) != true {
+					logging.LogInterface.WriteLog("TagsRouter", "TagRouter", TemplateInput.UserName, "ERROR", []string{"Does not have create tag permission"})
+					TemplateInput.Message += "Unable to use tag " + tag.Name + " due to insufficient permissions of user to create tags. "
+					// /ValidatePermission
+				} else {
+					tagID, err := database.DBInterface.NewTag(tag.Name, tag.Description, userID)
+					if err != nil {
+						logging.LogInterface.WriteLog("TagsRouter", "TagRouter", TemplateInput.UserName, "WARNING", []string{"error attempting to create tag", err.Error(), tag.Name})
+						TemplateInput.Message += "Unable to use tag " + tag.Name + " due to a database error. "
+					} else {
+						go writeAuditLog(userID, "CREATE-TAG", TemplateInput.UserName+" created a new tag. "+tag.Name)
+						validatedUserTags = append(validatedUserTags, tagID)
+						tagIDString = tagIDString + ", " + strconv.FormatUint(tagID, 10)
+					}
+				}
+			}
+		}
+		///////////////////
+		if err := database.DBInterface.AddTag(validatedUserTags, iImageID, userID); err != nil {
+			TemplateInput.Message += "Failed to add tag due to database error"
+			logging.LogInterface.WriteLog("TagRouter", "AddTags", TemplateInput.UserName, "WARNING", []string{"error attempting to add tags to file", err.Error(), strconv.FormatUint(iImageID, 10), tagIDString})
+		}
+	case "ChangeRating":
+		ImageID := request.FormValue("ID")
+		newRating := strings.ToLower(request.FormValue("NewRating"))
+		if TemplateInput.UserName == "" {
+			TemplateInput.Message += "You must be logged in to perform that action"
+			break
+		}
+
+		if ImageID == "" {
+			//redirect to images
+			TemplateInput.Message += "Error parsing image id"
+			break
+		}
+
+		iImageID, err := strconv.ParseUint(ImageID, 10, 32)
+		if err != nil {
+			TemplateInput.Message += "Error parsing image id"
+			logging.LogInterface.WriteLog("TagsRouter", "TagRouter", "*", "ERROR", []string{"Failed to parse image id ", err.Error()})
+			break
+		}
+		requestedID = iImageID
+		imageInfo, err := database.DBInterface.GetImage(iImageID)
+		if err != nil {
+			TemplateInput.Message += "Error parsing image id"
+			logging.LogInterface.WriteLog("TagsRouter", "TagRouter", "*", "ERROR", []string{"Failed to parse image id ", err.Error()})
+			break
+		}
+		//Validate permission to modify tags
+		if TemplateInput.UserPermissions.HasPermission(interfaces.ModifyImageTags) != true && (config.Configuration.UsersControlOwnObjects != true || TemplateInput.UserID != imageInfo.UploaderID) {
+			TemplateInput.Message += "User does not have modify permission for tags on images. "
+			go writeAuditLogByName(TemplateInput.UserName, "ADD-IMAGERATING", TemplateInput.UserName+" failed to edit rating for image "+ImageID+". Insufficient permissions. "+newRating)
+			break
+		}
+		// /ValidatePermission
+		//Change Rating
+
+		if err = database.DBInterface.SetImageRating(iImageID, newRating); err != nil {
+			logging.LogInterface.WriteLog("TagsRouter", "TagRouter", "*", "ERROR", []string{"Failed to change image rating ", err.Error()})
+			TemplateInput.Message += "Failed to change image rating, internal error ocurred. "
+		}
 	default:
 		//Otherwise ID should come from request
 		parsedValue, err := strconv.ParseUint(request.FormValue("ID"), 10, 32)
