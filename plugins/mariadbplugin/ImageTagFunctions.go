@@ -149,5 +149,8 @@ func getInvertedComparator(comparator string) string {
 	if comparator == "<=" {
 		return ">"
 	}
+	if comparator == "LIKE" {
+		return "NOT LIKE"
+	}
 	return ""
 }

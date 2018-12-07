@@ -452,8 +452,34 @@ func (DBConnection *MariaDBPlugin) parseMetaTags(MetaTags []interfaces.TagInform
 				} else {
 					ErrorList = append(ErrorList, errors.New("could not parse incollection tag"))
 				}
+			} else {
+				ErrorList = append(ErrorList, errors.New("could not parse incollection tag"))
 			}
 			ToAdd.Comparator = "=" //Clobber any other comparator requested. This one will only support equals
+		case ToAdd.Name == "name":
+			ToAdd.Name = "Name"
+			ToAdd.Description = "Name of the item"
+			ToAdd.IsComplexMeta = false
+			inCollOption, isString := ToAdd.MetaValue.(string)
+			if isString {
+
+				//This chunk is ugly, but allows us to escape spaces
+				inCollOption = strings.Replace(inCollOption, "--", "#", -1) //Placeholder for dash
+				inCollOption = strings.Replace(inCollOption, "-_", "$", -1) //Placeholder for underscore
+				inCollOption = strings.Replace(inCollOption, "__", " ", -1)
+				inCollOption = strings.Replace(inCollOption, "#", "-", -1)
+				inCollOption = strings.Replace(inCollOption, "_", "$", -1)
+				inCollOption = strings.Replace(inCollOption, "$", "\\_", -1)
+				if len(inCollOption) > 3 {
+					ToAdd.MetaValue = "%" + inCollOption + "%"
+					ToAdd.Exists = true
+				} else {
+					ErrorList = append(ErrorList, errors.New("could not parse name tag, please lengthen your query"))
+				}
+			} else {
+				ErrorList = append(ErrorList, errors.New("could not parse name tag"))
+			}
+			ToAdd.Comparator = "LIKE" //Clobber any other comparator requested. This one will only support LIKE
 		default:
 			ErrorList = append(ErrorList, errors.New("MetaTag does not exist"))
 		}
