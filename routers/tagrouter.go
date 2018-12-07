@@ -188,54 +188,7 @@ func TagRouter(responseWriter http.ResponseWriter, request *http.Request) {
 			go writeAuditLog(userID, "REPLACE-BULKIMAGETAG", TemplateInput.UserName+" bulk added tags to images. "+oldTagQuery+"->"+newTagQuery)
 		}
 		ID = strconv.FormatUint(userNewQTags[0].ID, 10)
-	case "ChangeRating":
-		ImageID := request.FormValue("ImageID")
-		newRating := strings.ToLower(request.FormValue("NewRating"))
-		if TemplateInput.UserName == "" {
-			TemplateInput.Message += "You must be logged in to perform that action"
-			http.Redirect(responseWriter, request, "/image?ID="+ImageID+"&prevMessage="+url.QueryEscape(TemplateInput.Message), 302)
-			return
-		}
 
-		if ImageID == "" {
-			//redirect to images
-			TemplateInput.Message += "Error parsing image id"
-			http.Redirect(responseWriter, request, "/image?ID="+ImageID+"&prevMessage="+url.QueryEscape(TemplateInput.Message), 302)
-			return
-		}
-
-		iImageID, err := strconv.ParseUint(ImageID, 10, 32)
-		if err != nil {
-			TemplateInput.Message += "Error parsing image id"
-			logging.LogInterface.WriteLog("TagsRouter", "TagRouter", "*", "ERROR", []string{"Failed to parse image id ", err.Error()})
-			http.Redirect(responseWriter, request, "/image?ID="+ImageID+"&prevMessage="+url.QueryEscape(TemplateInput.Message), 302)
-			return
-		}
-		imageInfo, err := database.DBInterface.GetImage(iImageID)
-		if err != nil {
-			TemplateInput.Message += "Error parsing image id"
-			logging.LogInterface.WriteLog("TagsRouter", "TagRouter", "*", "ERROR", []string{"Failed to parse image id ", err.Error()})
-			http.Redirect(responseWriter, request, "/image?ID="+ImageID+"&prevMessage="+url.QueryEscape(TemplateInput.Message), 302)
-			return
-		}
-		//Validate permission to modify tags
-		if TemplateInput.UserPermissions.HasPermission(interfaces.ModifyImageTags) != true && (config.Configuration.UsersControlOwnObjects != true || TemplateInput.UserID != imageInfo.UploaderID) {
-			TemplateInput.Message += "User does not have modify permission for tags on images. "
-			go writeAuditLogByName(TemplateInput.UserName, "ADD-IMAGERATING", TemplateInput.UserName+" failed to edit rating for image "+ImageID+". Insufficient permissions. "+newRating)
-			http.Redirect(responseWriter, request, "/image?ID="+ImageID+"&prevMessage="+url.QueryEscape(TemplateInput.Message), 302)
-			return
-		}
-		// /ValidatePermission
-		//Change Rating
-
-		if err = database.DBInterface.SetImageRating(iImageID, newRating); err != nil {
-			logging.LogInterface.WriteLog("TagsRouter", "TagRouter", "*", "ERROR", []string{"Failed to change image rating ", err.Error()})
-			TemplateInput.Message += "Failed to change image rating, internal error ocurred. "
-		}
-
-		//Redirect back to image
-		http.Redirect(responseWriter, request, "/image?ID="+ImageID+"&prevMessage="+url.QueryEscape(TemplateInput.Message), 302)
-		return
 	}
 
 	if ID == "" {
