@@ -195,12 +195,23 @@ Since the database is based on an interface someone could program another databa
 5. If schema update code could not be added and schema changes are not backwards compatible, increment minSupportedDBVersion variable. This will prompt user action.
 
 ### To add a new metatag
-Metatags directly query the Images table. parseMetaTags() converts the query name to the database column name and if needed, converts the queried value to something the column would expect. (Like a username to id)
-1. Update parseMetaTags() in TagQueryFunctions.go, note that the tag.Name should be the same named used in the database, not the name used in the query
-As long as the limitations are adhered to, then this is the only change necessary outside of the schema changes
-2. To add to form though, need to update ImageInformation struct and add a new property for metatag
+
+Metatags come in 2 varieties. Plain and complex. These tags can also be limited to collection queries and image queries. 
+
+For plain image metatags:
+These queries tend to query the Images table. Things like score, rating, etc.
+1. Update parseMetaTags() in TagQueryFunctions.go, note that the tag.Name should be the same name used in the database, not the name used in the query
+As long as the limitations are adhered to, then this is the only change necessary outside of the schema changes.
+2. To add to a form though so the value can be changed, you need to update ImageInformation struct and add a new property for the metatag
 3. Update GetImage() function to return new information as part of ImageInformation object it returns
 4. Edit Image.html template, and add a new form to change the metatag
 5. Update database interface and add a function to change the column in the images table for the tag
 6. Implement the new interface in MariaDBPlugin
 7. Update the relevant router that the form will send the change request to
+
+For complex image metatags:
+1. Update parseMetaTags() in TagQueryFunctions.go. Mark the tag as complex and ensure the comparator used is valid. If you need to convert the value of the user input, ensure you do so. (ToAdd.MetaValue)
+2. Update SearchImages in ImageSearchFunctions.go to support your new tag.
+
+Context:
+The parseMetaTags() function has a CollectionContext. This is set to true, if the user is querying for a collection. This can be used to validate certain tags that only work for one queries that only work either against images or collections.

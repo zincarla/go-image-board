@@ -456,6 +456,20 @@ func (DBConnection *MariaDBPlugin) parseMetaTags(MetaTags []interfaces.TagInform
 				ErrorList = append(ErrorList, errors.New("could not parse incollection tag"))
 			}
 			ToAdd.Comparator = "=" //Clobber any other comparator requested. This one will only support equals
+		case ToAdd.Name == "tagcount" && CollectionContext == false:
+			ToAdd.Name = "TagCount"
+			ToAdd.Description = "Number of tags an image has"
+			ToAdd.IsComplexMeta = true
+			stringValue, isString := ToAdd.MetaValue.(string)
+			if isString {
+				countValue, err := strconv.ParseInt(stringValue, 10, 64)
+				if err == nil {
+					ToAdd.Exists = true
+					ToAdd.MetaValue = strconv.FormatInt(countValue, 10)
+				}
+			} else {
+				ErrorList = append(ErrorList, errors.New("could not parse tagcount tag"))
+			}
 		case ToAdd.Name == "name":
 			ToAdd.Name = "Name"
 			ToAdd.Description = "Name of the item"

@@ -96,6 +96,14 @@ func (DBConnection *MariaDBPlugin) SearchImages(Tags []interfaces.TagInformation
 				metaTagQuery += "Images.ID" + comparator + "(SELECT DISTINCT ImageID FROM CollectionMembers) "
 				sqlWhereClause = sqlWhereClause + metaTagQuery
 				continue //Skip over rest of code for this tag
+			} else if tag.Name == "TagCount" { //Special Exception for TagCount
+				tagStringValue, isTagValued := tag.MetaValue.(string)
+				if isTagValued == false {
+					return ToReturn, 0, errors.New("Failed get value of " + tag.Name)
+				}
+				metaTagQuery += "Images.ID IN (SELECT ImageID FROM (SELECT ImageID, COUNT(*) AS TagCount FROM `ImageTags` GROUP BY ImageID) TagCountTBL WHERE TagCountTBL.TagCount "+comparator+" "+tagStringValue+") "
+				sqlWhereClause = sqlWhereClause + metaTagQuery
+				continue //Skip over rest of code for this tag 
 			}
 
 			metaTagQuery = metaTagQuery + "Images." + tag.Name + " "
@@ -136,7 +144,7 @@ func (DBConnection *MariaDBPlugin) SearchImages(Tags []interfaces.TagInformation
 	//Add values for metatags
 	for _, tag := range MetaTags {
 		//Handle Complex Tags Here
-		if tag.Name == "InCollection" { //Special Exception for InCollection
+		if tag.Name == "InCollection" || tag.Name == "TagCount" { //Special Exception for cert MetaTags
 			continue
 		}
 		//Otherwise use default
