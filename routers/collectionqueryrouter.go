@@ -58,6 +58,77 @@ func CollectionsRouter(responseWriter http.ResponseWriter, request *http.Request
 		TemplateInput.Message += "Successfully deleted collection " + CollectionInfo.Name + ". "
 		http.Redirect(responseWriter, request, "/collections?prevMessage="+url.QueryEscape(TemplateInput.Message), 302)
 		return
+	case "deleteandmembers":
+		if TemplateInput.UserName == "" {
+			//Redirect to logon
+			http.Redirect(responseWriter, request, "/logon?prevMessage="+url.QueryEscape("You must be logged in to delete collections"), 302)
+			return
+		}
+
+		//Get Collection ID
+		parsedCollectionID, err := strconv.ParseUint(request.FormValue("ID"), 10, 32)
+		if err != nil {
+			TemplateInput.Message += "Failed to get collection with that ID."
+			break
+		}
+
+		//Cache collection data
+		CollectionInfo, err := database.DBInterface.GetCollection(parsedCollectionID)
+		if err != nil {
+			TemplateInput.Message += "Failed to delete collection. SQL Error. "
+			go writeAuditLogByName(TemplateInput.UserName, "DELETE-COLLECTION", TemplateInput.UserName+" failed to delete collection. "+request.FormValue("ID")+", "+err.Error())
+			break //Cancel delete
+		}
+
+		//Validate Permission to delete
+		if TemplateInput.UserPermissions.HasPermission(interfaces.RemoveCollections) != true && (config.Configuration.UsersControlOwnObjects != true || CollectionInfo.UploaderID != TemplateInput.UserID) {
+			TemplateInput.Message += "User does not have delete permission for collection. "
+			go writeAuditLogByName(TemplateInput.UserName, "DELETE-COLLECTION", TemplateInput.UserName+" failed to delete collection. Insufficient permissions. "+request.FormValue("ID"))
+			break
+		}
+
+		//Grab list of images
+		CollectionMembers, _, err := database.DBInterface.GetCollectionMembers(parsedCollectionID, 0, 0)
+		if err != nil {
+			TemplateInput.Message += "Failed to delete collection. SQL Error getting collection memebers. "
+			go writeAuditLogByName(TemplateInput.UserName, "DELETE-COLLECTION", TemplateInput.UserName+" failed to delete collection. "+request.FormValue("ID")+", "+err.Error())
+			break //Cancel delete
+		}
+
+		//Check permissions for all members
+		canDelete := true
+		for _, ImageInfo := range CollectionMembers {
+			//Validate Permission to delete
+			if TemplateInput.UserPermissions.HasPermission(interfaces.RemoveImage) != true && (config.Configuration.UsersControlOwnObjects != true || ImageInfo.UploaderID != TemplateInput.UserID) {
+				TemplateInput.Message += "User does not have delete permission for image. "
+				go writeAuditLogByName(TemplateInput.UserName, "DELETE-IMAGE", TemplateInput.UserName+" failed to delete image. Insufficient permissions. "+request.FormValue("ID"))
+				canDelete = false
+				break
+			}
+		}
+		if !canDelete {
+			break;
+		}
+
+		//Delete images
+		for _, ImageInfo := range CollectionMembers {
+			err = database.DBInterface.DeleteImage(ImageInfo.ID)
+			if err != nil {
+				TemplateInput.Message += "Failed to delete image. "
+				go writeAuditLogByName(TemplateInput.UserName, "DELETE-IMAGE", TemplateInput.UserName+" failed to delete image.")
+			}
+		}
+
+		//Permission validated, now delete (Collection)
+		if err := database.DBInterface.DeleteCollection(parsedCollectionID); err != nil {
+			TemplateInput.Message += "Failed to delete collection. SQL Error. "
+			go writeAuditLogByName(TemplateInput.UserName, "DELETE-COLLECTION", TemplateInput.UserName+" failed to delete collection. "+request.FormValue("ID")+", "+err.Error())
+			break //Cancel delete
+		}
+		go writeAuditLogByName(TemplateInput.UserName, "DELETE-COLLECTION", TemplateInput.UserName+" deleted collection. "+request.FormValue("ID")+", "+CollectionInfo.Name)
+		TemplateInput.Message += "Successfully deleted collection " + CollectionInfo.Name + ". "
+		http.Redirect(responseWriter, request, "/collections?prevMessage="+url.QueryEscape(TemplateInput.Message), 302)
+		return
 	}
 
 	//Get the page offset

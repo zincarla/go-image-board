@@ -32,6 +32,7 @@
 				<h5>Commands</h5>
 				{{if and $UserNotNull $HasDeletePermissions}}
 				<a href="/collections?command=delete&ID={{.CollectionInfo.ID}}&SearchTerms={{.OldQuery}}" onclick="return confirm('Are you sure you want to delete this collection?');">Delete Collection</a>
+				<a href="/collections?command=deleteandmembers&ID={{.CollectionInfo.ID}}&SearchTerms={{.OldQuery}}" onclick="return confirm('Are you sure you want to delete this collection AND its members?');">and Members</a>
 				{{end}}
 				{{if and $UserNotNull $HasRemoveFromPermissions}}
 				<br><a href="/collectionorder?ID={{$CollectionID}}&SearchTerms={{$OldQuery}}">Reorder Members</a>
