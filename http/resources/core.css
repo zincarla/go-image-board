@@ -383,6 +383,9 @@ video, audio {
 .proposeReplace {
 	border: solid 5px slategray;
 }
+.highlightedAutoComplete {
+	background-color: slategray;
+}
 /*Cell phone selector*/
 @media (max-device-width: 536px), (max-width: 536px) {
 	#SearchContainer {

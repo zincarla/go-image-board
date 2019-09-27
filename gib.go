@@ -114,6 +114,8 @@ func main() {
 		//API
 		requestRouter.HandleFunc("/api/Collection", api.CollectionAPIRouter)
 		requestRouter.HandleFunc("/api/User", api.UserAPIRouter)
+		requestRouter.HandleFunc("/api/TagName", api.TagNameAPIRouter)
+
 	} else {
 		requestRouter.HandleFunc("/", routers.BadConfigRouter)
 		requestRouter.HandleFunc("/resources/{file}", routers.ResourceRouter) /*Required for CSS*/

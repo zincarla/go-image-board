@@ -29,7 +29,7 @@ func TagsRouter(responseWriter http.ResponseWriter, request *http.Request) {
 	pageStride := config.Configuration.PageStride
 
 	//Populate Tags
-	tag, totalResults, err := database.DBInterface.SearchTags(TagSearch, pageStart, pageStride)
+	tag, totalResults, err := database.DBInterface.SearchTags(TagSearch, pageStart, pageStride, false, false)
 	if err != nil {
 		TemplateInput.Message = "Error pulling tags"
 		logging.LogInterface.WriteLog("TagsRouter", "TagsRouter", "*", "ERROR", []string{"Failed to pull tags ", err.Error()})

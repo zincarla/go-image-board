@@ -103,7 +103,7 @@ func (DBConnection *MariaDBPlugin) AddTag(TagIDs []uint64, ImageID uint64, Linke
 		values += " ?, ?),"
 	}
 	values = values[:len(values)-1] + " ON DUPLICATE KEY UPDATE LinkerID=?;" //Strip last comma, add end
-	queryArray = append(queryArray, LinkerID) //For duplicate key update
+	queryArray = append(queryArray, LinkerID)                                //For duplicate key update
 	sqlQuery := "INSERT INTO ImageTags (TagID, ImageID, LinkerID) VALUES" + values
 	if _, err := DBConnection.DBHandle.Exec(sqlQuery, queryArray...); err != nil {
 		logging.LogInterface.WriteLog("MariaDBPlugin", "AddTag", "*", "ERROR", []string{"Tags not added to image", strconv.FormatUint(ImageID, 10), sqlQuery, err.Error()})
@@ -208,21 +208,39 @@ func (DBConnection *MariaDBPlugin) UpdateTag(TagID uint64, Name string, Descript
 }
 
 //SearchTags returns a list of tags like the provided name, but only the ID, Name, Description, and IsAlias
-func (DBConnection *MariaDBPlugin) SearchTags(name string, PageStart uint64, PageStride uint64) ([]interfaces.TagInformation, uint64, error) {
+func (DBConnection *MariaDBPlugin) SearchTags(name string, PageStart uint64, PageStride uint64, WildcardForwardOnly bool, SortByUsage bool) ([]interfaces.TagInformation, uint64, error) {
 	var ToReturn []interfaces.TagInformation
 	queryArray := []interface{}{}
-	sqlQuery := "SELECT ID, Name, Description, IsAlias FROM Tags ORDER BY Name LIMIT ? OFFSET ?"
+	sqlQuery := "SELECT ID, Name, Description, IsAlias FROM Tags"
 	sqlCountQuery := "SELECT Count(*) FROM Tags"
 
-	//Cleanup Query
+	if SortByUsage {
+		sqlQuery = sqlQuery + " JOIN (SELECT TagID, COUNT(*) as 'Usage' FROM ImageTags GROUP BY TagID) Cnt ON Cnt.TagID = Tags.ID"
+	}
+
+	//Cleanup Query and alter if we were provided a name
 	name = strings.TrimSpace(name)
 	name = strings.Replace(name, "%", "", -1)
 	if name != "" {
-		name = "%" + name + "%"
-		sqlQuery = "SELECT ID, Name, Description, IsAlias FROM Tags WHERE Name like ? ORDER BY Name LIMIT ? OFFSET ?"
-		sqlCountQuery = "SELECT Count(*) FROM Tags WHERE Name like ?"
+		if WildcardForwardOnly {
+			name = name + "%"
+		} else {
+			name = "%" + name + "%"
+		}
+		sqlQuery = sqlQuery + " WHERE Name like ?"
+		sqlCountQuery = sqlCountQuery + " WHERE Name like ?"
 		queryArray = append(queryArray, name)
 	}
+
+	//Add the sorting to the query
+	if SortByUsage {
+		sqlQuery = sqlQuery + " ORDER BY Cnt.Usage DESC"
+	} else {
+		sqlQuery = sqlQuery + " ORDER BY Name"
+	}
+
+	//Add the limit at the end
+	sqlQuery = sqlQuery + " LIMIT ? OFFSET ?"
 
 	//Query Count
 	//Run the count query (Count query does not use start/stride, so run this before we add those)

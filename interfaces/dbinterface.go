@@ -86,7 +86,7 @@ type DBInterface interface {
 	//ReplaceImageTags Replaces an old tag, with the new tag
 	ReplaceImageTags(OldTagID uint64, NewTagID uint64, LinkerID uint64) error
 	//SearchTags returns a list of tags like the provided name, but only the ID, Name, Description, and IsAlias
-	SearchTags(name string, PageStart uint64, PageStride uint64) ([]TagInformation, uint64, error)
+	SearchTags(name string, PageStart uint64, PageStride uint64, WildcardForwardOnly bool, SortByUsage bool) ([]TagInformation, uint64, error)
 
 	//UpdateUserVoteScore Either creates or changes a user's vote on an image
 	UpdateUserVoteScore(UserID uint64, ImageID uint64, Score int64) error
