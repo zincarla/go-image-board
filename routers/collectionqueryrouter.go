@@ -107,7 +107,14 @@ func CollectionsRouter(responseWriter http.ResponseWriter, request *http.Request
 			}
 		}
 		if !canDelete {
-			break;
+			break
+		}
+
+		//Permission validated, now delete (Collection)
+		if err := database.DBInterface.DeleteCollection(parsedCollectionID); err != nil {
+			TemplateInput.Message += "Failed to delete collection. SQL Error. "
+			go writeAuditLogByName(TemplateInput.UserName, "DELETE-COLLECTION", TemplateInput.UserName+" failed to delete collection. "+request.FormValue("ID")+", "+err.Error())
+			break //Cancel delete
 		}
 
 		//Delete images
@@ -119,12 +126,6 @@ func CollectionsRouter(responseWriter http.ResponseWriter, request *http.Request
 			}
 		}
 
-		//Permission validated, now delete (Collection)
-		if err := database.DBInterface.DeleteCollection(parsedCollectionID); err != nil {
-			TemplateInput.Message += "Failed to delete collection. SQL Error. "
-			go writeAuditLogByName(TemplateInput.UserName, "DELETE-COLLECTION", TemplateInput.UserName+" failed to delete collection. "+request.FormValue("ID")+", "+err.Error())
-			break //Cancel delete
-		}
 		go writeAuditLogByName(TemplateInput.UserName, "DELETE-COLLECTION", TemplateInput.UserName+" deleted collection. "+request.FormValue("ID")+", "+CollectionInfo.Name)
 		TemplateInput.Message += "Successfully deleted collection " + CollectionInfo.Name + ". "
 		http.Redirect(responseWriter, request, "/collections?prevMessage="+url.QueryEscape(TemplateInput.Message), 302)
