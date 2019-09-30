@@ -39,11 +39,15 @@
 				<h5>Tags{{if and $UserNotNull $HasTagPermissions}} (<a href="#" onclick="return ToggleFormDisplay('addTagForm');">add</a>){{end}}</h5>
 				<form action="/image" method="POST" id="addTagForm" class="displayHidden">
 					<h5>Add Tag</h5>
-					<input type="text" name="NewTags" placeholder="New Tags" value="">
+					<input type="text" name="NewTags" placeholder="New Tags" id="AddNewTags" value=""> 
+					<div id="acAddNewTags"></div>
 					<input type="hidden" name="ID" value="{{.ImageContentInfo.ID}}">
 					<input type="hidden" name="command" value="AddTags" />
 					<input type="hidden" name="SearchTerms" value="{{$OldQuery}}">
 					<input type="submit" value="Add">
+					<script>
+						var AddNewTagsAC = new AutoCompleteBox(document.getElementById("AddNewTags"), document.getElementById("acAddNewTags"));
+					</script>
 				</form>
 				<ul>
 					{{range .Tags}}
