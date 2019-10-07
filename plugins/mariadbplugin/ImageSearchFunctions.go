@@ -364,7 +364,7 @@ func (DBConnection *MariaDBPlugin) getPrevNexImage(Tags []interfaces.TagInformat
 	//Add values for metatags
 	for _, tag := range MetaTags {
 		//Handle Complex Tags Here
-		if tag.Name == "InCollection" { //Special Exception for InCollection
+		if tag.Name == "InCollection" || tag.Name == "TagCount" { //Special Exception for cert MetaTags
 			continue
 		}
 		//Otherwise use default
