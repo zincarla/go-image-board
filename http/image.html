@@ -117,6 +117,14 @@
 				{{.ImageContent}}
 				{{if eq $type "image"}}
 					<a onclick="return ExpandImage();" class="cellDefaultHidden" style="cursor:pointer;">&#8597;</a>
+					<script>
+						function OnLoadCorrectImage() {
+							if (document.getElementById("IMGContent")) {
+								CorrectImageOrient("IMGContent");
+							}
+						}
+						window.addEventListener('load', OnLoadCorrectImage);
+					</script>
 				{{end}}
 				{{if .ImageContentInfo.Location}}
 					<div id="downloadButton"><a href="/images/{{.ImageContentInfo.Location}}">Download</a></div>

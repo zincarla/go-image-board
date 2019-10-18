@@ -140,3 +140,19 @@ function GenerateUserSearchMenu(searchQuery, pageStride, pageOffset, maxCount, t
 
     document.getElementById(targetID).innerHTML = pageMenu;
 }
+
+function CorrectImageOrient(imgID) {
+    var imgElement = document.getElementById(imgID);
+     window.EXIF.getData(imgElement, function () {
+        var orientation = EXIF.getTag(this, "Orientation");
+        if (orientation && orientation != 1) {
+            var canvas = window.loadImage.scale(imgElement, {orientation: orientation || 0,maxWidth: 1000,maxHeight: 1000,canvas:true});
+            var newIMG = document.createElement("img");
+            newIMG.src = canvas.toDataURL();
+            newIMG.id = imgID;
+            newIMG.alt = imgElement.alt;
+            newIMG.style = imgElement.style;
+            imgElement.parentNode.replaceChild(newIMG,imgElement);
+        } //Otherwise not needed
+    });
+}
