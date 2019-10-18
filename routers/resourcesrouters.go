@@ -4,7 +4,6 @@ import (
 	"errors"
 	"go-image-board/config"
 	"go-image-board/logging"
-	"image"
 	"net/http"
 	"net/url"
 	"os"
@@ -12,6 +11,9 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+
+	"github.com/disintegration/imageorient"
+
 	//Because all image processing will happen in this file
 	_ "image/gif"
 	_ "image/jpeg"
@@ -96,7 +98,7 @@ func GenerateThumbnail(Name string) error {
 		if err != nil {
 			return err
 		}
-		originalImage, _, err := image.Decode(File)
+		originalImage, _, err := imageorient.Decode(File)
 		if err != nil {
 			return err
 		}
