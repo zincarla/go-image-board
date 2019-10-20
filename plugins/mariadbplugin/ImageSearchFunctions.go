@@ -5,7 +5,6 @@ import (
 	"errors"
 	"go-image-board/interfaces"
 	"go-image-board/logging"
-	"math"
 	"math/rand"
 	"strings"
 )
@@ -409,38 +408,23 @@ func (DBConnection *MariaDBPlugin) getPrevNexImage(Tags []interfaces.TagInformat
 
 //GetRandomImage returns a random image (Returns a ImageInformation and an error/nil)
 func (DBConnection *MariaDBPlugin) GetRandomImage(Tags []interfaces.TagInformation) (interfaces.ImageInformation, error) {
-	var ToReturn interfaces.ImageInformation
-	var min uint64
-	max := ^uint64(0)
+	imageInfo, resultCount, err := DBConnection.SearchImages(Tags, 0, 1)
 
-	if imageInfo, err := DBConnection.getPrevNexImage(Tags, 0, true); err == nil {
-		ToReturn = imageInfo
-		min = imageInfo.ID
+	if err == nil {
+		if resultCount <= 0 {
+			return interfaces.ImageInformation{}, errors.New("no images found with provided tags")
+		}
+		if resultCount == 1 {
+			return imageInfo[0], nil //Shortcut for one result
+		}
+
+		rando := rand.Float64()
+		randoID := uint64(rando * float64(resultCount))
+		imageInfo, _, err = DBConnection.SearchImages(Tags, randoID, 1)
+		if err == nil {
+			return imageInfo[0], nil
+		}
+		return interfaces.ImageInformation{}, err
 	}
-
-	if imageInfo, err := DBConnection.getPrevNexImage(Tags, math.MaxUint64, false); err == nil {
-		ToReturn = imageInfo
-		max = imageInfo.ID
-	}
-
-	//shortcut if there is only one result
-	if max == min {
-		return ToReturn, nil
-	}
-
-	rando := rand.Float64()
-	spread := float64(max - min)
-	randoID := uint64(rando*spread) + min
-
-	next := rand.Float32() >= .5
-
-	if imageInfo, err := DBConnection.getPrevNexImage(Tags, randoID, next); err == nil {
-		ToReturn = imageInfo
-	} else if imageInfo, err := DBConnection.getPrevNexImage(Tags, randoID, !next); err == nil {
-		ToReturn = imageInfo
-	} else {
-		return ToReturn, errors.New("no image found with provided tags")
-	}
-
-	return ToReturn, nil
+	return interfaces.ImageInformation{}, err
 }
