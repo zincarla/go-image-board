@@ -101,6 +101,15 @@ func ImageQueryRouter(responseWriter http.ResponseWriter, request *http.Request)
 				userQTags = append(userQTags, userFilterTags...)
 			}
 		}
+		//Return random image if requested
+		if randoOption := request.FormValue("SearchType"); randoOption == "Random" {
+			if imageInfo, err := database.DBInterface.GetRandomImage(userQTags); err == nil {
+				//redirect user to randomly selected image
+				http.Redirect(responseWriter, request, "/image?ID="+strconv.FormatUint(imageInfo.ID,10)+"&prevMessage="+url.QueryEscape(TemplateInput.Message)+"&SearchTerms="+url.QueryEscape(TemplateInput.OldQuery), 302);
+				return
+			}
+			TemplateInput.Message += "Failed to search for a random image. " //Just fall through to the normal search
+		}
 		//Parse tag results for next query
 		imageInfo, MaxCount, err := database.DBInterface.SearchImages(userQTags, pageStart, pageStride)
 		if err == nil {

@@ -6,6 +6,10 @@ import (
 	"go-image-board/config"
 	"go-image-board/logging"
 	"strconv"
+
+
+	"math/rand"
+	"time"
 	//I mean, where else would this go?
 	_ "github.com/go-sql-driver/mysql"
 )
@@ -23,6 +27,7 @@ type MariaDBPlugin struct {
 
 //InitDatabase connects to a database, and if needed, creates and or updates tables
 func (DBConnection *MariaDBPlugin) InitDatabase() error {
+	rand.Seed(time.Now().UnixNano())
 	var err error
 	//https://github.com/go-sql-driver/mysql/#dsn-data-source-name
 	DBConnection.DBHandle, err = sql.Open("mysql", config.Configuration.DBUser+":"+config.Configuration.DBPassword+"@tcp("+config.Configuration.DBHost+":"+config.Configuration.DBPort+")/"+config.Configuration.DBName)

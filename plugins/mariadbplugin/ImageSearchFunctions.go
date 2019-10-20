@@ -5,6 +5,8 @@ import (
 	"errors"
 	"go-image-board/interfaces"
 	"go-image-board/logging"
+	"math"
+	"math/rand"
 	"strings"
 )
 
@@ -213,7 +215,7 @@ func (DBConnection *MariaDBPlugin) GetPrevNexImages(Tags []interfaces.TagInforma
 	return ToReturn, nil
 }
 
-//GetPrevNexImages performs a search for images (Returns a list of ImageInformations (Up to 2) and an error/nil)
+//GetPrevNexImages performs a search for images (Returns a ImageInformation and an error/nil)
 func (DBConnection *MariaDBPlugin) getPrevNexImage(Tags []interfaces.TagInformation, TargetID uint64, Next bool) (interfaces.ImageInformation, error) {
 	//Cleanup input for use in code below
 	//Specifically we separate the include, the exclude and metatags into their own lists
@@ -401,6 +403,44 @@ func (DBConnection *MariaDBPlugin) getPrevNexImage(Tags []interfaces.TagInformat
 		return ToReturn, err
 	}
 	ToReturn = interfaces.ImageInformation{Name: Name, ID: ImageID, Location: Location}
+
+	return ToReturn, nil
+}
+
+//GetRandomImage returns a random image (Returns a ImageInformation and an error/nil)
+func (DBConnection *MariaDBPlugin) GetRandomImage(Tags []interfaces.TagInformation) (interfaces.ImageInformation, error) {
+	var ToReturn interfaces.ImageInformation
+	var min uint64
+	max := ^uint64(0)
+
+	if imageInfo, err := DBConnection.getPrevNexImage(Tags, 0, true); err == nil {
+		ToReturn = imageInfo
+		min = imageInfo.ID
+	}
+
+	if imageInfo, err := DBConnection.getPrevNexImage(Tags, math.MaxUint64, false); err == nil {
+		ToReturn = imageInfo
+		max = imageInfo.ID
+	}
+
+	//shortcut if there is only one result
+	if max == min {
+		return ToReturn, nil
+	}
+
+	rando := rand.Float64()
+	spread := float64(max - min)
+	randoID := uint64(rando*spread) + min
+
+	next := rand.Float32() >= .5
+
+	if imageInfo, err := DBConnection.getPrevNexImage(Tags, randoID, next); err == nil {
+		ToReturn = imageInfo
+	} else if imageInfo, err := DBConnection.getPrevNexImage(Tags, randoID, !next); err == nil {
+		ToReturn = imageInfo
+	} else {
+		return ToReturn, errors.New("no image found with provided tags")
+	}
 
 	return ToReturn, nil
 }
