@@ -153,9 +153,10 @@ func CollectionImageRouter(responseWriter http.ResponseWriter, request *http.Req
 		//Add image to collection
 		if err := database.DBInterface.AddCollectionMember(collection.ID, append([]uint64{}, parsedImageID), TemplateInput.UserID); err != nil {
 			TemplateInput.Message += "Failed to add image to collection. SQL error. Check if image is already part of the collection. "
-		} else {
-			TemplateInput.Message += "Image added to collection. "
 		}
+		TemplateInput.Message += "Image added to collection. "
+		http.Redirect(responseWriter, request, "/image?ID="+strconv.FormatUint(parsedImageID,10)+"&prevMessage="+url.QueryEscape(TemplateInput.Message)+"&SearchTerms="+url.QueryEscape(TemplateInput.OldQuery), 302)
+		return
 	case "modify":
 		if TemplateInput.UserName == "" {
 			//Redirect to logon
