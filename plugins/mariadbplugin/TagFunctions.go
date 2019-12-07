@@ -48,8 +48,9 @@ func (DBConnection *MariaDBPlugin) NewTag(Name string, Description string, Uploa
 		logging.LogInterface.WriteLog("MariaDBPlugin", "NewTag", "*", "ERROR", []string{"Failed to add tag", err.Error()})
 		return 0, err
 	}
-	logging.LogInterface.WriteLog("MariaDBPlugin", "NewTag", "*", "SUCCESS", []string{"Tag added"})
 	id, _ := resultInfo.LastInsertId()
+	logging.LogInterface.WriteLog("MariaDBPlugin", "NewTag", "*", "SUCCESS", []string{"Tag added", strconv.FormatUint(uint64(id),10)})
+	
 	return uint64(id), err
 }
 
@@ -58,7 +59,12 @@ func (DBConnection *MariaDBPlugin) DeleteTag(TagID uint64) error {
 	//Ensure not in use
 	var useCount int
 	if err := DBConnection.DBHandle.QueryRow("SELECT COUNT(*) AS UseCount FROM ImageTags WHERE TagID = ?", TagID).Scan(&useCount); err != nil {
-		logging.LogInterface.WriteLog("MariaDBPlugin", "DeleteTag", "*", "ERROR", []string{"Tag to delete is still in use", strconv.FormatUint(TagID, 10)})
+		logging.LogInterface.WriteLog("MariaDBPlugin", "DeleteTag", "*", "ERROR", []string{"Failed to get tag use information", err.Error()})
+		return errors.New("failed to check tag to delete usage")
+	}
+
+	if useCount > 0 {
+		logging.LogInterface.WriteLog("MariaDBPlugin", "DeleteTag", "*", "ERROR", []string{"Tag to delete is still in use", strconv.FormatUint(TagID, 10), "in use",strconv.Itoa(useCount)})
 		return errors.New("tag to delete is still in use")
 	}
 

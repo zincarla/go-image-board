@@ -188,7 +188,47 @@ func TagRouter(responseWriter http.ResponseWriter, request *http.Request) {
 			go writeAuditLog(userID, "REPLACE-BULKIMAGETAG", TemplateInput.UserName+" bulk added tags to images. "+oldTagQuery+"->"+newTagQuery)
 		}
 		ID = strconv.FormatUint(userNewQTags[0].ID, 10)
+	case "delete":
+		if TemplateInput.UserName == "" {
+			TemplateInput.Message += "You must be logged in to perform that action. "
+			break
+		}
+		if ID == "" {
+			TemplateInput.Message += "No ID provided to delete. "
+			break
+		}
+		iID, err := strconv.ParseUint(ID, 10, 32)
+		if err != nil {
+			TemplateInput.Message += "Error parsing tag id. "
+			logging.LogInterface.WriteLog("TagsRouter", "TagRouter", "*", "ERROR", []string{"Failed to parse tag id ", err.Error()})
+			break
+		}
+		tagInfo, err := database.DBInterface.GetTag(iID)
+		if err != nil {
+			TemplateInput.Message += "Error getting tag info. "
+			logging.LogInterface.WriteLog("TagsRouter", "TagRouter", "*", "ERROR", []string{"Failed to get tag info ", err.Error()})
+			break
+		}
 
+		//Validate permission to delete
+		if TemplateInput.UserPermissions.HasPermission(interfaces.RemoveTags) != true && (config.Configuration.UsersControlOwnObjects != true || TemplateInput.UserID != tagInfo.UploaderID) {
+			TemplateInput.Message += "User does not have modify permission for tags. "
+			go writeAuditLogByName(TemplateInput.UserName, "DELETE-TAG", TemplateInput.UserName+" failed to delete tag. Insufficient permissions. "+ID)
+			break
+		}
+		// /ValidatePermission
+
+		//Update tag
+		if err := database.DBInterface.DeleteTag(iID); err != nil {
+			TemplateInput.Message += "Failed to delete tag. Ensure the tag is not currently in use. "
+		} else {
+			TemplateInput.Message += "Tag deleted successfully. "
+			go writeAuditLogByName(TemplateInput.UserName, "DELETE-TAG", TemplateInput.UserName+" successfully deleted tag. "+ID)
+			//redirect user to tags since we just deleted this one
+			http.Redirect(responseWriter, request, "/tags?&prevMessage="+url.QueryEscape(TemplateInput.Message)+"&SearchTerms="+url.QueryEscape(TemplateInput.OldQuery), 302);
+			return
+		}
+	
 	}
 
 	if ID == "" {
