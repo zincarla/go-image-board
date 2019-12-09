@@ -26,8 +26,8 @@ func BadConfigRouter(responseWriter http.ResponseWriter, request *http.Request) 
 	http.ServeFile(responseWriter, request, config.JoinPath(config.Configuration.HTTPRoot, "resources"+string(filepath.Separator)+"updateconfig.html"))
 }
 
-//
-func writeAuditLog(UserID uint64, Type string, Info string) error {
+//WriteAuditLog Writes to the DB audit log, requires userID
+func WriteAuditLog(UserID uint64, Type string, Info string) error {
 
 	if err := database.DBInterface.AddAuditLog(UserID, Type, Info); err != nil {
 		sid := strconv.FormatUint(UserID, 10)
@@ -37,10 +37,11 @@ func writeAuditLog(UserID uint64, Type string, Info string) error {
 	return nil
 }
 
-func writeAuditLogByName(UserName string, Type string, Info string) error {
+//WriteAuditLogByName Writes to the DB audit log, requires UserName
+func WriteAuditLogByName(UserName string, Type string, Info string) error {
 	userID, err := database.DBInterface.GetUserID(UserName)
 	if err != nil {
 		logging.LogInterface.WriteLog("RootRouter", "writeAuditLog", UserName, "ERROR", []string{"Could not get user id for audit log.", err.Error(), Type, Info})
 	}
-	return writeAuditLog(userID, Type, Info)
+	return WriteAuditLog(userID, Type, Info)
 }

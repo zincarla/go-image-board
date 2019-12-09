@@ -81,8 +81,11 @@ func main() {
 			configConfirmed = true
 		}
 	}
-	//Init webserver
+	//Init webserver cache
 	templatecache.CacheTemplates()
+	//Init API Throttle
+	api.Throttle = api.ThrottleMap{}
+	api.Throttle.Init()
 	//Setup request routers
 	requestRouter := mux.NewRouter()
 
@@ -113,8 +116,14 @@ func main() {
 		requestRouter.HandleFunc("/mod", routers.ModRouter)
 		//API
 		requestRouter.HandleFunc("/api/Collection", api.CollectionAPIRouter)
-		requestRouter.HandleFunc("/api/User", api.UserAPIRouter)
+		requestRouter.HandleFunc("/api/Collections", api.CollectionsAPIRouter)
+		requestRouter.HandleFunc("/api/CollectionName", api.CollectionNameAPIRouter)
+		requestRouter.HandleFunc("/api/Users", api.UsersAPIRouter)
 		requestRouter.HandleFunc("/api/TagName", api.TagNameAPIRouter)
+		requestRouter.HandleFunc("/api/Tag", api.TagAPIRouter)
+		requestRouter.HandleFunc("/api/Tags", api.TagsAPIRouter)
+		requestRouter.HandleFunc("/api/Logon", api.LogonAPIRouter)
+		requestRouter.HandleFunc("/api/Logout", api.LogoutAPIRouter)
 
 	} else {
 		requestRouter.HandleFunc("/", routers.BadConfigRouter)

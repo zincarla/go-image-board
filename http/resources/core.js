@@ -53,8 +53,9 @@ function UpdatePermissionBox() {
 }
 
 //API
+var CheckCollectionTimer = null;
 function CheckCollectionName(form, resultID) {
-    document.getElementById(resultID).innerHTML = "Add to Collection"
+    //document.getElementById(resultID).innerHTML = "Add to Collection"
     var xhttp = new XMLHttpRequest();
     xhttp.onreadystatechange = function() {
         if (this.readyState == 4 && this.status == 200 ) {
@@ -73,8 +74,9 @@ function CheckCollectionName(form, resultID) {
             }
         }
     };
-    xhttp.open("GET", "/api/Collection?CollectionName="+form.elements["CollectionName"].value, true);
+    xhttp.open("GET", "/api/CollectionName?CollectionName="+form.elements["CollectionName"].value, true);
     xhttp.send();
+
     return false;
 }
 
@@ -101,7 +103,7 @@ function SearchUsers(formID, pageStart) {
             document.getElementById("userResultCount").innerText = "Error occurred: "+this.status+" - "+this.statusText+". From server: "+xhttp.responseText
         }
     };
-    xhttp.open("GET", "/api/User?userNameQuery="+form.elements["userName"].value+"&PageStart="+pageStart, true);
+    xhttp.open("GET", "/api/Users?userNameQuery="+form.elements["userName"].value+"&PageStart="+pageStart, true);
     xhttp.send();
     return false;
 }

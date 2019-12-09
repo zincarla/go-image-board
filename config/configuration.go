@@ -13,28 +13,52 @@ import (
 
 //ConfigurationSettings contains the structure of all the settings that will be loaded at runtime.
 type ConfigurationSettings struct {
-	DBName                 string
-	DBUser                 string
-	DBPassword             string
-	DBPort                 string
-	DBHost                 string
-	ImageDirectory         string
-	Address                string
-	ReadTimeout            time.Duration
-	WriteTimeout           time.Duration
-	MaxHeaderBytes         int
-	SessionStoreKey        []byte
-	HTTPRoot               string
-	MaxUploadBytes         int64
-	AllowAccountCreation   bool
-	AccountRequiredToView  bool
-	MaxThumbnailWidth      uint
-	MaxThumbnailHeight     uint
-	DefaultPermissions     uint64
+	//DBName is the name of the db used for this instance
+	DBName string
+	//DBUser is the user name used to auth to the db
+	DBUser string
+	//DBPassword is the password used to auth to the db
+	DBPassword string
+	//DBPort the port the database is listening to
+	DBPort string
+	//DBHost hostname of the database server
+	DBHost string
+	//ImageDirectory path to where images are stored
+	ImageDirectory string
+	//Address hostname/port that this server should listen on
+	Address string
+	//ReadTimeout timeout allowed for reads
+	ReadTimeout time.Duration
+	//WriteTimeout timeout allowed for writes
+	WriteTimeout time.Duration
+	//MaxHeaderBytes maximum amount of bytes allowed in a request header
+	MaxHeaderBytes int
+	//SessionStoreKey stores the key to the session store
+	SessionStoreKey []byte
+	//HTTPRoot directory where template and html files are kept
+	HTTPRoot string
+	//MaxUploadBytes maximum allowed bytes for an upload
+	MaxUploadBytes int64
+	//AllowAccountCreation if true, random users can create accounts, otherwise only mods can create users
+	AllowAccountCreation bool
+	//AccountRequiredToView if true, users must authenticate to access nearly any part of the server
+	AccountRequiredToView bool
+	//MaxThumbnailWidth Maximum width for automatically generated thumbnails
+	MaxThumbnailWidth uint
+	//MaxThumbnailHeight Maximum height for automatically generated thumbnails
+	MaxThumbnailHeight uint
+	//DefaultPermissions these permissions are assigned to all new users automatically
+	DefaultPermissions uint64
+	//UsersControlOwnObjects if this is set, permission checks are ignored for users that are trying to manage resources they contributed
 	UsersControlOwnObjects bool
-	FFMPEGPath             string
-	UseFFMPEG              bool
-	PageStride             uint64
+	//FFMPEGPath Path to the FFMPEG application
+	FFMPEGPath string
+	//UseFFMPEG If set, when joined with FFMPEGPath, videos that are uploaded will have a thumbnail generated using FFMPEG
+	UseFFMPEG bool
+	//PageStride How many images to show on one page
+	PageStride uint64
+	//APIThrottle How much time, in milliseconds, users using the API must wait between requests
+	APIThrottle int64
 }
 
 //SessionStore contains cookie information
@@ -44,7 +68,7 @@ var SessionStore *sessions.CookieStore
 var Configuration ConfigurationSettings
 
 //ApplicationVersion Current version of application. This should be incremented every release
-var ApplicationVersion = "1.0.2.7"
+var ApplicationVersion = "1.0.2.8"
 
 //SessionVariableName is used when checking cookies
 var SessionVariableName = "gib-session"

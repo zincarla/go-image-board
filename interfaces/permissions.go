@@ -11,7 +11,6 @@ type UserPermission uint64
 //Since each permission only has 1 bit with 1, we can do a bitand and see if the result is the same as the permission we are look for
 //Example, permission 3 is 0011, we want to see if this permission has AddTags, which is 2 or 0010.
 //0010 & 0011 = 0010, so the output is same as the permission we are checking, user has that permission
-//.... Why did I type this, this is not my first time using this method to check permissions...
 const (
 	//ViewImagesAndTags View only access to Images and Tags
 	ViewImagesAndTags UserPermission = 0
@@ -45,6 +44,9 @@ const (
 	RemoveCollections UserPermission = 8192
 	//ModifyCollectionMembers Allows a user to add and remove images to/from a collection, but not create or delete collections themselves
 	ModifyCollectionMembers UserPermission = 16384
+	//APIWriteAccess grants a user access to the API for making changes. The user is still limited by their other permissions however.
+	//Read access is generally given to authenticated users.
+	APIWriteAccess UserPermission = 32768
 	//Add more permissions here as needed in future. Keep using powers of 2 for this to work.
 	//Max number will be 18446744073709551615, after 64 possible permission assignments.
 )

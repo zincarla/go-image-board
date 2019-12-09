@@ -28,7 +28,7 @@ func ModRouter(responseWriter http.ResponseWriter, request *http.Request) {
 		if TemplateInput.UserPermissions.HasPermission(interfaces.EditUserPermissions) != true {
 			TemplateInput.Message += "User does not have modify permission for user permissions. "
 
-			go writeAuditLog(TemplateInput.UserID, "EDIT-USERPERMISSIONS", TemplateInput.UserName+" failed to edit user permissions, insufficient permissions.")
+			go WriteAuditLog(TemplateInput.UserID, "EDIT-USERPERMISSIONS", TemplateInput.UserName+" failed to edit user permissions, insufficient permissions.")
 			break
 		}
 		//Do the thing
@@ -57,7 +57,7 @@ func ModRouter(responseWriter http.ResponseWriter, request *http.Request) {
 		//Check if has permissions
 		if TemplateInput.UserPermissions.HasPermission(interfaces.DisableUser) != true {
 			TemplateInput.Message += "User does not have disable permission for users. "
-			go writeAuditLog(TemplateInput.UserID, "DISABLE-USER", TemplateInput.UserName+" failed to edit user permissions, insufficient permissions.")
+			go WriteAuditLog(TemplateInput.UserID, "DISABLE-USER", TemplateInput.UserName+" failed to edit user permissions, insufficient permissions.")
 			break
 		}
 		//Do the thing

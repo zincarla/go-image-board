@@ -62,14 +62,14 @@ func CollectionImageRouter(responseWriter http.ResponseWriter, request *http.Req
 		CollectionInfo, err := database.DBInterface.GetCollection(parsedCollectionID)
 		if err != nil {
 			TemplateInput.Message += "Failed to edit collection. SQL Error. "
-			go writeAuditLogByName(TemplateInput.UserName, "REMOVE-COLLECTIONMEMBER", TemplateInput.UserName+" failed to delete collection. "+request.FormValue("ID")+", "+err.Error())
+			go WriteAuditLogByName(TemplateInput.UserName, "REMOVE-COLLECTIONMEMBER", TemplateInput.UserName+" failed to delete collection. "+request.FormValue("ID")+", "+err.Error())
 			break //Cancel delete
 		}
 
 		//Validate Permission to delete
 		if TemplateInput.UserPermissions.HasPermission(interfaces.ModifyCollectionMembers) != true && (config.Configuration.UsersControlOwnObjects != true || CollectionInfo.UploaderID != TemplateInput.UserID) {
 			TemplateInput.Message += "User does not have edit member permission for collection. "
-			go writeAuditLogByName(TemplateInput.UserName, "REMOVE-COLLECTIONMEMBER", TemplateInput.UserName+" failed to delete collection. Insufficient permissions. "+request.FormValue("ID"))
+			go WriteAuditLogByName(TemplateInput.UserName, "REMOVE-COLLECTIONMEMBER", TemplateInput.UserName+" failed to delete collection. Insufficient permissions. "+request.FormValue("ID"))
 			break
 		}
 
@@ -77,20 +77,20 @@ func CollectionImageRouter(responseWriter http.ResponseWriter, request *http.Req
 		if CollectionInfo.Members <= 1 {
 			if err := database.DBInterface.DeleteCollection(parsedCollectionID); err != nil {
 				TemplateInput.Message += "Failed to delete collection. SQL Error. "
-				go writeAuditLogByName(TemplateInput.UserName, "REMOVE-COLLECTIONMEMBER", TemplateInput.UserName+" failed to remove member from collection. "+request.FormValue("ImageID")+" from "+request.FormValue("ID")+", "+err.Error())
+				go WriteAuditLogByName(TemplateInput.UserName, "REMOVE-COLLECTIONMEMBER", TemplateInput.UserName+" failed to remove member from collection. "+request.FormValue("ImageID")+" from "+request.FormValue("ID")+", "+err.Error())
 				break //Cancel remove
 			}
-			go writeAuditLogByName(TemplateInput.UserName, "REMOVE-COLLECTIONMEMBER", TemplateInput.UserName+" removed image from collection. "+request.FormValue("ImageID")+" from "+request.FormValue("ID")+", "+CollectionInfo.Name)
+			go WriteAuditLogByName(TemplateInput.UserName, "REMOVE-COLLECTIONMEMBER", TemplateInput.UserName+" removed image from collection. "+request.FormValue("ImageID")+" from "+request.FormValue("ID")+", "+CollectionInfo.Name)
 			TemplateInput.Message += "Successfully remove image from collection. Collection empty, so collection was also removed. "
 			//Redirect since we deleted collection
 			http.Redirect(responseWriter, request, "/collections?prevMessage="+url.QueryEscape(TemplateInput.Message), 302)
 		} else {
 			if err := database.DBInterface.RemoveCollectionMember(parsedCollectionID, parsedImageID); err != nil {
 				TemplateInput.Message += "Failed to delete collection member. SQL Error. "
-				go writeAuditLogByName(TemplateInput.UserName, "REMOVE-COLLECTIONMEMBER", TemplateInput.UserName+" failed to remove member from collection. "+request.FormValue("ImageID")+" from "+request.FormValue("ID")+", "+err.Error())
+				go WriteAuditLogByName(TemplateInput.UserName, "REMOVE-COLLECTIONMEMBER", TemplateInput.UserName+" failed to remove member from collection. "+request.FormValue("ImageID")+" from "+request.FormValue("ID")+", "+err.Error())
 				break //Cancel remove
 			}
-			go writeAuditLogByName(TemplateInput.UserName, "REMOVE-COLLECTIONMEMBER", TemplateInput.UserName+" removed image from collection. "+request.FormValue("ImageID")+" from "+request.FormValue("ID")+", "+CollectionInfo.Name)
+			go WriteAuditLogByName(TemplateInput.UserName, "REMOVE-COLLECTIONMEMBER", TemplateInput.UserName+" removed image from collection. "+request.FormValue("ImageID")+" from "+request.FormValue("ID")+", "+CollectionInfo.Name)
 			TemplateInput.Message += "Successfully remove image from collection. "
 		}
 	case "addcollectionmember":
@@ -107,7 +107,7 @@ func CollectionImageRouter(responseWriter http.ResponseWriter, request *http.Req
 			//Validate Permission
 			if TemplateInput.UserPermissions.HasPermission(interfaces.AddCollections) != true {
 				TemplateInput.Message += "You do not have create collection permissions. "
-				go writeAuditLogByName(TemplateInput.UserName, "ADD-COLLECTIONMEMBER", TemplateInput.UserName+" failed to create a collection. Insufficient permissions. "+request.FormValue("CollectionName"))
+				go WriteAuditLogByName(TemplateInput.UserName, "ADD-COLLECTIONMEMBER", TemplateInput.UserName+" failed to create a collection. Insufficient permissions. "+request.FormValue("CollectionName"))
 				break
 			}
 
@@ -146,7 +146,7 @@ func CollectionImageRouter(responseWriter http.ResponseWriter, request *http.Req
 		//Validate Permission
 		if TemplateInput.UserPermissions.HasPermission(interfaces.ModifyCollectionMembers) != true && (config.Configuration.UsersControlOwnObjects != true || collection.UploaderID != TemplateInput.UserID) {
 			TemplateInput.Message += "You do not have edit member permission for this collection. "
-			go writeAuditLogByName(TemplateInput.UserName, "ADD-COLLECTIONMEMBER", TemplateInput.UserName+" failed to add a collection member. Insufficient permissions. "+collection.Name)
+			go WriteAuditLogByName(TemplateInput.UserName, "ADD-COLLECTIONMEMBER", TemplateInput.UserName+" failed to add a collection member. Insufficient permissions. "+collection.Name)
 			break
 		}
 
@@ -155,7 +155,7 @@ func CollectionImageRouter(responseWriter http.ResponseWriter, request *http.Req
 			TemplateInput.Message += "Failed to add image to collection. SQL error. Check if image is already part of the collection. "
 		}
 		TemplateInput.Message += "Image added to collection. "
-		http.Redirect(responseWriter, request, "/image?ID="+strconv.FormatUint(parsedImageID,10)+"&prevMessage="+url.QueryEscape(TemplateInput.Message)+"&SearchTerms="+url.QueryEscape(TemplateInput.OldQuery), 302)
+		http.Redirect(responseWriter, request, "/image?ID="+strconv.FormatUint(parsedImageID, 10)+"&prevMessage="+url.QueryEscape(TemplateInput.Message)+"&SearchTerms="+url.QueryEscape(TemplateInput.OldQuery), 302)
 		return
 	case "modify":
 		if TemplateInput.UserName == "" {
@@ -188,7 +188,7 @@ func CollectionImageRouter(responseWriter http.ResponseWriter, request *http.Req
 		CollectionInfo, err := database.DBInterface.GetCollection(collectionID)
 		if err != nil {
 			TemplateInput.Message += "Failed to edit collection. SQL Error. "
-			go writeAuditLogByName(TemplateInput.UserName, "MODIFY-COLLECTION", TemplateInput.UserName+" failed to modify collection. "+request.FormValue("ID")+", "+err.Error())
+			go WriteAuditLogByName(TemplateInput.UserName, "MODIFY-COLLECTION", TemplateInput.UserName+" failed to modify collection. "+request.FormValue("ID")+", "+err.Error())
 			break //Cancel delete
 		}
 
@@ -202,17 +202,17 @@ func CollectionImageRouter(responseWriter http.ResponseWriter, request *http.Req
 		//Validate Permission to delete
 		if TemplateInput.UserPermissions.HasPermission(interfaces.ModifyCollections) != true && (config.Configuration.UsersControlOwnObjects != true || CollectionInfo.UploaderID != TemplateInput.UserID) {
 			TemplateInput.Message += "User does not have edit member permission for collection. "
-			go writeAuditLogByName(TemplateInput.UserName, "MODIFY-COLLECTION", TemplateInput.UserName+" failed to modify collection. Insufficient permissions. "+request.FormValue("ID"))
+			go WriteAuditLogByName(TemplateInput.UserName, "MODIFY-COLLECTION", TemplateInput.UserName+" failed to modify collection. Insufficient permissions. "+request.FormValue("ID"))
 			break
 		}
 
 		//Permission validated, now modify
 		if err := database.DBInterface.UpdateCollection(collectionID, newName, newDesc); err != nil {
 			TemplateInput.Message += "Failed to modify collection. SQL Error. "
-			go writeAuditLogByName(TemplateInput.UserName, "MODIFY-COLLECTION", TemplateInput.UserName+" failed to modify collection. "+request.FormValue("ID")+", "+err.Error())
+			go WriteAuditLogByName(TemplateInput.UserName, "MODIFY-COLLECTION", TemplateInput.UserName+" failed to modify collection. "+request.FormValue("ID")+", "+err.Error())
 			break //Cancel remove
 		}
-		go writeAuditLogByName(TemplateInput.UserName, "MODIFY-COLLECTION", TemplateInput.UserName+" modified collection ("+request.FormValue("ID")+")")
+		go WriteAuditLogByName(TemplateInput.UserName, "MODIFY-COLLECTION", TemplateInput.UserName+" modified collection ("+request.FormValue("ID")+")")
 		TemplateInput.Message += "Successfully modified collection."
 	}
 
@@ -285,7 +285,7 @@ func CollectionImageOrderRouter(responseWriter http.ResponseWriter, request *htt
 	CollectionInfo, err := database.DBInterface.GetCollection(collectionID)
 	if err != nil {
 		TemplateInput.Message += "Failed to modify collection. SQL Error. "
-		go writeAuditLogByName(TemplateInput.UserName, "MODIFY-COLLECTIONMEMBER", TemplateInput.UserName+" failed to modify collection. "+request.FormValue("ID")+", "+err.Error())
+		go WriteAuditLogByName(TemplateInput.UserName, "MODIFY-COLLECTIONMEMBER", TemplateInput.UserName+" failed to modify collection. "+request.FormValue("ID")+", "+err.Error())
 		http.Redirect(responseWriter, request, "/collections?prevMessage="+url.QueryEscape(TemplateInput.Message), 302)
 		return
 	}
@@ -293,7 +293,7 @@ func CollectionImageOrderRouter(responseWriter http.ResponseWriter, request *htt
 	//Validate Permission to Modify
 	if TemplateInput.UserPermissions.HasPermission(interfaces.ModifyCollectionMembers) != true && (config.Configuration.UsersControlOwnObjects != true || CollectionInfo.UploaderID != TemplateInput.UserID) {
 		TemplateInput.Message += "You do not have edit member permission for collection. "
-		go writeAuditLogByName(TemplateInput.UserName, "MODIFY-COLLECTIONMEMBER", TemplateInput.UserName+" failed to modify collection order. Insufficient permissions. "+request.FormValue("ID"))
+		go WriteAuditLogByName(TemplateInput.UserName, "MODIFY-COLLECTIONMEMBER", TemplateInput.UserName+" failed to modify collection order. Insufficient permissions. "+request.FormValue("ID"))
 		http.Redirect(responseWriter, request, "/collections?prevMessage="+url.QueryEscape(TemplateInput.Message), 302)
 		return
 	}

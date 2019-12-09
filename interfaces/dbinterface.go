@@ -72,6 +72,8 @@ type DBInterface interface {
 	GetAllTags() ([]TagInformation, error)
 	//GetTag return detailed information on one tag
 	GetTag(ID uint64) (TagInformation, error)
+	//GetTagByName returns detailed information on one tag
+	GetTagByName(Name string) (TagInformation, error)
 	//Tag Operations
 	//NewTag adds a tag with the provided information
 	NewTag(Name string, Description string, UploaderID uint64) (uint64, error)

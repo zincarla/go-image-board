@@ -78,7 +78,7 @@ func TagRouter(responseWriter http.ResponseWriter, request *http.Request) {
 		//Validate permission to upload
 		if TemplateInput.UserPermissions.HasPermission(interfaces.ModifyTags) != true && (config.Configuration.UsersControlOwnObjects != true || TemplateInput.UserID != tagInfo.UploaderID) {
 			TemplateInput.Message += "User does not have modify permission for tags. "
-			go writeAuditLogByName(TemplateInput.UserName, "MODIFY-TAG", TemplateInput.UserName+" failed to update tag. Insufficient permissions. "+ID)
+			go WriteAuditLogByName(TemplateInput.UserName, "MODIFY-TAG", TemplateInput.UserName+" failed to update tag. Insufficient permissions. "+ID)
 			break
 		}
 		// /ValidatePermission
@@ -100,7 +100,7 @@ func TagRouter(responseWriter http.ResponseWriter, request *http.Request) {
 			TemplateInput.Message += "Failed to update tag. Is your name too short? Did it exist in the first place? "
 		} else {
 			TemplateInput.Message += "Tag updated successfully. "
-			go writeAuditLogByName(TemplateInput.UserName, "MODIFY-TAG", TemplateInput.UserName+" successfully updated tag. "+ID+" to alias "+request.FormValue("aliasedTagName")+" with name "+request.FormValue("tagName")+" and description "+request.FormValue("tagDescription"))
+			go WriteAuditLogByName(TemplateInput.UserName, "MODIFY-TAG", TemplateInput.UserName+" successfully updated tag. "+ID+" to alias "+request.FormValue("aliasedTagName")+" with name "+request.FormValue("tagName")+" and description "+request.FormValue("tagDescription"))
 		}
 	case "bulkAddTag":
 		oldTagQuery := request.FormValue("tagName")
@@ -124,7 +124,7 @@ func TagRouter(responseWriter http.ResponseWriter, request *http.Request) {
 		//Validate permission to bulk modify tags
 		if TemplateInput.UserPermissions.HasPermission(interfaces.ModifyImageTags) != true || TemplateInput.UserPermissions.HasPermission(interfaces.BulkTagOperations) != true {
 			TemplateInput.Message += "User does not have modify permission for bulk tagging on images. "
-			go writeAuditLogByName(TemplateInput.UserName, "ADD-BULKIMAGETAG", TemplateInput.UserName+" failed to add tag to images. Insufficient permissions. "+oldTagQuery+"->"+newTagQuery)
+			go WriteAuditLogByName(TemplateInput.UserName, "ADD-BULKIMAGETAG", TemplateInput.UserName+" failed to add tag to images. Insufficient permissions. "+oldTagQuery+"->"+newTagQuery)
 			break
 		}
 		//Parse out tag arguments
@@ -142,7 +142,7 @@ func TagRouter(responseWriter http.ResponseWriter, request *http.Request) {
 			logging.LogInterface.WriteLog("tagrouter", "TagRouter", TemplateInput.UserName, "ERROR", []string{"Failed to bulk add tags due to a SQL error", err.Error(), newTagQuery, oldTagQuery})
 		} else {
 			TemplateInput.Message += "Tags added successfully. "
-			go writeAuditLog(userID, "ADD-BULKIMAGETAG", TemplateInput.UserName+" bulk added tags to images. "+oldTagQuery+"->"+newTagQuery)
+			go WriteAuditLog(userID, "ADD-BULKIMAGETAG", TemplateInput.UserName+" bulk added tags to images. "+oldTagQuery+"->"+newTagQuery)
 		}
 		ID = strconv.FormatUint(userNewQTags[0].ID, 10)
 	case "replaceTag":
@@ -167,7 +167,7 @@ func TagRouter(responseWriter http.ResponseWriter, request *http.Request) {
 		//Validate permission to bulk modify tags
 		if TemplateInput.UserPermissions.HasPermission(interfaces.ModifyImageTags) != true || TemplateInput.UserPermissions.HasPermission(interfaces.BulkTagOperations) != true {
 			TemplateInput.Message += "User does not have modify permission for bulk tagging on images. "
-			go writeAuditLogByName(TemplateInput.UserName, "REPLACE-BULKIMAGETAG", TemplateInput.UserName+" failed to add tag to images. Insufficient permissions. "+oldTagQuery+"->"+newTagQuery)
+			go WriteAuditLogByName(TemplateInput.UserName, "REPLACE-BULKIMAGETAG", TemplateInput.UserName+" failed to add tag to images. Insufficient permissions. "+oldTagQuery+"->"+newTagQuery)
 			break
 		}
 		//Parse out tag arguments
@@ -185,7 +185,7 @@ func TagRouter(responseWriter http.ResponseWriter, request *http.Request) {
 			logging.LogInterface.WriteLog("tagrouter", "TagRouter", TemplateInput.UserName, "ERROR", []string{"Failed to bulk replace tags due to a SQL error", err.Error(), newTagQuery, oldTagQuery})
 		} else {
 			TemplateInput.Message += "Tags replaced successfully. "
-			go writeAuditLog(userID, "REPLACE-BULKIMAGETAG", TemplateInput.UserName+" bulk added tags to images. "+oldTagQuery+"->"+newTagQuery)
+			go WriteAuditLog(userID, "REPLACE-BULKIMAGETAG", TemplateInput.UserName+" bulk added tags to images. "+oldTagQuery+"->"+newTagQuery)
 		}
 		ID = strconv.FormatUint(userNewQTags[0].ID, 10)
 	case "delete":
@@ -213,7 +213,7 @@ func TagRouter(responseWriter http.ResponseWriter, request *http.Request) {
 		//Validate permission to delete
 		if TemplateInput.UserPermissions.HasPermission(interfaces.RemoveTags) != true && (config.Configuration.UsersControlOwnObjects != true || TemplateInput.UserID != tagInfo.UploaderID) {
 			TemplateInput.Message += "User does not have modify permission for tags. "
-			go writeAuditLogByName(TemplateInput.UserName, "DELETE-TAG", TemplateInput.UserName+" failed to delete tag. Insufficient permissions. "+ID)
+			go WriteAuditLogByName(TemplateInput.UserName, "DELETE-TAG", TemplateInput.UserName+" failed to delete tag. Insufficient permissions. "+ID)
 			break
 		}
 		// /ValidatePermission
@@ -223,12 +223,12 @@ func TagRouter(responseWriter http.ResponseWriter, request *http.Request) {
 			TemplateInput.Message += "Failed to delete tag. Ensure the tag is not currently in use. "
 		} else {
 			TemplateInput.Message += "Tag deleted successfully. "
-			go writeAuditLogByName(TemplateInput.UserName, "DELETE-TAG", TemplateInput.UserName+" successfully deleted tag. "+ID)
+			go WriteAuditLogByName(TemplateInput.UserName, "DELETE-TAG", TemplateInput.UserName+" successfully deleted tag. "+ID)
 			//redirect user to tags since we just deleted this one
-			http.Redirect(responseWriter, request, "/tags?&prevMessage="+url.QueryEscape(TemplateInput.Message)+"&SearchTerms="+url.QueryEscape(TemplateInput.OldQuery), 302);
+			http.Redirect(responseWriter, request, "/tags?&prevMessage="+url.QueryEscape(TemplateInput.Message)+"&SearchTerms="+url.QueryEscape(TemplateInput.OldQuery), 302)
 			return
 		}
-	
+
 	}
 
 	if ID == "" {

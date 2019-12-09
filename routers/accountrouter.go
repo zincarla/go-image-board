@@ -49,12 +49,12 @@ func LogonRouter(responseWriter http.ResponseWriter, request *http.Request) {
 				session.Values["UserName"] = username
 				// Save it before we write to the response/return from the handler.
 				session.Save(request, responseWriter)
-				go writeAuditLogByName(username, "LOGON", username+" successfully logged on.")
+				go WriteAuditLogByName(username, "LOGON", username+" successfully logged on.")
 				logging.LogInterface.WriteLog("LogonRouter", "LogonHandler", username, "SUCCESS", []string{"Account Validation"})
 				http.Redirect(responseWriter, request, "/images", 302)
 				return
 			}
-			go writeAuditLogByName(username, "LOGON", username+" failed to log in. "+err.Error())
+			go WriteAuditLogByName(username, "LOGON", username+" failed to log in. "+err.Error())
 			TemplateInput.Message = "Wrong username or password"
 			replyWithTemplate("logon.html", TemplateInput, responseWriter)
 			return
@@ -95,7 +95,7 @@ func LogonRouter(responseWriter http.ResponseWriter, request *http.Request) {
 		}
 		err := database.DBInterface.CreateUser(username, []byte(request.FormValue("password")), strings.ToLower(request.FormValue("eMail")), config.Configuration.DefaultPermissions)
 		if err == nil {
-			go writeAuditLogByName(username, "ACCOUNT-CREATED", username+" successfully created an account.")
+			go WriteAuditLogByName(username, "ACCOUNT-CREATED", username+" successfully created an account.")
 			TemplateInput.Message += "Your account has been created. Please sign in. "
 			TemplateInput.UserID = 0
 			TemplateInput.UserName = ""
@@ -121,7 +121,7 @@ func LogonRouter(responseWriter http.ResponseWriter, request *http.Request) {
 			}
 		}
 
-		go writeAuditLogByName(userName, "LOGOUT", userName+" manually logged out.")
+		go WriteAuditLogByName(userName, "LOGOUT", userName+" manually logged out.")
 		TemplateInput.Message = "Successfully logged out."
 		TemplateInput.UserID = 0
 		TemplateInput.UserName = ""
@@ -183,7 +183,7 @@ func LogonRouter(responseWriter http.ResponseWriter, request *http.Request) {
 		err := database.DBInterface.ValidateSecurityQuestions(userName, []byte(answerOne), []byte(answerTwo), []byte(answerThree))
 		if err != nil {
 			TemplateInput.Message = "Failed to validate answers"
-			go writeAuditLogByName(userName, "PASSWORD-RESET", userName+" failed to reset password, security answers incorrect.")
+			go WriteAuditLogByName(userName, "PASSWORD-RESET", userName+" failed to reset password, security answers incorrect.")
 			break
 		}
 
@@ -192,10 +192,10 @@ func LogonRouter(responseWriter http.ResponseWriter, request *http.Request) {
 		err = database.DBInterface.SetUserPassword(userName, nil, []byte(request.FormValue("newpassword")), []byte(answerOne), []byte(answerTwo), []byte(answerThree))
 		if err != nil {
 			TemplateInput.Message = "Failed to change password"
-			go writeAuditLogByName(userName, "PASSWORD-RESET", userName+" failed to reset password. "+err.Error())
+			go WriteAuditLogByName(userName, "PASSWORD-RESET", userName+" failed to reset password. "+err.Error())
 			break
 		}
-		go writeAuditLogByName(userName, "PASSWORD-RESET", userName+" reset password successfully by security question challenge.")
+		go WriteAuditLogByName(userName, "PASSWORD-RESET", userName+" reset password successfully by security question challenge.")
 		TemplateInput.Message = "Successfully set password."
 	case "changepw":
 		//User requests to change password, first validate parameters
@@ -211,7 +211,7 @@ func LogonRouter(responseWriter http.ResponseWriter, request *http.Request) {
 		if username != "" && request.FormValue("oldpassword") != "" && database.DBInterface.ValidateProposedUsername(username) == nil {
 			err := database.DBInterface.ValidateUser(username, []byte(request.FormValue("oldpassword")))
 			if err != nil {
-				go writeAuditLogByName(username, "PASSWORD-SET", username+" failed to set password. "+err.Error())
+				go WriteAuditLogByName(username, "PASSWORD-SET", username+" failed to set password. "+err.Error())
 				TemplateInput.Message = "Either username or password incorrect."
 				break
 			}
@@ -219,7 +219,7 @@ func LogonRouter(responseWriter http.ResponseWriter, request *http.Request) {
 
 		err := database.DBInterface.SetUserPassword(username, []byte(request.FormValue("oldpassword")), []byte(request.FormValue("newpassword")), nil, nil, nil)
 		if err != nil {
-			go writeAuditLogByName(username, "PASSWORD-SET", username+" failed to set password. "+err.Error())
+			go WriteAuditLogByName(username, "PASSWORD-SET", username+" failed to set password. "+err.Error())
 			TemplateInput.Message = "Failed to update password."
 			break
 		}
@@ -234,7 +234,7 @@ func LogonRouter(responseWriter http.ResponseWriter, request *http.Request) {
 		session.Values["TokenID"] = ""
 		session.Values["UserName"] = ""
 		session.Save(request, responseWriter)
-		go writeAuditLogByName(username, "PASSWORD-SET", username+" successfully set password by old password challenge. ")
+		go WriteAuditLogByName(username, "PASSWORD-SET", username+" successfully set password by old password challenge. ")
 		TemplateInput.Message = "Your password was changed successfully. Please log in."
 	case "securityquestion":
 		//User requests to change security questions
@@ -242,7 +242,7 @@ func LogonRouter(responseWriter http.ResponseWriter, request *http.Request) {
 		userName, tokenID, _ := getSessionInformation(request)
 		if tokenID == "" || userName == "" {
 			TemplateInput.Message = "You must be logged in to perform this action."
-			go writeAuditLogByName(userName, "QUESTION-SET", userName+" failed to set questions. Not logged in.")
+			go WriteAuditLogByName(userName, "QUESTION-SET", userName+" failed to set questions. Not logged in.")
 			logging.LogInterface.WriteLog("AccountRouter", "AccountHandler", userName, "ERROR", []string{"User not logged in"})
 			break
 		}
@@ -251,7 +251,7 @@ func LogonRouter(responseWriter http.ResponseWriter, request *http.Request) {
 		err := database.DBInterface.ValidateUser(userName, []byte(request.FormValue("confirmpassword")))
 		if err != nil {
 			TemplateInput.Message = "Password confirmation failed, please try again."
-			go writeAuditLogByName(userName, "QUESTION-SET", userName+" failed to set questions. "+err.Error())
+			go WriteAuditLogByName(userName, "QUESTION-SET", userName+" failed to set questions. "+err.Error())
 			break
 		}
 
@@ -284,10 +284,10 @@ func LogonRouter(responseWriter http.ResponseWriter, request *http.Request) {
 		//Call change in DB once implemented
 		err = database.DBInterface.SetSecurityQuestions(userName, questionOne, questionTwo, questionThree, []byte(answerOne), []byte(answerTwo), []byte(answerThree), []byte(answerChallenge))
 		if err != nil {
-			go writeAuditLogByName(userName, "QUESTION-SET", userName+" failed to set questions. "+err.Error())
+			go WriteAuditLogByName(userName, "QUESTION-SET", userName+" failed to set questions. "+err.Error())
 			TemplateInput.Message = "Failed to set questions."
 		} else {
-			go writeAuditLogByName(userName, "QUESTION-SET", userName+" successfully set questions with password challenge. ")
+			go WriteAuditLogByName(userName, "QUESTION-SET", userName+" successfully set questions with password challenge. ")
 			TemplateInput.Message = "Successfully set questions."
 		}
 	case "setuserfilter":
@@ -300,12 +300,12 @@ func LogonRouter(responseWriter http.ResponseWriter, request *http.Request) {
 		}
 		err := database.DBInterface.SetUserQueryTags(TemplateInput.UserID, request.FormValue("filter"))
 		if err != nil {
-			go writeAuditLogByName(userName, "FILTER-SET", userName+" failed to set filter. "+err.Error())
+			go WriteAuditLogByName(userName, "FILTER-SET", userName+" failed to set filter. "+err.Error())
 			TemplateInput.Message = "Failed to update filter."
 			break
 		}
 		//Success
-		go writeAuditLogByName(userName, "FILTER-SET", userName+" successfully set filter. ")
+		go WriteAuditLogByName(userName, "FILTER-SET", userName+" successfully set filter. ")
 		TemplateInput.Message = "Your filter was changed successfully."
 	}
 

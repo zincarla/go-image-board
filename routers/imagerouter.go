@@ -68,7 +68,7 @@ func ImageRouter(responseWriter http.ResponseWriter, request *http.Request) {
 		}
 
 		if !(TemplateInput.UserPermissions.HasPermission(interfaces.ScoreImage) || (imageInfo.UploaderID == TemplateInput.UserID && config.Configuration.UsersControlOwnObjects)) {
-			go writeAuditLog(TemplateInput.UserID, "IMAGE-SCORE", TemplateInput.UserName+" failed to score image. No permissions.")
+			go WriteAuditLog(TemplateInput.UserID, "IMAGE-SCORE", TemplateInput.UserName+" failed to score image. No permissions.")
 			TemplateInput.Message += "You do not have permissions to vote on this image. "
 			break
 		}
@@ -113,7 +113,7 @@ func ImageRouter(responseWriter http.ResponseWriter, request *http.Request) {
 		}
 
 		if !(TemplateInput.UserPermissions.HasPermission(interfaces.SourceImage) || (imageInfo.UploaderID == TemplateInput.UserID && config.Configuration.UsersControlOwnObjects)) {
-			go writeAuditLog(TemplateInput.UserID, "IMAGE-SOURCE", TemplateInput.UserName+" failed to source image. No permissions.")
+			go WriteAuditLog(TemplateInput.UserID, "IMAGE-SOURCE", TemplateInput.UserName+" failed to source image. No permissions.")
 			TemplateInput.Message += "You do not have permissions to change the source of this image. "
 			break
 		}
@@ -151,7 +151,7 @@ func ImageRouter(responseWriter http.ResponseWriter, request *http.Request) {
 		}
 
 		if !(TemplateInput.UserPermissions.HasPermission(interfaces.SourceImage) || (imageInfo.UploaderID == TemplateInput.UserID && config.Configuration.UsersControlOwnObjects)) {
-			go writeAuditLog(TemplateInput.UserID, "IMAGE-NAME", TemplateInput.UserName+" failed to name image. No permissions.")
+			go WriteAuditLog(TemplateInput.UserID, "IMAGE-NAME", TemplateInput.UserName+" failed to name image. No permissions.")
 			TemplateInput.Message += "You do not have permissions to change the name/description of this image. "
 			break
 		}
@@ -197,7 +197,7 @@ func ImageRouter(responseWriter http.ResponseWriter, request *http.Request) {
 		//Validate permission to upload
 		if TemplateInput.UserPermissions.HasPermission(interfaces.ModifyImageTags) != true && (config.Configuration.UsersControlOwnObjects != true || TemplateInput.UserID != imageInfo.UploaderID) {
 			TemplateInput.Message += "User does not have modify permission for tags on images. "
-			go writeAuditLogByName(TemplateInput.UserName, "REMOVE-IMAGETAG", TemplateInput.UserName+" failed to remove tag from image "+ImageID+". Insufficient permissions. "+TagID)
+			go WriteAuditLogByName(TemplateInput.UserName, "REMOVE-IMAGETAG", TemplateInput.UserName+" failed to remove tag from image "+ImageID+". Insufficient permissions. "+TagID)
 			break
 		}
 		// /ValidatePermission
@@ -212,7 +212,7 @@ func ImageRouter(responseWriter http.ResponseWriter, request *http.Request) {
 			TemplateInput.Message += "Failed to remove tag. Was it attached in the first place?"
 		} else {
 			TemplateInput.Message += "Tag removed successfully"
-			go writeAuditLogByName(TemplateInput.UserName, "REMOVE-IMAGETAG", TemplateInput.UserName+" removed tag from image "+ImageID+". tag "+TagID)
+			go WriteAuditLogByName(TemplateInput.UserName, "REMOVE-IMAGETAG", TemplateInput.UserName+" removed tag from image "+ImageID+". tag "+TagID)
 		}
 
 	case "AddTags":
@@ -251,7 +251,7 @@ func ImageRouter(responseWriter http.ResponseWriter, request *http.Request) {
 		//Validate permission to modify tags
 		if TemplateInput.UserPermissions.HasPermission(interfaces.ModifyImageTags) != true && (config.Configuration.UsersControlOwnObjects != true || TemplateInput.UserID != imageInfo.UploaderID) {
 			TemplateInput.Message += "User does not have modify permission for tags on images. "
-			go writeAuditLogByName(TemplateInput.UserName, "ADD-IMAGETAG", TemplateInput.UserName+" failed to add tag to image "+ImageID+". Insufficient permissions. "+userQuery)
+			go WriteAuditLogByName(TemplateInput.UserName, "ADD-IMAGETAG", TemplateInput.UserName+" failed to add tag to image "+ImageID+". Insufficient permissions. "+userQuery)
 			break
 		}
 		// /ValidatePermission
@@ -284,7 +284,7 @@ func ImageRouter(responseWriter http.ResponseWriter, request *http.Request) {
 						logging.LogInterface.WriteLog("TagsRouter", "TagRouter", TemplateInput.UserName, "WARNING", []string{"error attempting to create tag", err.Error(), tag.Name})
 						TemplateInput.Message += "Unable to use tag " + tag.Name + " due to a database error. "
 					} else {
-						go writeAuditLog(userID, "CREATE-TAG", TemplateInput.UserName+" created a new tag. "+tag.Name)
+						go WriteAuditLog(userID, "CREATE-TAG", TemplateInput.UserName+" created a new tag. "+tag.Name)
 						validatedUserTags = append(validatedUserTags, tagID)
 						tagIDString = tagIDString + ", " + strconv.FormatUint(tagID, 10)
 					}
@@ -326,7 +326,7 @@ func ImageRouter(responseWriter http.ResponseWriter, request *http.Request) {
 		//Validate permission to modify tags
 		if TemplateInput.UserPermissions.HasPermission(interfaces.ModifyImageTags) != true && (config.Configuration.UsersControlOwnObjects != true || TemplateInput.UserID != imageInfo.UploaderID) {
 			TemplateInput.Message += "User does not have modify permission for tags on images. "
-			go writeAuditLogByName(TemplateInput.UserName, "ADD-IMAGERATING", TemplateInput.UserName+" failed to edit rating for image "+ImageID+". Insufficient permissions. "+newRating)
+			go WriteAuditLogByName(TemplateInput.UserName, "ADD-IMAGERATING", TemplateInput.UserName+" failed to edit rating for image "+ImageID+". Insufficient permissions. "+newRating)
 			break
 		}
 		// /ValidatePermission
@@ -433,14 +433,14 @@ func handleImageUpload(request *http.Request, userName string) (uint64, error) {
 	//Translate UserID
 	userID, err := database.DBInterface.GetUserID(userName)
 	if err != nil {
-		go writeAuditLog(userID, "IMAGE-UPLOAD", userName+" failed to upload image. "+err.Error())
+		go WriteAuditLog(userID, "IMAGE-UPLOAD", userName+" failed to upload image. "+err.Error())
 		return 0, errors.New("user not valid")
 	}
 
 	//Validate permission to upload
 	userPermission, err := database.DBInterface.GetUserPermissionSet(userName)
 	if err != nil {
-		go writeAuditLog(userID, "IMAGE-UPLOAD", userName+" failed to upload image. "+err.Error())
+		go WriteAuditLog(userID, "IMAGE-UPLOAD", userName+" failed to upload image. "+err.Error())
 		return 0, errors.New("Could not validate permission (SQL Error)")
 	}
 
@@ -451,20 +451,20 @@ func handleImageUpload(request *http.Request, userName string) (uint64, error) {
 	if collectionName != "" && err != nil {
 		//Want to add to collection, but the collection does not exist
 		if interfaces.UserPermission(userPermission).HasPermission(interfaces.AddCollections) != true {
-			go writeAuditLog(userID, "IMAGE-UPLOAD", userName+" failed to upload image. No permissions to create collection.")
+			go WriteAuditLog(userID, "IMAGE-UPLOAD", userName+" failed to upload image. No permissions to create collection.")
 			return 0, errors.New("User does not have create permission for collections")
 		}
 	} else if collectionName != "" && err == nil {
 		//Want to add to a pre-existing collection
 		if interfaces.UserPermission(userPermission).HasPermission(interfaces.ModifyCollections) != true &&
 			(config.Configuration.UsersControlOwnObjects && collectionInfo.UploaderID != userID) {
-			go writeAuditLog(userID, "IMAGE-UPLOAD", userName+" failed to upload image. No permissions to add members to collection.")
+			go WriteAuditLog(userID, "IMAGE-UPLOAD", userName+" failed to upload image. No permissions to add members to collection.")
 			return 0, errors.New("User does not have permission to update requested collection")
 		}
 	}
 
 	if interfaces.UserPermission(userPermission).HasPermission(interfaces.UploadImage) != true {
-		go writeAuditLog(userID, "IMAGE-UPLOAD", userName+" failed to upload image. No permissions.")
+		go WriteAuditLog(userID, "IMAGE-UPLOAD", userName+" failed to upload image. No permissions.")
 		return 0, errors.New("User does not have upload permission for images")
 	}
 	// /ValidatePermission
@@ -504,7 +504,7 @@ func handleImageUpload(request *http.Request, userName string) (uint64, error) {
 					logging.LogInterface.WriteLog("ImageRouter", "handleImageUpload", userName, "WARNING", []string{"error attempting to create tag", err.Error(), tag.Name})
 					errorCompilation += "Unable to use tag " + tag.Name + " due to a database error. "
 				} else {
-					go writeAuditLog(userID, "CREATE-TAG", userName+" created a new tag. "+tag.Name)
+					go WriteAuditLog(userID, "CREATE-TAG", userName+" created a new tag. "+tag.Name)
 					validatedUserTags = append(validatedUserTags, tagID)
 					tagIDString = tagIDString + ", " + strconv.FormatUint(tagID, 10)
 				}
@@ -589,11 +589,11 @@ func handleImageUpload(request *http.Request, userName string) (uint64, error) {
 				errorCompilation += "Failed to add tags to " + fileHeader.Filename + ". "
 			} else {
 
-				go writeAuditLog(userID, "IMAGE-UPLOAD", userName+" tagged image "+strconv.FormatUint(lastID, 10)+" with "+tagIDString)
+				go WriteAuditLog(userID, "IMAGE-UPLOAD", userName+" tagged image "+strconv.FormatUint(lastID, 10)+" with "+tagIDString)
 			}
 
 			//Log success
-			go writeAuditLog(userID, "IMAGE-UPLOAD", userName+" successfully uploaded an image. "+strconv.FormatUint(lastID, 10))
+			go WriteAuditLog(userID, "IMAGE-UPLOAD", userName+" successfully uploaded an image. "+strconv.FormatUint(lastID, 10))
 			//Start go routine to generate thumbnail
 			go GenerateThumbnail(hashName)
 		}

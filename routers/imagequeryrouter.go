@@ -54,24 +54,24 @@ func ImageQueryRouter(responseWriter http.ResponseWriter, request *http.Request)
 		ImageInfo, err := database.DBInterface.GetImage(parsedImageID)
 		if err != nil {
 			TemplateInput.Message += "Failed to delete image. SQL Error. "
-			go writeAuditLogByName(TemplateInput.UserName, "DELETE-IMAGE", TemplateInput.UserName+" failed to delete image. "+request.FormValue("ID")+", "+err.Error())
+			go WriteAuditLogByName(TemplateInput.UserName, "DELETE-IMAGE", TemplateInput.UserName+" failed to delete image. "+request.FormValue("ID")+", "+err.Error())
 			break //Cancel delete
 		}
 
 		//Validate Permission to delete
 		if TemplateInput.UserPermissions.HasPermission(interfaces.RemoveImage) != true && (config.Configuration.UsersControlOwnObjects != true || ImageInfo.UploaderID != TemplateInput.UserID) {
 			TemplateInput.Message += "User does not have delete permission for image. "
-			go writeAuditLogByName(TemplateInput.UserName, "DELETE-IMAGE", TemplateInput.UserName+" failed to delete image. Insufficient permissions. "+request.FormValue("ID"))
+			go WriteAuditLogByName(TemplateInput.UserName, "DELETE-IMAGE", TemplateInput.UserName+" failed to delete image. Insufficient permissions. "+request.FormValue("ID"))
 			break
 		}
 
 		//Permission validated, now delete (ImageTags and Images)
 		if err := database.DBInterface.DeleteImage(parsedImageID); err != nil {
 			TemplateInput.Message += "Failed to delete image. SQL Error. "
-			go writeAuditLogByName(TemplateInput.UserName, "DELETE-IMAGE", TemplateInput.UserName+" failed to delete image. "+request.FormValue("ID")+", "+err.Error())
+			go WriteAuditLogByName(TemplateInput.UserName, "DELETE-IMAGE", TemplateInput.UserName+" failed to delete image. "+request.FormValue("ID")+", "+err.Error())
 			break //Cancel delete
 		}
-		go writeAuditLogByName(TemplateInput.UserName, "DELETE-IMAGE", TemplateInput.UserName+" deleted image. "+request.FormValue("ID")+", "+ImageInfo.Name+", "+ImageInfo.Location)
+		go WriteAuditLogByName(TemplateInput.UserName, "DELETE-IMAGE", TemplateInput.UserName+" deleted image. "+request.FormValue("ID")+", "+ImageInfo.Name+", "+ImageInfo.Location)
 		//Third, delete Image from Disk
 		go os.Remove(config.JoinPath(config.Configuration.ImageDirectory, ImageInfo.Location))
 		//Last delete thumbnail from disk
@@ -105,12 +105,11 @@ func ImageQueryRouter(responseWriter http.ResponseWriter, request *http.Request)
 		if request.FormValue("SearchType") == "Random" {
 			if imageInfo, err := database.DBInterface.GetRandomImage(userQTags); err == nil {
 				//redirect user to randomly selected image
-				http.Redirect(responseWriter, request, "/image?ID="+strconv.FormatUint(imageInfo.ID,10)+"&prevMessage="+url.QueryEscape(TemplateInput.Message)+"&SearchTerms="+url.QueryEscape(TemplateInput.OldQuery), 302);
+				http.Redirect(responseWriter, request, "/image?ID="+strconv.FormatUint(imageInfo.ID, 10)+"&prevMessage="+url.QueryEscape(TemplateInput.Message)+"&SearchTerms="+url.QueryEscape(TemplateInput.OldQuery), 302)
 				return
-			} else {
-				TemplateInput.Message += "Failed to search for a random image. " //Just fall through to the normal search
-				logging.LogInterface.WriteLog("ImageRouter", "ImageQueryRouter", "*", "ERROR", []string{"Failed to search random image", userQuery, err.Error()})
 			}
+			TemplateInput.Message += "Failed to search for a random image. " //Just fall through to the normal search
+			logging.LogInterface.WriteLog("ImageRouter", "ImageQueryRouter", "*", "ERROR", []string{"Failed to search random image", userQuery, err.Error()})
 		}
 		//Parse tag results for next query
 		imageInfo, MaxCount, err := database.DBInterface.SearchImages(userQTags, pageStart, pageStride)

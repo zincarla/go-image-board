@@ -49,8 +49,8 @@ func (DBConnection *MariaDBPlugin) NewTag(Name string, Description string, Uploa
 		return 0, err
 	}
 	id, _ := resultInfo.LastInsertId()
-	logging.LogInterface.WriteLog("MariaDBPlugin", "NewTag", "*", "SUCCESS", []string{"Tag added", strconv.FormatUint(uint64(id),10)})
-	
+	logging.LogInterface.WriteLog("MariaDBPlugin", "NewTag", "*", "SUCCESS", []string{"Tag added", strconv.FormatUint(uint64(id), 10)})
+
 	return uint64(id), err
 }
 
@@ -64,7 +64,7 @@ func (DBConnection *MariaDBPlugin) DeleteTag(TagID uint64) error {
 	}
 
 	if useCount > 0 {
-		logging.LogInterface.WriteLog("MariaDBPlugin", "DeleteTag", "*", "ERROR", []string{"Tag to delete is still in use", strconv.FormatUint(TagID, 10), "in use",strconv.Itoa(useCount)})
+		logging.LogInterface.WriteLog("MariaDBPlugin", "DeleteTag", "*", "ERROR", []string{"Tag to delete is still in use", strconv.FormatUint(TagID, 10), "in use", strconv.Itoa(useCount)})
 		return errors.New("tag to delete is still in use")
 	}
 
@@ -180,6 +180,35 @@ func (DBConnection *MariaDBPlugin) GetTag(ID uint64) (interfaces.TagInformation,
 	}
 
 	return interfaces.TagInformation{Name: Name, ID: ID, Description: SDescription, Exists: true, Exclude: false, UploaderID: UploaderID, UploadTime: UploadTime, AliasedID: AliasedID, IsAlias: IsAlias}, nil
+}
+
+//GetTagByName returns detailed information on one tag as queried by name
+func (DBConnection *MariaDBPlugin) GetTagByName(Name string) (interfaces.TagInformation, error) {
+	sqlQuery := "SELECT ID, Description, UploaderID, UploadTime, AliasedID, IsAlias FROM Tags WHERE Name=?"
+	//Pass the sql query to DB
+	//Placeholders for data returned by each row
+	var Description sql.NullString
+	var TagID uint64
+	var UploaderID uint64
+	var NUploadTime mysql.NullTime
+	var UploadTime time.Time
+	var AliasedID uint64
+	var IsAlias bool
+	err := DBConnection.DBHandle.QueryRow(sqlQuery, Name).Scan(&TagID, &Description, &UploaderID, &NUploadTime, &AliasedID, &IsAlias)
+	if err != nil {
+		return interfaces.TagInformation{Name: Name, Exists: false}, err
+	}
+	//If description is a valid non-null value, use it, else, use ""
+	var SDescription string
+	if Description.Valid {
+		SDescription = Description.String
+	}
+	//De-nullify time if possible
+	if NUploadTime.Valid {
+		UploadTime = NUploadTime.Time
+	}
+
+	return interfaces.TagInformation{Name: Name, ID: TagID, Description: SDescription, Exists: true, Exclude: false, UploaderID: UploaderID, UploadTime: UploadTime, AliasedID: AliasedID, IsAlias: IsAlias}, nil
 }
 
 //UpdateTag updates a pre-existing tag
