@@ -69,7 +69,7 @@ under
 ![Example of DarkTheme](http://ziviz.us/images/GIBDarkSearch.PNG "DarkTheme Image Details")
 
 ## User Permissions
-User permissions are stored in the database as an unsigned 64 bit interger where each bit represents a single permission flag. Since each bit is a single permission, you can add the permissions you want together to form your effective permissions.
+User permissions are stored in the database as an unsigned 64 bit integer where each bit represents a single permission flag. Since each bit is a single permission, you can add the permissions you want together to form your effective permissions.
 
 ## About files
 Files located in the "/http/about/" directory are imported into the about.html template and served when requested from http://\<yourserver\>/about/\<filename\>.html
