@@ -25,7 +25,7 @@ func UsersAPIRouter(responseWriter http.ResponseWriter, request *http.Request) {
 		return //User not logged in and was already handled
 	}
 
-	if request.Method == "GET" {
+	if request.Method == http.MethodGet {
 		//Query for a user's information, will return UserInformation
 		requestedName := strings.TrimSpace(request.FormValue("userNameQuery"))
 		//Get the page offset
@@ -49,5 +49,7 @@ func UsersAPIRouter(responseWriter http.ResponseWriter, request *http.Request) {
 		}
 
 		ReplyWithJSON(responseWriter, request, UserSearchResult{Users: userInfo, ResultCount: count, ServerStride: pageStride}, UserName)
+	} else {
+		ReplyWithJSONError(responseWriter, request, "unknown method used", UserName, http.StatusBadRequest)
 	}
 }

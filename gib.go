@@ -97,6 +97,7 @@ func main() {
 
 			return //We only wanted to rename
 		}
+		//Web routers
 		requestRouter.HandleFunc("/resources/{file}", routers.ResourceRouter)
 		requestRouter.HandleFunc("/", routers.RootRouter)
 		requestRouter.HandleFunc("/images", routers.ImageQueryRouter)
@@ -111,19 +112,23 @@ func main() {
 		requestRouter.HandleFunc("/tags", routers.TagsRouter)
 		requestRouter.HandleFunc("/tag", routers.TagRouter)
 		requestRouter.HandleFunc("/redirect", routers.RedirectRouter)
-		//Account
 		requestRouter.HandleFunc("/logon", routers.LogonRouter)
 		requestRouter.HandleFunc("/mod", routers.ModRouter)
-		//API
+		//API routers
 		requestRouter.HandleFunc("/api/Collection", api.CollectionAPIRouter)
 		requestRouter.HandleFunc("/api/Collections", api.CollectionsAPIRouter)
 		requestRouter.HandleFunc("/api/CollectionName", api.CollectionNameAPIRouter)
-		requestRouter.HandleFunc("/api/Users", api.UsersAPIRouter)
+		//
 		requestRouter.HandleFunc("/api/TagName", api.TagNameAPIRouter)
 		requestRouter.HandleFunc("/api/Tag", api.TagAPIRouter)
 		requestRouter.HandleFunc("/api/Tags", api.TagsAPIRouter)
+		//
+		requestRouter.HandleFunc("/api/Image", api.ImageAPIRouter)
+		requestRouter.HandleFunc("/api/Images", api.ImagesAPIRouter)
+		//
 		requestRouter.HandleFunc("/api/Logon", api.LogonAPIRouter)
 		requestRouter.HandleFunc("/api/Logout", api.LogoutAPIRouter)
+		requestRouter.HandleFunc("/api/Users", api.UsersAPIRouter)
 
 	} else {
 		requestRouter.HandleFunc("/", routers.BadConfigRouter)

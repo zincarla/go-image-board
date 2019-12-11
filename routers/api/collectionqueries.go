@@ -25,7 +25,7 @@ func CollectionNameAPIRouter(responseWriter http.ResponseWriter, request *http.R
 		return //User not logged in and was already handled
 	}
 
-	if request.Method == "GET" {
+	if request.Method == http.MethodGet {
 		//Query for a collection's information, will return CollectionInformation
 		requestedName := request.FormValue("CollectionName")
 
@@ -43,6 +43,8 @@ func CollectionNameAPIRouter(responseWriter http.ResponseWriter, request *http.R
 		} else {
 			ReplyWithJSONError(responseWriter, request, "Please specify CollectionName", UserName, http.StatusBadRequest)
 		}
+	} else {
+		ReplyWithJSONError(responseWriter, request, "unknown method used", UserName, http.StatusBadRequest)
 	}
 }
 
@@ -54,7 +56,7 @@ func CollectionAPIRouter(responseWriter http.ResponseWriter, request *http.Reque
 		return //User not logged in and was already handled
 	}
 
-	if request.Method == "GET" {
+	if request.Method == http.MethodGet {
 		//Query for a collection's information, will return CollectionInformation
 		requestedID := request.FormValue("CollectionID")
 		if requestedID != "" {
@@ -78,6 +80,8 @@ func CollectionAPIRouter(responseWriter http.ResponseWriter, request *http.Reque
 			ReplyWithJSONError(responseWriter, request, "Please specify CollectionID", UserName, http.StatusBadRequest)
 			return
 		}
+	} else {
+		ReplyWithJSONError(responseWriter, request, "unknown method used", UserName, http.StatusBadRequest)
 	}
 }
 
@@ -89,7 +93,7 @@ func CollectionsAPIRouter(responseWriter http.ResponseWriter, request *http.Requ
 		return //User not logged in and was already handled
 	}
 
-	if request.Method == "GET" {
+	if request.Method == http.MethodGet {
 		//Query for a collection's information, will return CollectionInformation
 		userQuery := request.FormValue("SearchQuery")
 		pageStart, _ := strconv.ParseUint(request.FormValue("PageStart"), 10, 32) //Either parses fine, or is 0, both works
@@ -112,5 +116,7 @@ func CollectionsAPIRouter(responseWriter http.ResponseWriter, request *http.Requ
 			logging.LogInterface.WriteLog("API", "CollectionsAPIRouter", UserName, "ERROR", []string{"Failed to load user's filter", err.Error()})
 			ReplyWithJSONError(responseWriter, request, "failed to parse your query", UserName, http.StatusInternalServerError)
 		}
+	} else {
+		ReplyWithJSONError(responseWriter, request, "unknown method used", UserName, http.StatusBadRequest)
 	}
 }

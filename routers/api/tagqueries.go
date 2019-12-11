@@ -40,6 +40,8 @@ func TagNameAPIRouter(responseWriter http.ResponseWriter, request *http.Request)
 		}
 
 		ReplyWithJSON(responseWriter, request, TagSearchResult{Tags: tagInfo, ResultCount: count, ServerStride: 5}, "*")
+	} else {
+		ReplyWithJSONError(responseWriter, request, "unknown method used", UserName, http.StatusBadRequest)
 	}
 }
 
@@ -89,6 +91,8 @@ func TagAPIRouter(responseWriter http.ResponseWriter, request *http.Request) {
 			ReplyWithJSONError(responseWriter, request, "Please specify either TagID or TagName", UserName, http.StatusBadRequest)
 			return
 		}
+	} else {
+		ReplyWithJSONError(responseWriter, request, "unknown method used", UserName, http.StatusBadRequest)
 	}
 }
 
@@ -101,7 +105,7 @@ func TagsAPIRouter(responseWriter http.ResponseWriter, request *http.Request) {
 	}
 
 	//This is used for auto-complete functionality
-	if request.Method == "GET" {
+	if request.Method == http.MethodGet {
 		//Query for a tag's informaion, will return TagInformation
 		requestedName := strings.TrimSpace(request.FormValue("tagNameQuery"))
 		pageStart, _ := strconv.ParseUint(request.FormValue("PageStart"), 10, 32) //Either parses fine, or is 0, both works
@@ -116,5 +120,7 @@ func TagsAPIRouter(responseWriter http.ResponseWriter, request *http.Request) {
 		}
 
 		ReplyWithJSON(responseWriter, request, TagSearchResult{Tags: tagInfo, ResultCount: count, ServerStride: pageStride}, "*")
+	} else {
+		ReplyWithJSONError(responseWriter, request, "unknown method used", UserName, http.StatusBadRequest)
 	}
 }
