@@ -116,12 +116,20 @@ class AutoCompleteBox {
 
     //Calls new suggestions when the tabkey is pressed
 	keyHandler(e) {
-		var TABKEY = 9;
-		if(e.keyCode == TABKEY) {
-			var newSuggestion = this.lastSetSuggestion+1;
-			if (newSuggestion >= this.completionResults.length || newSuggestion < 0) {
+        var TABKEY = 9;
+        var UPKEY = 38;
+        var DOWNKEY = 40;
+		if(e.keyCode == TABKEY || e.keyCode == DOWNKEY || e.keyCode == UPKEY) {
+            var newSuggestion = this.lastSetSuggestion+1;
+            if (e.keyCode == UPKEY) {
+                var newSuggestion = this.lastSetSuggestion-1;
+            }
+			if (newSuggestion >= this.completionResults.length) {
 				newSuggestion =0;
-			}
+            }
+            if (newSuggestion < 0) {
+				newSuggestion = this.completionResults.length-1;
+            }
 			this.setSuggestion(newSuggestion);
 			if(e.preventDefault) {
 				e.preventDefault();
@@ -133,7 +141,9 @@ class AutoCompleteBox {
     //Reloads autocomplete options when anything other than tab is pressed
 	keyHandlerUp(e) {
 		var TABKEY = 9;
-		if(e.keyCode != TABKEY) {
+        var UPKEY = 38;
+        var DOWNKEY = 40;
+		if(e.keyCode != TABKEY && e.keyCode != UPKEY && e.keyCode != DOWNKEY) {
 			this.getSuggestion();
 		}
 	}
