@@ -89,7 +89,7 @@ func (DBConnection *MariaDBPlugin) AddTag(TagIDs []uint64, ImageID uint64, Linke
 	queryArray := []interface{}{}
 	for i := 0; i < len(TagIDs); i++ {
 		TagID := TagIDs[i]
-		tagInfo, err := DBConnection.GetTag(TagID)
+		tagInfo, err := DBConnection.GetTag(TagID, false)
 		if err != nil {
 			return errors.New("Failed to validate tag " + strconv.FormatUint(TagID, 10))
 		}
@@ -154,7 +154,7 @@ func (DBConnection *MariaDBPlugin) GetAllTags() ([]interfaces.TagInformation, er
 }
 
 //GetTag returns detailed information on one tag
-func (DBConnection *MariaDBPlugin) GetTag(ID uint64) (interfaces.TagInformation, error) {
+func (DBConnection *MariaDBPlugin) GetTag(ID uint64, IncludeCount bool) (interfaces.TagInformation, error) {
 	sqlQuery := "SELECT Name, Description, UploaderID, UploadTime, AliasedID, IsAlias FROM Tags WHERE ID=?"
 	//Pass the sql query to DB
 	//Placeholders for data returned by each row
@@ -165,6 +165,7 @@ func (DBConnection *MariaDBPlugin) GetTag(ID uint64) (interfaces.TagInformation,
 	var UploadTime time.Time
 	var AliasedID uint64
 	var IsAlias bool
+	var TagCount uint64
 	err := DBConnection.DBHandle.QueryRow(sqlQuery, ID).Scan(&Name, &Description, &UploaderID, &NUploadTime, &AliasedID, &IsAlias)
 	if err != nil {
 		return interfaces.TagInformation{ID: ID, Exists: false}, err
@@ -179,7 +180,15 @@ func (DBConnection *MariaDBPlugin) GetTag(ID uint64) (interfaces.TagInformation,
 		UploadTime = NUploadTime.Time
 	}
 
-	return interfaces.TagInformation{Name: Name, ID: ID, Description: SDescription, Exists: true, Exclude: false, UploaderID: UploaderID, UploadTime: UploadTime, AliasedID: AliasedID, IsAlias: IsAlias}, nil
+	if IncludeCount {
+		sqlQuery := "SELECT COUNT(*) as TagCount FROM ImageTags WHERE TagID=?"
+		err := DBConnection.DBHandle.QueryRow(sqlQuery, ID).Scan(&TagCount)
+		if err != nil {
+			return interfaces.TagInformation{ID: ID, Exists: false}, err
+		}
+	}
+
+	return interfaces.TagInformation{Name: Name, ID: ID, Description: SDescription, Exists: true, Exclude: false, UploaderID: UploaderID, UploadTime: UploadTime, AliasedID: AliasedID, IsAlias: IsAlias, UseCount: TagCount}, nil
 }
 
 //GetTagByName returns detailed information on one tag as queried by name
@@ -222,7 +231,7 @@ func (DBConnection *MariaDBPlugin) UpdateTag(TagID uint64, Name string, Descript
 
 	if IsAlias {
 		//Prevent adding alias
-		tagInfo, err := DBConnection.GetTag(AliasedID)
+		tagInfo, err := DBConnection.GetTag(AliasedID, false)
 		if err != nil || tagInfo.IsAlias {
 			return errors.New("Tag to alias could not be found, or is an alias itself")
 		}

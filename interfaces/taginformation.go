@@ -13,6 +13,7 @@ type TagInformation struct {
 	UploaderID  uint64
 	UploadTime  time.Time
 	AliasedID   uint64
+	UseCount    uint64
 	IsAlias     bool
 	//If the tag is a valid tag
 	Exists bool

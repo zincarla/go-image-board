@@ -70,8 +70,8 @@ type DBInterface interface {
 	GetImageTags(ImageID uint64) ([]TagInformation, error)
 	//GetAllTags returns a list of all tags
 	GetAllTags() ([]TagInformation, error)
-	//GetTag return detailed information on one tag
-	GetTag(ID uint64) (TagInformation, error)
+	//GetTag returns detailed information on one tag
+	GetTag(ID uint64, IncludeCount bool) (TagInformation, error)
 	//GetTagByName returns detailed information on one tag
 	GetTagByName(Name string) (TagInformation, error)
 	//Tag Operations

@@ -55,10 +55,13 @@
 						<input type="submit" value="Bulk Add" />
 					</form>
 					<div id="tagData">
-						<h4>Tag Name <a href="/images?SearchTerms={{.TagContentInfo.Name}}"><img src="/resources/searchicon.svg" class="icon" /></a></h4>
-						{{.TagContentInfo.Name}}
-						<h4>Tag Description</h4>
-						{{.TagContentInfo.Description}}
+						<h4>{{.TagContentInfo.Name}} <a href="/images?SearchTerms={{.TagContentInfo.Name}}"><img src="/resources/searchicon.svg" class="icon" /></a></h4>
+						{{.TagContentInfo.Description}}<br>
+						{{if .TagContentInfo.IsAlias}}
+						This tag is an alias of <a href="/tag?ID={{.AliasTagInfo.ID}}">{{.AliasTagInfo.Name}}</a> which is used {{.AliasTagInfo.UseCount}} time(s)
+						{{else}}
+						This tag is used {{.TagContentInfo.UseCount}} time(s)
+						{{end}}
 					</div>
 				</div>
 			</div>

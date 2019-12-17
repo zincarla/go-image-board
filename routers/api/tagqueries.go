@@ -66,7 +66,7 @@ func TagAPIRouter(responseWriter http.ResponseWriter, request *http.Request) {
 				ReplyWithJSONError(responseWriter, request, "TagID could not be parsed into a number", UserName, http.StatusBadRequest)
 				return
 			}
-			tag, err := database.DBInterface.GetTag(parsedID)
+			tag, err := database.DBInterface.GetTag(parsedID, true)
 			if err != nil {
 				if err == sql.ErrNoRows {
 					ReplyWithJSONError(responseWriter, request, "No tag by that ID", UserName, http.StatusNotFound)

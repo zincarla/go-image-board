@@ -98,8 +98,8 @@ func (DBConnection *MariaDBPlugin) ReplaceImageTags(OldTagID uint64, NewTagID ui
 //BulkAddTag adds an association of a tag to image into the association table that already have another tag
 func (DBConnection *MariaDBPlugin) BulkAddTag(TagID uint64, OldTagID uint64, LinkerID uint64) error {
 	//Prevent adding alias
-	tagInfo, err := DBConnection.GetTag(TagID)
-	oldTagInfo, err2 := DBConnection.GetTag(OldTagID)
+	tagInfo, err := DBConnection.GetTag(TagID, false)
+	oldTagInfo, err2 := DBConnection.GetTag(OldTagID, false)
 	if err != nil || err2 != nil {
 		return errors.New("Failed to validate tags")
 	}
