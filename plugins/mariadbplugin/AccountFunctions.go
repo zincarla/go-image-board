@@ -238,3 +238,23 @@ func (DBConnection *MariaDBPlugin) SearchUsers(searchString string, PageStart ui
 
 	return ToReturn, MaxResults, nil
 }
+
+//GetUser returns a UserInformation object for the user with the specified ID
+func (DBConnection *MariaDBPlugin) GetUser(UserID uint64) (interfaces.UserInformation, error) {
+	queryArray := []interface{}{}
+	sqlQuery := "SELECT Name, CreationTime, Disabled, Permissions FROM Users WHERE ID = ?"
+	queryArray = append(queryArray, UserID)
+
+	//First Query the main information
+	var Name string
+	var NCreationTime mysql.NullTime
+	var CreationTime time.Time
+	var Disabled bool
+	var Permissions uint64
+	err := DBConnection.DBHandle.QueryRow(sqlQuery, queryArray...).Scan(&Name, &NCreationTime, &Disabled, &Permissions)
+	if err != nil {
+		return interfaces.UserInformation{}, err
+	}
+
+	return interfaces.UserInformation{ID: UserID, Name: Name, CreationTime: CreationTime, Disabled: Disabled, Permissions: interfaces.UserPermission(Permissions)}, nil
+}

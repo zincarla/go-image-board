@@ -45,6 +45,8 @@ type DBInterface interface {
 	GetUserFilter(UserID uint64) (string, error)
 	//SearchUsers performs a search for users (Returns a list of UserInfos, or error)
 	SearchUsers(searchString string, PageStart uint64, PageStride uint64) ([]UserInformation, uint64, error)
+	//GetUser returns a UserInformation object for the user with the specified ID
+	GetUser(UserID uint64) (UserInformation, error)
 
 	//Image operations
 	//NewImage adds an image with the provided information and returns the id, or error

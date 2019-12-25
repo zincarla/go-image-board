@@ -43,6 +43,10 @@ input[type=submit] {
 	border: none;
 	cursor: pointer;
 }
+input[type="radio"]{
+	width: auto;
+	margin: 4px 4px;
+}
 form {
 	width:100%;
 }

@@ -48,6 +48,8 @@ type templateInput struct {
 	RequestStart time.Time
 	//RequestTime is time it took to process a user request in MS
 	RequestTime int64
+	//ModUserData contains information for the modUser page
+	ModUserData interfaces.UserInformation
 }
 
 var totalImages uint64

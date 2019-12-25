@@ -95,7 +95,7 @@ function SearchUsers(formID, pageStart) {
             }
             for (I = 0; I<Result.Users.length; I++) {
                 newElem = document.createElement("tr")
-                newElem.innerHTML =  "<td>"+Result.Users[I].Name+"</td><td>"+Result.Users[I].ID+"</td><td>"+Result.Users[I].Permissions+"</td><td>"+Result.Users[I].Disabled+"</td><td>"+Result.Users[I].CreationTime+"</td>"
+                newElem.innerHTML =  "<td><a href=\"/mod/user?userName="+Result.Users[I].Name+"\">"+Result.Users[I].Name+"</a></td><td>"+Result.Users[I].ID+"</td><td>"+Result.Users[I].Permissions+"</td><td>"+Result.Users[I].Disabled+"</td><td>"+Result.Users[I].CreationTime+"</td>"
                 table.appendChild(newElem);
             }
             GenerateUserSearchMenu(form.elements["userName"].value, Result.ServerStride, pageStart, Result.ResultCount, 'userResultPageMenu', formID)

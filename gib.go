@@ -114,6 +114,7 @@ func main() {
 		requestRouter.HandleFunc("/redirect", routers.RedirectRouter)
 		requestRouter.HandleFunc("/logon", routers.LogonRouter)
 		requestRouter.HandleFunc("/mod", routers.ModRouter)
+		requestRouter.HandleFunc("/mod/user", routers.ModUserRouter)
 		//API routers
 		requestRouter.HandleFunc("/api/Collection", api.CollectionAPIRouter)
 		requestRouter.HandleFunc("/api/Collections", api.CollectionsAPIRouter)
