@@ -1,8 +1,8 @@
 <div id="mainImageSearchForm">
     {{if ne .PreviousMemberID 0}}<a href="/image?ID={{.PreviousMemberID}}&SearchTerms={{.OldQuery}}"><div class="previousInCollection">&lt;</div></a>{{end}}
-    <form action="/images" method="post">
+    <form action="/images" method="get">
         <input type="text" name="SearchTerms" placeholder="Search Images" value="{{.OldQuery}}">
-        <input type="submit" name="SearchType" value="Search">
+        <input type="submit" value="Search">
         <input type="submit" name="SearchType" value="Random">
     </form>
     {{if ne .NextMemberID 0}}<a href="/image?ID={{.NextMemberID}}&SearchTerms={{.OldQuery}}"><div class="nextInCollection">&gt;</div></a>{{end}}
