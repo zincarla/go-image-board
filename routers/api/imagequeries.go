@@ -134,7 +134,7 @@ func ImagesAPIRouter(responseWriter http.ResponseWriter, request *http.Request) 
 			if err != nil {
 				logging.LogInterface.WriteLog("API", "ImagesAPIRouter", UserName, "ERROR", []string{"Failed to load user's filter", err.Error()})
 			} else {
-				userQTags = append(userQTags, userFilterTags...)
+				userQTags = interfaces.RemoveDuplicateTags(append(userQTags, userFilterTags...))
 			}
 
 			//Perform Query

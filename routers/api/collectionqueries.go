@@ -106,7 +106,7 @@ func CollectionsAPIRouter(responseWriter http.ResponseWriter, request *http.Requ
 			if err != nil {
 				logging.LogInterface.WriteLog("API", "CollectionsAPIRouter", UserName, "ERROR", []string{"Failed to load user's filter", err.Error()})
 			} else {
-				userQTags = append(userQTags, userFilterTags...)
+				userQTags = interfaces.RemoveDuplicateTags(append(userQTags, userFilterTags...))
 			}
 
 			//Perform Query

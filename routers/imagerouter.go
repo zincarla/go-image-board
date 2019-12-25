@@ -376,7 +376,7 @@ func ImageRouter(responseWriter http.ResponseWriter, request *http.Request) {
 					logging.LogInterface.WriteLog("ImageRouter", "ImageQueryRouter", TemplateInput.UserName, "ERROR", []string{"Failed to load user's filter", err.Error()})
 					TemplateInput.Message += "Failed to add your global filter to this query. Internal error. "
 				} else {
-					userQTags = append(userQTags, userFilterTags...)
+					userQTags = interfaces.RemoveDuplicateTags(append(userQTags, userFilterTags...))
 				}
 			}
 			prevNextImage, err := database.DBInterface.GetPrevNexImages(userQTags, requestedID)
