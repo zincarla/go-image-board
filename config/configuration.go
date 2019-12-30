@@ -59,6 +59,12 @@ type ConfigurationSettings struct {
 	PageStride uint64
 	//APIThrottle How much time, in milliseconds, users using the API must wait between requests
 	APIThrottle int64
+	//UseTLS Enables TLS encryption on server
+	UseTLS bool
+	//TLSCertPath The path to the TLS/SSL cert
+	TLSCertPath string
+	//TLSKeyPath The path to the TLS/SSL key file for the cert
+	TLSKeyPath string
 }
 
 //SessionStore contains cookie information
@@ -68,7 +74,7 @@ var SessionStore *sessions.CookieStore
 var Configuration ConfigurationSettings
 
 //ApplicationVersion Current version of application. This should be incremented every release
-var ApplicationVersion = "1.0.3.2"
+var ApplicationVersion = "1.0.3.3"
 
 //SessionVariableName is used when checking cookies
 var SessionVariableName = "gib-session"

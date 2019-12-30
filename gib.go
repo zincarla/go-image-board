@@ -81,6 +81,16 @@ func main() {
 			configConfirmed = true
 		}
 	}
+	//Verify TLS Settings
+	if config.Configuration.UseTLS {
+		if _, err := os.Stat(config.Configuration.TLSCertPath); err != nil {
+			configConfirmed = false
+			logging.LogInterface.WriteLog("MAIN", "SERVER", "*", "ERROR", []string{"Failed to stat TLS Cert file, does it exist? Does this application have permission to it?"})
+		} else if _, err := os.Stat(config.Configuration.TLSKeyPath); err != nil {
+			configConfirmed = false
+			logging.LogInterface.WriteLog("MAIN", "SERVER", "*", "ERROR", []string{"Failed to stat TLS Key file, does it exist? Does this application have permission to it?"})
+		}
+	}
 	//Init webserver cache
 	templatecache.CacheTemplates()
 	//Init API Throttle
@@ -146,7 +156,12 @@ func main() {
 	}
 	//Serve requests. Log on failure.
 	logging.LogInterface.WriteLog("MAIN", "SERVER", "*", "INFO", []string{"Server now listening"})
-	err = server.ListenAndServe()
+	if config.Configuration.UseTLS == false || configConfirmed == false {
+		err = server.ListenAndServe()
+	} else {
+		logging.LogInterface.WriteLog("MAIN", "SERVER", "*", "INFO", []string{"via tls"})
+		err = server.ListenAndServeTLS(config.Configuration.TLSCertPath, config.Configuration.TLSKeyPath)
+	}
 	if err != nil {
 		logging.LogInterface.WriteLog("MAIN", "SERVER", "*", "ERROR", []string{err.Error()})
 	}
