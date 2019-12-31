@@ -55,11 +55,11 @@ docker run --name myimageboard -p 80:8080 -v /var/docker/myimageboard/images:/va
 
 ### TLS
 
-As of 1.0.3.3 Go! ImageBoard supports TLS. I still recommend using an Nginx reverse proxy container for its additional features and [letsencrypt](https://letsencrypt.org/) support. To enable TLS set UseTLS, TLSCertPath, and TLSKeyPath in your configuration file.
+As of 1.0.3.3 Go! ImageBoard supports TLS. I still recommend using an Nginx reverse proxy container for its additional features and [letsencrypt](https://letsencrypt.org/) support. To enable TLS set UseTLS, TLSCertPath, and TLSKeyPath in your configuration file. Such as `{...,"UseTLS":true,"TLSCertPath":".\\configuration\\cert.pem","TLSKeyPath":".\\configuration\\server.key"}`
 
 ### Configuration File
 
-When you run Go! ImageBoard for the first time, the application will generate a new config file for you. This config file is JSON formatted and contains various configuration options. This file must be configured in order for Go! ImageBoard to be usable. Such as `{...,"UseTLS":true,"TLSCertPath":".\\configuration\\cert.pem","TLSKeyPath":".\\configuration\\server.key"}`
+When you run Go! ImageBoard for the first time, the application will generate a new config file for you. This config file is JSON formatted and contains various configuration options. This file must be configured in order for Go! ImageBoard to be usable. 
 
 ### Optional Darktheme
 
