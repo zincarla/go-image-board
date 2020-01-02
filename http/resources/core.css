@@ -329,7 +329,7 @@ video, audio {
 }
 
 .closedDescriptionBox {
-	height: 5em;
+	max-height: 5em;
 	overflow: hidden;
 }
 
