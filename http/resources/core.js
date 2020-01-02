@@ -28,6 +28,15 @@ function ToggleFormDisplay(id) {
     return false;
 }
 
+//toggleCSSClass is used to toggle a css class on a given html element.
+function toggleCSSClass(elementID, className) {
+    if (document.getElementById(elementID).classList.contains(className)) {
+        document.getElementById(elementID).classList.remove(className);
+    } else {
+        document.getElementById(elementID).classList.add(className);
+    }
+}
+
 //Expand Image or not
 function ExpandImage() {
     parent = document.getElementById("ImageGridContainer");

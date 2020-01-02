@@ -129,7 +129,12 @@
 				{{if .ImageContentInfo.Location}}
 					<div id="downloadButton"><a href="/images/{{.ImageContentInfo.Location}}">Download</a></div>
 				{{end}}
-				{{if .ImageContentInfo.Description}}<div class="card">{{.ImageContentInfo.Description}}</h4>{{end}}
+				{{if .ImageContentInfo.Description}}
+					<div class="card" style="padding-bottom:0px;">
+						<div class="closedDescriptionBox" id="imageDescriptionBox">{{.ImageContentInfo.Description}}</div>
+						<div class="cardExpander"><a href="#" onclick="return toggleCSSClass('imageDescriptionBox', 'closedDescriptionBox');">...</a></div>
+					</div>
+				{{end}}
 			</div>
 		</div>
 {{template "footer.html" .}}

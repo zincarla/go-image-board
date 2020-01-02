@@ -311,6 +311,10 @@ video, audio {
 	background-color: #8080801a;
 	margin-bottom: 1em;
 }
+.cardExpander {
+	background-image: linear-gradient(#7e7e7e00,#7e7e7e75);
+	border-radius: 8px;
+}
 /*StreamView Stuff*/
 .Full.ImageResultContainer {
 	width: 80%;
@@ -324,6 +328,10 @@ video, audio {
     max-height: 100vh;
 }
 
+.closedDescriptionBox {
+	height: 5em;
+	overflow: hidden;
+}
 
 /*Collection List Stuff*/
 .CollectionList {
