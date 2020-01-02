@@ -104,8 +104,6 @@ type DBInterface interface {
 	//Maitenance
 	//InitDatabase connects to a database, and if needed, creates and or updates tables
 	InitDatabase() error
-	//GetPluginInformation Return plugin info as string
-	GetPluginInformation() string
 	//AddAuditLog adds a new audit log to the db
 	AddAuditLog(UserID uint64, Type string, Info string) error
 
