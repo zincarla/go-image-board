@@ -8,6 +8,8 @@ import (
 	"go-image-board/logging"
 	"net/http"
 	"strconv"
+
+	"github.com/gorilla/mux"
 )
 
 //CollectionSearchResult response format for a collection search
@@ -48,7 +50,7 @@ func CollectionNameAPIRouter(responseWriter http.ResponseWriter, request *http.R
 	}
 }
 
-//CollectionAPIRouter serves requests to /api/Collection
+//CollectionAPIRouter serves requests to /api/Collection/{CollectionID}
 func CollectionAPIRouter(responseWriter http.ResponseWriter, request *http.Request) {
 	//Validate Logon
 	UserAPIValidated, _, UserName := ValidateAndThrottleAPIUser(responseWriter, request)
@@ -56,9 +58,12 @@ func CollectionAPIRouter(responseWriter http.ResponseWriter, request *http.Reque
 		return //User not logged in and was already handled
 	}
 
+	//Get variables for URL mux from Gorilla
+	urlVariables := mux.Vars(request)
+
 	if request.Method == http.MethodGet {
 		//Query for a collection's information, will return CollectionInformation
-		requestedID := request.FormValue("CollectionID")
+		requestedID := urlVariables["CollectionID"]
 		if requestedID != "" {
 			//Grab specific collection by ID
 			parsedID, err := strconv.ParseUint(requestedID, 10, 32)

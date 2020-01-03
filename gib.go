@@ -125,16 +125,17 @@ func main() {
 		requestRouter.HandleFunc("/logon", routers.LogonRouter)
 		requestRouter.HandleFunc("/mod", routers.ModRouter)
 		requestRouter.HandleFunc("/mod/user", routers.ModUserRouter)
+
 		//API routers
-		requestRouter.HandleFunc("/api/Collection", api.CollectionAPIRouter)
+		requestRouter.HandleFunc("/api/Collection/{CollectionID}", api.CollectionAPIRouter)
 		requestRouter.HandleFunc("/api/Collections", api.CollectionsAPIRouter)
 		requestRouter.HandleFunc("/api/CollectionName", api.CollectionNameAPIRouter)
 		//
 		requestRouter.HandleFunc("/api/TagName", api.TagNameAPIRouter)
-		requestRouter.HandleFunc("/api/Tag", api.TagAPIRouter)
+		requestRouter.HandleFunc("/api/Tag/{TagID}", api.TagAPIRouter)
 		requestRouter.HandleFunc("/api/Tags", api.TagsAPIRouter)
 		//
-		requestRouter.HandleFunc("/api/Image", api.ImageAPIRouter)
+		requestRouter.HandleFunc("/api/Image/{ImageID}", api.ImageAPIRouter)
 		requestRouter.HandleFunc("/api/Images", api.ImagesAPIRouter)
 		//
 		requestRouter.HandleFunc("/api/Logon", api.LogonAPIRouter)

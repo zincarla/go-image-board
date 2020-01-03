@@ -9,6 +9,8 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+
+	"github.com/gorilla/mux"
 )
 
 //TagSearchResult response format for a tag search
@@ -45,7 +47,7 @@ func TagNameAPIRouter(responseWriter http.ResponseWriter, request *http.Request)
 	}
 }
 
-//TagAPIRouter serves requests to /api/Tag
+//TagAPIRouter serves requests to /api/Tag/{TagID}
 func TagAPIRouter(responseWriter http.ResponseWriter, request *http.Request) {
 	//Validate Logon
 	UserAPIValidated, _, UserName := ValidateAndThrottleAPIUser(responseWriter, request)
@@ -53,11 +55,13 @@ func TagAPIRouter(responseWriter http.ResponseWriter, request *http.Request) {
 		return //User not logged in and was already handled
 	}
 
+	//Get variables for URL mux from Gorilla
+	urlVariables := mux.Vars(request)
+
 	//This is used for auto-complete functionality
 	if request.Method == "GET" {
 		//Query for a tag's informaion, will return TagInformation
-		requestedID := request.FormValue("TagID")
-		requestedName := request.FormValue("TagName")
+		requestedID := urlVariables["TagID"]
 
 		if requestedID != "" {
 			//Grab specific tag by ID
@@ -76,19 +80,8 @@ func TagAPIRouter(responseWriter http.ResponseWriter, request *http.Request) {
 				return
 			}
 			ReplyWithJSON(responseWriter, request, tag, UserName)
-		} else if requestedName != "" {
-			tag, err := database.DBInterface.GetTagByName(requestedName)
-			if err != nil {
-				if err == sql.ErrNoRows {
-					ReplyWithJSONError(responseWriter, request, "No tag by that Name", UserName, http.StatusNotFound)
-					return
-				}
-				ReplyWithJSONError(responseWriter, request, "Internal database error", UserName, http.StatusInternalServerError)
-				return
-			}
-			ReplyWithJSON(responseWriter, request, tag, UserName)
 		} else {
-			ReplyWithJSONError(responseWriter, request, "Please specify either TagID or TagName", UserName, http.StatusBadRequest)
+			ReplyWithJSONError(responseWriter, request, "Please specify TagID", UserName, http.StatusBadRequest)
 			return
 		}
 	} else {

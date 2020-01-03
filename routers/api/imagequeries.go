@@ -11,6 +11,8 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+
+	"github.com/gorilla/mux"
 )
 
 //ImageSearchResult response format for an image search
@@ -20,7 +22,7 @@ type ImageSearchResult struct {
 	ServerStride uint64
 }
 
-//ImageAPIRouter serves requests to /api/Image
+//ImageAPIRouter serves requests to /api/Image/{ImageID}
 func ImageAPIRouter(responseWriter http.ResponseWriter, request *http.Request) {
 	//Validate Logon
 	UserAPIValidated, UserID, UserName := ValidateAndThrottleAPIUser(responseWriter, request)
@@ -28,9 +30,12 @@ func ImageAPIRouter(responseWriter http.ResponseWriter, request *http.Request) {
 		return //User not logged in and was already handled
 	}
 
+	//Get variables for URL mux from Gorilla
+	urlVariables := mux.Vars(request)
+
 	if request.Method == http.MethodGet {
 		//Query for a images's information, will return ImageInformation
-		requestedID := request.FormValue("ImageID")
+		requestedID := urlVariables["ImageID"]
 		if requestedID != "" {
 			//Grab specific image by ID
 			parsedID, err := strconv.ParseUint(requestedID, 10, 32)
@@ -53,7 +58,7 @@ func ImageAPIRouter(responseWriter http.ResponseWriter, request *http.Request) {
 			return
 		}
 	} else if request.Method == http.MethodDelete {
-		requestedID := request.FormValue("ImageID")
+		requestedID := urlVariables["ImageID"]
 		if requestedID != "" {
 			//Grab specific image by ID
 			parsedID, err := strconv.ParseUint(requestedID, 10, 32)

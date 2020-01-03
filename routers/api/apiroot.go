@@ -3,10 +3,13 @@ package api
 import (
 	"encoding/json"
 	"go-image-board/config"
+	"go-image-board/database"
 	"go-image-board/logging"
 	"go-image-board/routers"
+	"net"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -42,11 +45,11 @@ func ReplyWithJSONStatus(responseWriter http.ResponseWriter, request *http.Reque
 	responseWriter.Header().Set("Content-Type", "application/json")
 	responseWriter.WriteHeader(statusCode)
 	responseWriter.Write(response)
-
 }
 
 //ReplyWithJSONError replies to a request with an error response
 func ReplyWithJSONError(responseWriter http.ResponseWriter, request *http.Request, errorText string, userName string, statusCode int) {
+	logging.LogInterface.WriteLog("APIRoot", "ReplyWithJSONError", userName, "ERROR", []string{errorText})
 	ReplyWithJSONStatus(responseWriter, request, ErrorResponse{Error: errorText}, userName, statusCode)
 }
 
@@ -54,12 +57,40 @@ func ReplyWithJSONError(responseWriter http.ResponseWriter, request *http.Reques
 func ValidateAPIUser(responseWriter http.ResponseWriter, request *http.Request) (bool, uint64, string) {
 	//Validate Logon
 	UserID, UserName, TokenID := routers.ValidateUserLogon(request)
-	if UserID == 0 || UserName == "" || TokenID == "" {
-		responseWriter.Header().Add("WWW-Authenticate", "Newauth realm=\"gib-api\"") //IANA requires a WWW-Authenticate header with StatusUnauthorized
-		ReplyWithJSONError(responseWriter, request, "Unauthenticated request, please login first", "*", http.StatusUnauthorized)
-		return false, 0, ""
+	errMSG := ""
+	if UserID != 0 && UserName != "" && TokenID != "" {
+		//Validated with session
+		return true, UserID, UserName
 	}
-	return true, UserID, UserName
+	//Attempt with auth header instead
+	authHeader := request.Header.Get("Authorization")
+	if authHeader != "" {
+		//Remove "Newauth" from header
+		if strings.HasPrefix(authHeader, "Newauth ") {
+			authHeader = authHeader[8:]
+			authPieces := strings.Split(authHeader, ":")
+			if len(authPieces) == 2 {
+				userName := authPieces[0]
+				tokenID := authPieces[1]
+				ip, _, _ := net.SplitHostPort(request.RemoteAddr)
+				userID, err := database.DBInterface.GetUserID(userName)
+				if err == nil {
+					if err := database.DBInterface.ValidateToken(userName, tokenID, ip); err != nil {
+						logging.LogInterface.WriteLog("APIRoot", "ValidateAPIUser", userName, "SUCCESS", []string{"Validated by header"})
+						return true, userID, userName //Valid auth header
+					}
+					errMSG = "Token is invalid"
+				}
+				errMSG = "User is invalid"
+			}
+		} else {
+			errMSG = "Auth header incorrect format"
+		}
+	}
+
+	responseWriter.Header().Add("WWW-Authenticate", "Newauth realm=\"gib-api\"") //IANA requires a WWW-Authenticate header with StatusUnauthorized
+	ReplyWithJSONError(responseWriter, request, "Unauthenticated request, please login first. "+errMSG, "*", http.StatusUnauthorized)
+	return false, 0, ""
 }
 
 //ThrottleAPIUser This helper function shortens code elsewhere. This validates whether a user is in a throttle period, and if so, tells them.

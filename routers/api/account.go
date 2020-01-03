@@ -1,6 +1,7 @@
 package api
 
 import (
+	"encoding/binary"
 	"encoding/json"
 	"go-image-board/config"
 	"go-image-board/database"
@@ -8,7 +9,9 @@ import (
 	"go-image-board/routers"
 	"net"
 	"net/http"
+	"strconv"
 	"strings"
+	"time"
 )
 
 //logonInput is the object that is expected from the client
@@ -17,10 +20,43 @@ type logonInput struct {
 	Password string
 }
 
+//IPThrottle is a thread-safe cache of API throttle times, specifically for the logon events
+var IPThrottle ThrottleMap
+
+//ThrottleAPILogonIP This helper function shortens code elsewhere. This validates whether an ip is in a throttle period, and if so, tells them.
+func ThrottleAPILogonIP(responseWriter http.ResponseWriter, request *http.Request) bool {
+	//Convert IP to UInt64 to be compliant with ThrottleMap
+	ipString, _, _ := net.SplitHostPort(request.RemoteAddr)
+	ip := net.ParseIP(ipString)
+	var UserIP uint64
+	if ip != nil {
+		UserIP = binary.BigEndian.Uint64(ip)
+	}
+	//Respond with TooManyRequests if user is throttled, otherwise let parent function continue
+	canUse, throttleTime := IPThrottle.CanUseAPI(UserIP)
+	if canUse {
+		//This may not be best place for this, but seems simplest. We will set the throttle here, since this is called at the top of all API requests
+		//This also ensure throttle is only set on a non-throttled attempt and not reset inbetween
+		Throttle.SetValue(UserIP, 5000) //Hard 5 second throttle
+		return true                     //User logged in, and not throttled, tell calling function to continue
+	}
+	retrySeconds := int64(throttleTime.Sub(time.Now()).Seconds())
+	if retrySeconds <= 0 {
+		retrySeconds = 1
+	}
+	responseWriter.Header().Set("Retry-After", strconv.FormatInt(retrySeconds, 10))
+	ReplyWithJSONStatus(responseWriter, request, ThrottleErrorResponse{Error: "Please wait a bit between requests", Timeout: throttleTime.Sub(time.Now()).Milliseconds()}, ipString, http.StatusTooManyRequests)
+	return false
+}
+
 //LogonAPIRouter serves requests to /api/Logon
 func LogonAPIRouter(responseWriter http.ResponseWriter, request *http.Request) {
-	//TODO: Brute force weakness here. We need to throttle this somehow....
 	//TODO: Come to think of it, should lock out accounts after so many bad password attempts....
+
+	//Logon throttle check
+	if ThrottleAPILogonIP(responseWriter, request) == false {
+		return
+	}
 
 	//Decode user request
 	decoder := json.NewDecoder(request.Body)
