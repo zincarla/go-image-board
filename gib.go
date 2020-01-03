@@ -129,9 +129,7 @@ func main() {
 		//API routers
 		requestRouter.HandleFunc("/api/Collection/{CollectionID}", api.CollectionAPIRouter)
 		requestRouter.HandleFunc("/api/Collections", api.CollectionsAPIRouter)
-		requestRouter.HandleFunc("/api/CollectionName", api.CollectionNameAPIRouter)
 		//
-		requestRouter.HandleFunc("/api/TagName", api.TagNameAPIRouter)
 		requestRouter.HandleFunc("/api/Tag/{TagID}", api.TagAPIRouter)
 		requestRouter.HandleFunc("/api/Tags", api.TagsAPIRouter)
 		//
@@ -141,6 +139,9 @@ func main() {
 		requestRouter.HandleFunc("/api/Logon", api.LogonAPIRouter)
 		requestRouter.HandleFunc("/api/Logout", api.LogoutAPIRouter)
 		requestRouter.HandleFunc("/api/Users", api.UsersAPIRouter)
+		//Autocomplete helpers
+		requestRouter.HandleFunc("/api/TagName", api.TagNameAPIRouter)
+		requestRouter.HandleFunc("/api/CollectionName", api.CollectionNameAPIRouter)
 
 	} else {
 		requestRouter.HandleFunc("/", routers.BadConfigRouter)

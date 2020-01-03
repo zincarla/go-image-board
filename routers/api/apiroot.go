@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"go-image-board/config"
 	"go-image-board/database"
+	"go-image-board/interfaces"
 	"go-image-board/logging"
 	"go-image-board/routers"
 	"net"
@@ -121,4 +122,21 @@ func ValidateAndThrottleAPIUser(responseWriter http.ResponseWriter, request *htt
 		return goodThrottle, userID, userName
 	}
 	return false, userID, userName
+}
+
+//ValidateAPIUserWriteAccess Validates the given user has permission to use advanced API functions, and if not repsonds to user. Returns ShouldContinue, and UserPermissions
+func ValidateAPIUserWriteAccess(responseWriter http.ResponseWriter, request *http.Request, UserName string) (bool, interfaces.UserPermission) {
+	//Get user permission info
+	permissions, err := database.DBInterface.GetUserPermissionSet(UserName)
+	if err != nil {
+		ReplyWithJSONError(responseWriter, request, "Could not validate your permission, internal databse error", UserName, http.StatusForbidden)
+		return false, permissions
+	}
+	//Validate Permission to delete using api
+	if interfaces.UserPermission(permissions).HasPermission(interfaces.APIWriteAccess) != true {
+		ReplyWithJSONError(responseWriter, request, "You do not have API write access", UserName, http.StatusForbidden)
+		go routers.WriteAuditLogByName(UserName, "API", UserName+" failed query API. Insufficient permissions. ")
+		return false, permissions
+	}
+	return true, permissions
 }

@@ -30,6 +30,12 @@ func ImageAPIRouter(responseWriter http.ResponseWriter, request *http.Request) {
 		return //User not logged in and was already handled
 	}
 
+	//Validate Permission to use api
+	UserAPIWriteValidated, permissions := ValidateAPIUserWriteAccess(responseWriter, request, UserName)
+	if !UserAPIWriteValidated {
+		return //User does not have API access and was already told
+	}
+
 	//Get variables for URL mux from Gorilla
 	urlVariables := mux.Vars(request)
 
@@ -76,19 +82,8 @@ func ImageAPIRouter(responseWriter http.ResponseWriter, request *http.Request) {
 				ReplyWithJSONError(responseWriter, request, "Interal Database Error", UserName, http.StatusInternalServerError)
 				return
 			}
-			//Get user permission info
-			permissions, err := database.DBInterface.GetUserPermissionSet(UserName)
-			if err != nil {
-				ReplyWithJSONError(responseWriter, request, "Could not validate your permission, internal databse error", UserName, http.StatusForbidden)
-				return
-			}
 
-			//Validate Permission to delete using api
-			if interfaces.UserPermission(permissions).HasPermission(interfaces.APIWriteAccess) != true {
-				ReplyWithJSONError(responseWriter, request, "You do not have API write access", UserName, http.StatusForbidden)
-				go routers.WriteAuditLogByName(UserName, "DELETE-IMAGE", UserName+" failed to delete image with API. Insufficient permissions. "+requestedID)
-				return
-			}
+			//Validate delete permissions
 			if interfaces.UserPermission(permissions).HasPermission(interfaces.RemoveImage) != true && (config.Configuration.UsersControlOwnObjects != true || imageInfo.UploaderID != UserID) {
 				ReplyWithJSONError(responseWriter, request, "You do not have permission to delete that", UserName, http.StatusForbidden)
 				go routers.WriteAuditLogByName(UserName, "DELETE-IMAGE", UserName+" failed to delete image with API. Insufficient permissions. "+requestedID)
@@ -124,6 +119,11 @@ func ImagesAPIRouter(responseWriter http.ResponseWriter, request *http.Request) 
 	UserAPIValidated, UserID, UserName := ValidateAndThrottleAPIUser(responseWriter, request)
 	if !UserAPIValidated {
 		return //User not logged in and was already handled
+	}
+	//Validate Permission to use api
+	UserAPIWriteValidated, _ := ValidateAPIUserWriteAccess(responseWriter, request, UserName)
+	if !UserAPIWriteValidated {
+		return //User does not have API access and was already told
 	}
 
 	if request.Method == http.MethodGet {

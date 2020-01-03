@@ -118,6 +118,6 @@ func LogoutAPIRouter(responseWriter http.ResponseWriter, request *http.Request) 
 			logging.LogInterface.WriteLog("AccountLogoutAPIRouter", "LogoutHandler", UserName, "WARN", []string{"Account logout was requested but an error occured during token removal", err.Error()})
 		}
 	}
-	go routers.WriteAuditLogByName(UserName, "LOGOUT", UserName+" manually logged out.")
+	go routers.WriteAuditLogByName(UserName, "LOGOUT", UserName+" manually logged out of API.")
 	ReplyWithJSON(responseWriter, request, GenericResponse{Result: "you have been logged out"}, UserName)
 }
