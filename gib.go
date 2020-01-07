@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"go-image-board/config"
 	"go-image-board/database"
@@ -65,6 +66,12 @@ func main() {
 	//Resave config file
 	config.SaveConfiguration(configPath)
 
+	//Init webserver cache
+	templatecache.CacheTemplates()
+	//Init API Throttle
+	api.Throttle = api.ThrottleMap{}
+	api.Throttle.Init()
+
 	//If we can, start the database
 	//logging.LogInterface.WriteLog("MAIN", "SERVER", "*", "Information", []string{fmt.Sprintf("%+v", config.Configuration)})
 	if config.Configuration.DBName == "" || config.Configuration.DBPassword == "" || config.Configuration.DBUser == "" || config.Configuration.DBHost == "" {
@@ -74,12 +81,38 @@ func main() {
 		database.DBInterface = &mariadbplugin.MariaDBPlugin{}
 		err = database.DBInterface.InitDatabase()
 		if err != nil {
-			logging.LogInterface.WriteLog("MAIN", "SERVER", "*", "ERROR", []string{"Failed to connect to database", err.Error()})
-			database.DBInterface = nil
-		} else {
-			logging.LogInterface.WriteLog("MAIN", "SERVER", "*", "INFO", []string{"Successfully connected to database"})
-			configConfirmed = true
+			logging.LogInterface.WriteLog("MAIN", "SERVER", "*", "ERROR", []string{"Failed to connect to database. Will keep trying. ", err.Error()})
+			//Wait group for ending server
+			serverEndedWG := &sync.WaitGroup{}
+			serverEndedWG.Add(1)
+			//Setup basic routers and server server
+			requestRouter := mux.NewRouter()
+			requestRouter.HandleFunc("/", routers.BadConfigRouter)
+			requestRouter.HandleFunc("/resources/{file}", routers.ResourceRouter) /*Required for CSS*/
+			server := &http.Server{
+				Handler:        requestRouter,
+				Addr:           config.Configuration.Address,
+				ReadTimeout:    config.Configuration.ReadTimeout,
+				WriteTimeout:   config.Configuration.WriteTimeout,
+				MaxHeaderBytes: config.Configuration.MaxHeaderBytes,
+			}
+			//Actually start server listener in a goroutine
+			go badConfigServerListenAndServe(serverEndedWG, server)
+			//Now we loop for database connection
+			for err != nil {
+				time.Sleep(60 * time.Second) // retry interval
+				err = database.DBInterface.InitDatabase()
+			}
+			//Kill server once we get a database connection
+			waitCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			//Not defering cancel as this is the main function, instead calling it below after it is uneeded
+			if err := server.Shutdown(waitCtx); err != nil {
+				logging.LogInterface.WriteLog("MAIN", "SERVER", "*", "ERROR", []string{"Error shutting down temp server. ", err.Error()})
+			}
+			cancel()
 		}
+		logging.LogInterface.WriteLog("MAIN", "SERVER", "*", "INFO", []string{"Successfully connected to database"})
+		configConfirmed = true
 	}
 	//Verify TLS Settings
 	if config.Configuration.UseTLS {
@@ -91,11 +124,6 @@ func main() {
 			logging.LogInterface.WriteLog("MAIN", "SERVER", "*", "ERROR", []string{"Failed to stat TLS Key file, does it exist? Does this application have permission to it?"})
 		}
 	}
-	//Init webserver cache
-	templatecache.CacheTemplates()
-	//Init API Throttle
-	api.Throttle = api.ThrottleMap{}
-	api.Throttle.Init()
 	//Setup request routers
 	requestRouter := mux.NewRouter()
 
@@ -201,4 +229,12 @@ func fixMissingConfigs() {
 		config.Configuration.PageStride = 30
 	}
 	config.CreateSessionStore()
+}
+
+func badConfigServerListenAndServe(serverEndedWG *sync.WaitGroup, server *http.Server) {
+	defer serverEndedWG.Done()
+	logging.LogInterface.WriteLog("MAIN", "SERVER", "*", "INFO", []string{"Temp server now listening"})
+	if err := server.ListenAndServe(); err != http.ErrServerClosed {
+		logging.LogInterface.WriteLog("MAIN", "SERVER", "*", "ERROR", []string{"Error occured on temp server stop", err.Error()})
+	}
 }
