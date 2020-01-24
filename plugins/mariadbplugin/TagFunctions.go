@@ -16,6 +16,7 @@ import (
 //Tag Operations
 var regexTagName = regexp.MustCompile("[^a-zA-Z0-9_-]") //Used to cleanup tag names
 var regexWhiteSpace = regexp.MustCompile("\\s{2,}")     //Matches 2 or more consecutive whitespace
+var regexTagValue = regexp.MustCompile("[^a-zA-Z0-9_\\-\\.]")
 
 func prepareTagName(Name string) string {
 	//Lowercase Name -> Trimmed front and end of whitespace -> any inner whitespace reduced and underscored
@@ -25,7 +26,7 @@ func prepareTagName(Name string) string {
 		//Assume a metatag
 		NameValue := strings.Split(Name, ":")
 		value, comparator := getTagComparator(NameValue[1]) //Strip comparator, so it does not get replaced by a _
-		Name = regexTagName.ReplaceAllString(NameValue[0], "_") + ":" + comparator + regexTagName.ReplaceAllString(value, "_")
+		Name = regexTagName.ReplaceAllString(NameValue[0], "_") + ":" + comparator + regexTagValue.ReplaceAllString(value, "_")
 	} else {
 		//Then any special characters replaced with _
 		Name = regexTagName.ReplaceAllString(Name, "_")
