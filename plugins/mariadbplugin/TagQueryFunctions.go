@@ -494,7 +494,7 @@ func (DBConnection *MariaDBPlugin) parseMetaTags(MetaTags []interfaces.TagInform
 				ErrorList = append(ErrorList, errors.New("could not parse name tag"))
 			}
 			ToAdd.Comparator = "LIKE" //Clobber any other comparator requested. This one will only support LIKE
-		case ToAdd.Name == "location":
+		case ToAdd.Name == "location" && CollectionContext == false:
 			ToAdd.Name = "Location"
 			ToAdd.Description = "The item's file location/name"
 			ToAdd.IsComplexMeta = false
