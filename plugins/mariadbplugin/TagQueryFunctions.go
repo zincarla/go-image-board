@@ -174,6 +174,9 @@ func (DBConnection *MariaDBPlugin) GetQueryTags(UserQuery string, CollectionCont
 func getTagComparator(TagValue string) (string, string) {
 	tagRunes := []rune(TagValue)
 	toReturn := ""
+	if len(tagRunes) == 0 { //Edge case if someone searched "tagname:"
+		return "", ""
+	}
 	if tagRunes[0] == '>' || tagRunes[0] == '<' {
 		toReturn += string(tagRunes[0])
 		tagRunes = tagRunes[1:]

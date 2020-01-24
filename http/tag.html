@@ -8,6 +8,10 @@
 			{{$IsOwn := eq .TagContentInfo.UploaderID .UserID}}
 			{{$CanModifyOwn := and .UserControlsOwn $IsOwn}}
 			<div id="SideMenu" class="cellDefaultHidden">
+				<form action="/tags" method="get">
+					<input type="text" name="SearchTags" placeholder="Search Tags" value="">
+					<input type="submit" value="Search Tags">
+				</form>
 				{{template "mainSearchForm.html" .}}
 
 				<h5>Commands</h5>
