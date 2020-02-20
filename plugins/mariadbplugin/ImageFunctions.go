@@ -124,6 +124,21 @@ func (DBConnection *MariaDBPlugin) GetImage(ID uint64) (interfaces.ImageInformat
 	return ToReturn, nil
 }
 
+//GetImageByFileName returns an ImageInformation object given a ImageName
+func (DBConnection *MariaDBPlugin) GetImageByFileName(imageName string) (interfaces.ImageInformation, error) {
+	ToReturn := interfaces.ImageInformation{Location: imageName}
+	var UploadTime mysql.NullTime
+	err := DBConnection.DBHandle.QueryRow("Select Images.Name, IFNULL(Images.Description,'') AS Description, Images.ID, Images.UploaderID, Images.UploadTime, Images.Rating, Users.Name, Images.ScoreAverage, Images.ScoreTotal, Images.ScoreVoters, Images.Source FROM Images LEFT OUTER JOIN Users ON Images.UploaderID = Users.ID WHERE Images.Location=?", imageName).Scan(&ToReturn.Name, &ToReturn.Description, &ToReturn.ID, &ToReturn.UploaderID, &UploadTime, &ToReturn.Rating, &ToReturn.UploaderName, &ToReturn.ScoreAverage, &ToReturn.ScoreTotal, &ToReturn.ScoreVoters, &ToReturn.Source)
+	if err != nil {
+		logging.LogInterface.WriteLog("ImageFunctions", "GetImageByFileName", "*", "ERROR", []string{"Failed to get image info from database", err.Error()})
+		return ToReturn, err
+	}
+	if UploadTime.Valid {
+		ToReturn.UploadTime = UploadTime.Time
+	}
+	return ToReturn, nil
+}
+
 //SetImageRating changes a given image's rating in the database
 func (DBConnection *MariaDBPlugin) SetImageRating(ID uint64, Rating string) error {
 	_, err := DBConnection.DBHandle.Exec("UPDATE Images SET Rating = ? WHERE ID = ?;", Rating, ID)

@@ -35,6 +35,8 @@ type DBInterface interface {
 	GetUserID(userName string) (uint64, error)
 	//GetImage returns an ImageInformation object given an ID
 	GetImage(ID uint64) (ImageInformation, error)
+	//GetImageByFileName returns an ImageInformation object given a ImageName
+	GetImageByFileName(imageName string) (ImageInformation, error)
 	//ValidateProposedUsername returns whether a username is in a valid format
 	ValidateProposedUsername(UserName string) error
 	//SetImageRating changes a given image's rating

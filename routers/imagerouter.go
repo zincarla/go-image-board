@@ -543,8 +543,17 @@ func handleImageUpload(request *http.Request, userName string) (uint64, error) {
 			filePath := config.JoinPath(config.Configuration.ImageDirectory, hashName)
 			//Check if file exists, if so, skip
 			if _, err := os.Stat(filePath); err == nil {
-				logging.LogInterface.WriteLog("ImageRouter", "handleImageUpload", userName, "INFO", []string{"Skipping as file is already uploaded"})
-				errorCompilation += fileHeader.Filename + " has already been uploaded. "
+				var duplicateID uint64
+				dupInfo, ierr := database.DBInterface.GetImageByFileName(hashName)
+				if ierr == nil {
+					duplicateID = dupInfo.ID
+				}
+				logging.LogInterface.WriteLog("ImageRouter", "handleImageUpload", userName, "INFO", []string{"Skipping as file is already uploaded", fileHeader.Filename, filePath, strconv.FormatUint(duplicateID, 10)})
+				if ierr == nil {
+					errorCompilation += fileHeader.Filename + " has already been uploaded as ID " + strconv.FormatUint(duplicateID, 10) + ". "
+				} else {
+					errorCompilation += fileHeader.Filename + " has already been uploaded. "
+				}
 				fileStream.Close()
 				continue
 			}
