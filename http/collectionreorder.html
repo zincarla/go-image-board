@@ -3,6 +3,10 @@
 		{{template "headMenu.html" .}}
 		<div id="BodyContent">
 			<div id="SideMenu" class="cellDefaultHidden">
+				<form action="/collections" method="get">
+					<input type="text" name="SearchTerms" placeholder="Search Collections" value="{{.OldQuery}}">
+					<input type="submit" value="Search Collections">
+				</form>
 				{{template "mainSearchForm.html" .}}
 
 				{{$CanDeleteCollection := .UserPermissions.HasPermission 8192}}
