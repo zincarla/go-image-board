@@ -9,6 +9,7 @@ import (
 	"go-image-board/interfaces"
 	"go-image-board/logging"
 	"go-image-board/routers/templatecache"
+	"html/template"
 	"io"
 	"net/http"
 	"net/url"
@@ -28,6 +29,7 @@ func ImageRouter(responseWriter http.ResponseWriter, request *http.Request) {
 	}
 	var requestedID uint64
 	var err error
+	var duplicateIDs map[string]uint64
 	//If we are just now uploading the file, then we need to get ID from upload function
 	switch request.FormValue("command") {
 	case "uploadFile":
@@ -37,14 +39,26 @@ func ImageRouter(responseWriter http.ResponseWriter, request *http.Request) {
 			return
 		}
 		logging.LogInterface.WriteLog("ImageRouter", "ImageRouter", TemplateInput.UserName, "INFO", []string{"Attempting to upload file"})
-		requestedID, err = handleImageUpload(request, TemplateInput.UserName)
+		requestedID, duplicateIDs, err = handleImageUpload(request, TemplateInput.UserName)
 		if err != nil {
 			logging.LogInterface.WriteLog("ImageRouter", "ImageRouter", TemplateInput.UserName, "WARNING", []string{err.Error()})
 			TemplateInput.Message = "One or more warnings generated during upload. " + err.Error()
 		}
+		if duplicateIDs != nil && len(duplicateIDs) > 0 {
+			for fileName, duplicateID := range duplicateIDs {
+				TemplateInput.HTMLMessage += template.HTML("<a href=\"/image?ID=" + strconv.FormatUint(duplicateID, 10) + "\">" + template.HTMLEscapeString(fileName) + "</a> has already been uploaded. ")
+			}
+		}
+		//Nicety for if we have blank requestID
+		if requestedID == 0 && duplicateIDs != nil && len(duplicateIDs) > 0 {
+			for _, duplicateID := range duplicateIDs {
+				requestedID = duplicateID
+				break
+			}
+		}
 		//redirect to a GET form of page
-		http.Redirect(responseWriter, request, "/image?ID="+strconv.FormatUint(requestedID, 10)+"&prevMessage="+url.QueryEscape(TemplateInput.Message), 302)
-		return
+		//http.Redirect(responseWriter, request, "/image?ID="+strconv.FormatUint(requestedID, 10)+"&prevMessage="+url.QueryEscape(TemplateInput.Message), 302)
+		//return
 	case "ChangeVote":
 		sImageID := request.FormValue("ID")
 		if TemplateInput.UserName == "" || TemplateInput.UserID == 0 {
@@ -429,19 +443,19 @@ type uploadData struct {
 	ID   uint64
 }
 
-func handleImageUpload(request *http.Request, userName string) (uint64, error) {
+func handleImageUpload(request *http.Request, userName string) (uint64, map[string]uint64, error) {
 	//Translate UserID
 	userID, err := database.DBInterface.GetUserID(userName)
 	if err != nil {
 		go WriteAuditLog(userID, "IMAGE-UPLOAD", userName+" failed to upload image. "+err.Error())
-		return 0, errors.New("user not valid")
+		return 0, nil, errors.New("user not valid")
 	}
 
 	//Validate permission to upload
 	userPermission, err := database.DBInterface.GetUserPermissionSet(userName)
 	if err != nil {
 		go WriteAuditLog(userID, "IMAGE-UPLOAD", userName+" failed to upload image. "+err.Error())
-		return 0, errors.New("Could not validate permission (SQL Error)")
+		return 0, nil, errors.New("Could not validate permission (SQL Error)")
 	}
 
 	//ParseCollection
@@ -452,24 +466,25 @@ func handleImageUpload(request *http.Request, userName string) (uint64, error) {
 		//Want to add to collection, but the collection does not exist
 		if interfaces.UserPermission(userPermission).HasPermission(interfaces.AddCollections) != true {
 			go WriteAuditLog(userID, "IMAGE-UPLOAD", userName+" failed to upload image. No permissions to create collection.")
-			return 0, errors.New("User does not have create permission for collections")
+			return 0, nil, errors.New("User does not have create permission for collections")
 		}
 	} else if collectionName != "" && err == nil {
 		//Want to add to a pre-existing collection
 		if interfaces.UserPermission(userPermission).HasPermission(interfaces.ModifyCollections) != true &&
 			(config.Configuration.UsersControlOwnObjects && collectionInfo.UploaderID != userID) {
 			go WriteAuditLog(userID, "IMAGE-UPLOAD", userName+" failed to upload image. No permissions to add members to collection.")
-			return 0, errors.New("User does not have permission to update requested collection")
+			return 0, nil, errors.New("User does not have permission to update requested collection")
 		}
 	}
 
 	if interfaces.UserPermission(userPermission).HasPermission(interfaces.UploadImage) != true {
 		go WriteAuditLog(userID, "IMAGE-UPLOAD", userName+" failed to upload image. No permissions.")
-		return 0, errors.New("User does not have upload permission for images")
+		return 0, nil, errors.New("User does not have upload permission for images")
 	}
 	// /ValidatePermission
 
 	errorCompilation := ""
+	duplicateIDs := make(map[string]uint64)
 
 	//Cache tags first, improves speed to calculate this once than for each image
 	//Get tags
@@ -550,7 +565,8 @@ func handleImageUpload(request *http.Request, userName string) (uint64, error) {
 				}
 				logging.LogInterface.WriteLog("ImageRouter", "handleImageUpload", userName, "INFO", []string{"Skipping as file is already uploaded", fileHeader.Filename, filePath, strconv.FormatUint(duplicateID, 10)})
 				if ierr == nil {
-					errorCompilation += fileHeader.Filename + " has already been uploaded as ID " + strconv.FormatUint(duplicateID, 10) + ". "
+					//errorCompilation += fileHeader.Filename + " has already been uploaded as ID " + strconv.FormatUint(duplicateID, 10) + ". "
+					duplicateIDs[fileHeader.Filename] = duplicateID
 				} else {
 					errorCompilation += fileHeader.Filename + " has already been uploaded. "
 				}
@@ -637,9 +653,9 @@ func handleImageUpload(request *http.Request, userName string) (uint64, error) {
 	}
 
 	if errorCompilation != "" {
-		return lastID, errors.New(errorCompilation)
+		return lastID, duplicateIDs, errors.New(errorCompilation)
 	}
-	return lastID, nil
+	return lastID, duplicateIDs, nil
 }
 
 //GetNewImageName uses the original filename and file contents to create a new name

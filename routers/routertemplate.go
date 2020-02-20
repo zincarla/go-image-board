@@ -29,6 +29,7 @@ type templateInput struct {
 	UserName              string
 	UserID                uint64
 	Message               string
+	HTMLMessage           template.HTML
 	AllowAccountCreation  bool
 	AccountRequiredToView bool
 	QuestionOne           string

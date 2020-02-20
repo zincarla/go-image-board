@@ -1,5 +1,7 @@
-		<div id="messageContainer" class="display{{if ne .Message ""}}Block{{else}}Hidden{{end}}">
-			{{.Message}} <a href="javascript:ToggleDIVDisplay('messageContainer');">Click here</a> to close this message.
+		<div id="messageContainer" class="display{{if or .Message .HTMLMessage}}Block{{else}}Hidden{{end}}">
+			{{if .Message}}{{.Message}}<br>{{end}}
+			{{if .HTMLMessage}}{{.HTMLMessage}}<br>{{end}}
+			<a href="javascript:ToggleDIVDisplay('messageContainer');">Click here</a> to close this message.
 		</div>
 		<div id="CellMenuButton" onclick="ToggleCellDIVDisplay('HeadMenu'); ToggleCellDIVDisplay('SideMenu');"><img src="/resources/hamburgmenu.svg" alt="Show Menu" /></div>
 		<div id="HeadMenu" class="cellDefaultHidden">
