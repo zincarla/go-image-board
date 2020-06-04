@@ -27,6 +27,7 @@ type ImageInformation struct {
 
 //ImagedHash conveniently contains the vertical and horizontal dHashes of an image
 type ImagedHash struct {
-	ImagehHash uint64
-	ImagevHash uint64
+	ImagehHash          uint64
+	ImagevHash          uint64
+	SimilarityThreshold uint64
 }

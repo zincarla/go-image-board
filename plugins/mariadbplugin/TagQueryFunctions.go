@@ -473,27 +473,27 @@ func (DBConnection *MariaDBPlugin) parseMetaTags(MetaTags []interfaces.TagInform
 			} else {
 				ErrorList = append(ErrorList, errors.New("could not parse tagcount tag"))
 			}
-		case ToAdd.Name == "ordersimiliar" && CollectionContext == false:
-			ToAdd.Name = "OrderSimiliar"
-			ToAdd.Description = "Changes the order of results so that similiar results to the specified image are shown"
+		case ToAdd.Name == "similar" && CollectionContext == false:
+			ToAdd.Name = "Similar"
+			ToAdd.Description = "Show images similar to the id specified"
 			ToAdd.IsComplexMeta = true
-			ToAdd.Comparator = "LIKE" //Not really used
 			stringValue, isString := ToAdd.MetaValue.(string)
+			ToAdd.Comparator = "<=" //Only return results less than or equal to threshold
 			if isString {
 				idValue, err := strconv.ParseUint(stringValue, 10, 64)
 				if err == nil {
 					hHash, vHash, err := DBConnection.GetImagedHash(idValue)
 					if err == nil {
 						ToAdd.Exists = true
-						ToAdd.MetaValue = interfaces.ImagedHash{ImagehHash: hHash, ImagevHash: vHash}
+						ToAdd.MetaValue = interfaces.ImagedHash{ImagehHash: hHash, ImagevHash: vHash, SimilarityThreshold: 26} //At 128 bits, 26 is 20%...ish
 					} else {
-						ErrorList = append(ErrorList, errors.New("internal error occured querying database for order"))
+						ErrorList = append(ErrorList, errors.New("internal error occured querying database for similar"))
 					}
 				} else {
-					ErrorList = append(ErrorList, errors.New("could not find requested image for order tag"))
+					ErrorList = append(ErrorList, errors.New("could not find requested image for similar tag"))
 				}
 			} else {
-				ErrorList = append(ErrorList, errors.New("could not parse order tag"))
+				ErrorList = append(ErrorList, errors.New("could not parse similar tag"))
 			}
 		case ToAdd.Name == "name":
 			ToAdd.Name = "Name"
