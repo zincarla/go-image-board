@@ -27,6 +27,7 @@ func main() {
 	//Commands
 	generateThumbsOnly := flag.Bool("thumbsonly", false, "Regenerates all thumbnails. You should run this if you change your thumbnail size or enable ffmpeg.")
 	generatedHashesOnly := flag.Bool("dhashonly", false, "Regenerates all dhashes. You should run this if you change hash method, or after updating past 1.0.3.8")
+	missingOnly := flag.Bool("missingonly", false, "When used with dhashonly or thumbsonly, prevents deleting pre-existing entries.")
 	renameFilesOnly := flag.Bool("renameonly", false, "Renames all posts and corrects the names in the database. Use if changing naming convention of files.")
 	flag.Parse()
 
@@ -43,6 +44,7 @@ func main() {
 	//Add any missing configs
 	fixMissingConfigs()
 	if *generateThumbsOnly {
+		logging.LogInterface.WriteLog("Server", "Generate Thumbnails Flag", "*", "INFO", []string{"Generate thumbnails flag detected. Server will not start and instead just generate thumbnails. This may take some time."})
 		//We need wait group so that we don't end the application before goroutines
 		var wg sync.WaitGroup
 		//list files
@@ -52,18 +54,24 @@ func main() {
 			return
 		}
 		//for each image
+		generatedThumbnails := uint64(0)
 		for _, file := range files {
 			//Delete thumbnail
-			os.Remove(config.Configuration.ImageDirectory + string(filepath.Separator) + "thumbs" + string(filepath.Separator) + file.Name() + ".png")
-			//Goroutine generate a new one
-			wg.Add(1) //This magic thing will prevent program from closing before goroutines finish
-			go func(fileName string) {
-				defer wg.Done()
-				routers.GenerateThumbnail(fileName)
-			}(file.Name())
+			thumbNailPath := config.Configuration.ImageDirectory + string(filepath.Separator) + "thumbs" + string(filepath.Separator) + file.Name() + ".png"
+			if _, err := os.Stat(thumbNailPath); *missingOnly == false || (err != nil && os.IsNotExist(err)) {
+				os.Remove(thumbNailPath)
+				//Goroutine generate a new one
+				generatedThumbnails++
+				wg.Add(1) //This magic thing will prevent program from closing before goroutines finish
+				go func(fileName string) {
+					defer wg.Done()
+					routers.GenerateThumbnail(fileName)
+				}(file.Name())
+			}
 		}
 		wg.Wait() //This will wait for all goroutines to finish
-		return    //We do not want to start server if used in cli
+		logging.LogInterface.WriteLog("Server", "Generate Thumbnails Flag", "*", "SUCCESS", []string{"Finished generating " + strconv.FormatUint(generatedThumbnails, 10) + " new thumbnails."})
+		return //We do not want to start server if used in cli
 	}
 
 	//Resave config file
@@ -118,10 +126,12 @@ func main() {
 		configConfirmed = true
 	}
 	if *generatedHashesOnly {
+		logging.LogInterface.WriteLog("Server", "Generate dHashes Flag", "*", "INFO", []string{"Generate dHashes flag detected. Server will not start and instead just generate dHashes. This will take some time."})
 		//We need wait group so that we don't end the application before goroutines
 		var wg sync.WaitGroup
 		//for each image in the database
 		page := uint64(0)
+		processedImages := uint64(0)
 		for true {
 			images, maxCount, err := database.DBInterface.SearchImages([]interfaces.TagInformation{}, page, config.Configuration.PageStride)
 			page += config.Configuration.PageStride
@@ -135,16 +145,25 @@ func main() {
 			}
 			logging.LogInterface.WriteLog("MAIN", "SERVER", "*", "INFO", []string{"Queing", strconv.FormatUint(page, 10), "of", strconv.FormatUint(maxCount, 10)})
 			for _, nextImage := range images {
-				wg.Add(1) //This magic thing will prevent program from closing before goroutines finish
-				go func(fileName string, imageID uint64) {
-					defer wg.Done()
-					routers.GeneratedHash(fileName, imageID)
-				}(nextImage.Location, nextImage.ID)
+				var dhashExists error
+				if *missingOnly {
+					_, _, dhashExists = database.DBInterface.GetImagedHash(nextImage.ID)
+				}
+				if *missingOnly == false || dhashExists != nil {
+					processedImages++
+					wg.Add(1) //This magic thing will prevent program from closing before goroutines finish
+					go func(fileName string, imageID uint64) {
+						defer wg.Done()
+						routers.GeneratedHash(fileName, imageID)
+					}(nextImage.Location, nextImage.ID)
+				}
 			}
 		}
 		logging.LogInterface.WriteLog("MAIN", "SERVER", "*", "INFO", []string{"Waiting for images to finish processing"})
 		wg.Wait() //This will wait for all goroutines to finish
-		return    //We do not want to start server if used in cli
+		logging.LogInterface.WriteLog("Server", "Generate dHashes Flag", "*", "SUCCESS", []string{"Finished generating " + strconv.FormatUint(processedImages, 10) + " new dHashes."})
+
+		return //We do not want to start server if used in cli
 	}
 	//Verify TLS Settings
 	if config.Configuration.UseTLS {

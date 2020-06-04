@@ -174,7 +174,6 @@ func (DBConnection *MariaDBPlugin) GetImagedHash(ID uint64) (uint64, uint64, err
 	var hHash, vHash uint64
 	err := DBConnection.DBHandle.QueryRow("SELECT hHash, vHash from ImagedHashes WHERE ImageID = ?", ID).Scan(&hHash, &vHash)
 	if err != nil {
-		logging.LogInterface.WriteLog("ImageFunctions", "GetImagedHash", "*", "ERROR", []string{"Failed to set image dHashes", err.Error()})
 		return hHash, vHash, err
 	}
 	return hHash, vHash, nil
