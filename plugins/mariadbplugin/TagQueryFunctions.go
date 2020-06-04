@@ -480,12 +480,28 @@ func (DBConnection *MariaDBPlugin) parseMetaTags(MetaTags []interfaces.TagInform
 			stringValue, isString := ToAdd.MetaValue.(string)
 			ToAdd.Comparator = "<=" //Only return results less than or equal to threshold
 			if isString {
+				//First handle similarity if needed
+				SimilarityThreshold := uint64(26) //At 128 bits, 26 is 20%...ish
+				stringComponents := strings.Split(stringValue, "-")
+				if len(stringComponents) == 2 {
+					newSimilarity, err := strconv.ParseUint(stringComponents[0], 10, 64)
+					if err != nil {
+						ErrorList = append(ErrorList, errors.New("error parsing similarity threshold for similarity tag"))
+						break
+					}
+					stringValue = stringComponents[1]
+					SimilarityThreshold = newSimilarity
+				} else if len(stringComponents) != 1 {
+					ErrorList = append(ErrorList, errors.New("could not parse similar tag"))
+					break
+				}
+				//Then id value
 				idValue, err := strconv.ParseUint(stringValue, 10, 64)
 				if err == nil {
 					hHash, vHash, err := DBConnection.GetImagedHash(idValue)
 					if err == nil {
 						ToAdd.Exists = true
-						ToAdd.MetaValue = interfaces.ImagedHash{ImagehHash: hHash, ImagevHash: vHash, SimilarityThreshold: 26} //At 128 bits, 26 is 20%...ish
+						ToAdd.MetaValue = interfaces.ImagedHash{ImagehHash: hHash, ImagevHash: vHash, SimilarityThreshold: SimilarityThreshold}
 					} else {
 						ErrorList = append(ErrorList, errors.New("internal error occured querying database for similar"))
 					}
