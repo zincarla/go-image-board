@@ -159,6 +159,16 @@ func (DBConnection *MariaDBPlugin) SetImageSource(ID uint64, Source string) erro
 	return nil
 }
 
+//SetImagedHash changes a given image's dHash in the database
+func (DBConnection *MariaDBPlugin) SetImagedHash(ID uint64, hHash uint64, vHash uint64) error {
+	_, err := DBConnection.DBHandle.Exec("INSERT INTO ImagedHashes (ImageID, hHash, vHash) VALUES (?,?,?) ON DUPLICATE KEY UPDATE hHash = VALUES(hHash), vHash = VALUES(vHash);", ID, hHash, vHash)
+	if err != nil {
+		logging.LogInterface.WriteLog("ImageFunctions", "SetImagedHash", "*", "ERROR", []string{"Failed to set image dHashes", err.Error()})
+		return err
+	}
+	return nil
+}
+
 /*
 //Our select query, if inclusive
 SELECT ImageID, Name, Location FROM (

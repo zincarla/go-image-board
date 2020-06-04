@@ -30,7 +30,7 @@ func TagNameAPIRouter(responseWriter http.ResponseWriter, request *http.Request)
 	}
 
 	//This is used for auto-complete functionality
-	if request.Method == "GET" {
+	if request.Method == http.MethodGet {
 		//Query for a tag's informaion, will return TagInformation
 		requestedName := strings.TrimSpace(request.FormValue("tagNameQuery"))
 
@@ -65,7 +65,7 @@ func TagAPIRouter(responseWriter http.ResponseWriter, request *http.Request) {
 	urlVariables := mux.Vars(request)
 
 	//This is used for auto-complete functionality
-	if request.Method == "GET" {
+	if request.Method == http.MethodGet {
 		//Query for a tag's informaion, will return TagInformation
 		requestedID := urlVariables["TagID"]
 

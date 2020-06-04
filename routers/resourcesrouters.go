@@ -3,6 +3,7 @@ package routers
 import (
 	"errors"
 	"go-image-board/config"
+	"go-image-board/database"
 	"go-image-board/logging"
 	"net/http"
 	"net/url"
@@ -89,8 +90,6 @@ func ThumbnailRouter(responseWriter http.ResponseWriter, request *http.Request) 
 func GenerateThumbnail(Name string) error {
 	//Switch on extension
 	//Each case will contain generators for that file type
-	//In future for example, could load a random frame from a video file and use that.
-	//ATM, just images are supported
 	switch ext := filepath.Ext(strings.ToLower(Name)); ext {
 	case ".jpg", ".jpeg", ".bmp", ".gif", ".png", ".webp", ".tiff", ".tif":
 		File, err := os.Open(config.JoinPath(config.Configuration.ImageDirectory, Name))
@@ -144,5 +143,63 @@ func GenerateThumbnail(Name string) error {
 		return nil
 	default:
 		return errors.New("No thumbnail method for file type")
+	}
+}
+
+//GeneratedHash will attempt to generate a dHash for the given image
+func GeneratedHash(Name string, ImageID uint64) error {
+	//Switch on extension
+	switch ext := filepath.Ext(strings.ToLower(Name)); ext {
+	case ".jpg", ".jpeg", ".bmp", ".gif", ".png", ".webp", ".tiff", ".tif":
+		//Load image
+		File, err := os.Open(config.JoinPath(config.Configuration.ImageDirectory, Name))
+		defer File.Close()
+		if err != nil {
+			return err
+		}
+		originalImage, _, err := imageorient.Decode(File)
+		if err != nil {
+			return err
+		}
+		//Scale it
+		const newWidth = 9
+		const newHeight = 9
+		originalImage = resize.Resize(uint(newWidth), uint(newHeight), originalImage, resize.Lanczos3)
+
+		//Greyscale it
+		greyScaledImage := [newWidth][newHeight]byte{}
+		for x := 0; x < newWidth; x++ {
+			for y := 0; y < newHeight; y++ {
+				r, g, b, _ := originalImage.At(x, y).RGBA()
+				greyScaledImage[x][y] = byte((r + g + b) / 3)
+			}
+		}
+
+		//Now we compute hashes, one vertical and one horizontal
+		//Using dHash per instructions at http://www.hackerfactor.com/blog/index.php?/archives/529-Kind-of-Like-That.html
+		vHash := uint64(0)
+		hHash := uint64(0)
+		bitLocation := 64
+		for y := 1; y < newHeight; y++ {
+			for x := 1; x < newWidth; x++ {
+				bitLocation--
+				if greyScaledImage[x][y] > greyScaledImage[x-1][y] {
+					hHash = hHash | (1 << bitLocation)
+				}
+			}
+		}
+		bitLocation = 64
+		for x := 1; x < newWidth; x++ {
+			for y := 1; y < newHeight; y++ {
+				bitLocation--
+				if greyScaledImage[x][y] > greyScaledImage[x][y-1] {
+					vHash = vHash | (1 << bitLocation)
+				}
+			}
+		}
+
+		return database.DBInterface.SetImagedHash(ImageID, hHash, vHash)
+	default:
+		return errors.New("Cannot process image of this type")
 	}
 }

@@ -74,7 +74,7 @@ var SessionStore *sessions.CookieStore
 var Configuration ConfigurationSettings
 
 //ApplicationVersion Current version of application. This should be incremented every release
-var ApplicationVersion = "1.0.3.7"
+var ApplicationVersion = "1.0.3.8"
 
 //SessionVariableName is used when checking cookies
 var SessionVariableName = "gib-session"

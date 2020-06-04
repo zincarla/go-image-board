@@ -621,6 +621,7 @@ func handleImageUpload(request *http.Request, userName string) (uint64, map[stri
 			go WriteAuditLog(userID, "IMAGE-UPLOAD", userName+" successfully uploaded an image. "+strconv.FormatUint(lastID, 10))
 			//Start go routine to generate thumbnail
 			go GenerateThumbnail(hashName)
+			go GeneratedHash(hashName, lastID)
 		}
 		fileStream.Close()
 	}

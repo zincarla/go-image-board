@@ -7,15 +7,15 @@ import (
 	"go-image-board/logging"
 	"strconv"
 
-
 	"math/rand"
 	"time"
+
 	//I mean, where else would this go?
 	_ "github.com/go-sql-driver/mysql"
 )
 
 //TODO: Increment this whenever we alter the DB Schema, ensure you attempt to add update code below
-var currentDBVersion int64 = 11
+var currentDBVersion int64 = 12
 
 //TODO: Increment this when we alter the db schema and don't add update code to compensate
 var minSupportedDBVersion int64 // 0 by default
@@ -94,6 +94,11 @@ func (DBConnection *MariaDBPlugin) performFreshDBInstall() error {
 		return err
 	}
 	_, err = DBConnection.DBHandle.Exec("CREATE TABLE ImageTags (ID BIGINT UNSIGNED NOT NULL AUTO_INCREMENT UNIQUE, ImageID BIGINT UNSIGNED NOT NULL, TagID BIGINT UNSIGNED NOT NULL, LinkerID BIGINT UNSIGNED NOT NULL, LinkTime TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL, UNIQUE INDEX ImageTagPair (TagID,ImageID), INDEX(ImageID), INDEX(LinkerID));")
+	if err != nil {
+		logging.LogInterface.WriteLog("MariaDBPlugin", "performFreshDBInstall", "*", "ERROR", []string{"Failed to install database", err.Error()})
+		return err
+	}
+	_, err = DBConnection.DBHandle.Exec("CREATE TABLE ImagedHashes (ID BIGINT UNSIGNED NOT NULL AUTO_INCREMENT UNIQUE, ImageID BIGINT UNSIGNED NOT NULL, vHash BIGINT UNSIGNED NOT NULL, hHash BIGINT UNSIGNED NOT NULL, UNIQUE INDEX(ImageID), INDEX(vHash), INDEX(hHash));")
 	if err != nil {
 		logging.LogInterface.WriteLog("MariaDBPlugin", "performFreshDBInstall", "*", "ERROR", []string{"Failed to install database", err.Error()})
 		return err
@@ -743,6 +748,20 @@ func (DBConnection *MariaDBPlugin) upgradeDatabase(version int64) (int64, error)
 			return version, err
 		}
 		version = 11
+		logging.LogInterface.WriteLog("MariaDBPlugin", "InitDatabase", "*", "INFO", []string{"Database schema updated to version", strconv.FormatInt(version, 10)})
+	}
+	//Update version 11->12
+	if version == 11 {
+		_, err := DBConnection.DBHandle.Exec("CREATE TABLE ImagedHashes (ID BIGINT UNSIGNED NOT NULL AUTO_INCREMENT UNIQUE, ImageID BIGINT UNSIGNED NOT NULL, vHash BIGINT UNSIGNED NOT NULL, hHash BIGINT UNSIGNED NOT NULL, UNIQUE INDEX(ImageID), INDEX(vHash), INDEX(hHash));")
+		if err != nil {
+			logging.LogInterface.WriteLog("MariaDBPlugin", "performFreshDBInstall", "*", "ERROR", []string{"Failed to install database", err.Error()})
+			return version, err
+		}
+		if _, err := DBConnection.DBHandle.Exec("UPDATE DBVersion SET version = 12;"); err != nil {
+			logging.LogInterface.WriteLog("MariaDBPlugin", "InitDatabase", "*", "ERROR", []string{"Failed to update database version", err.Error()})
+			return version, err
+		}
+		version = 12
 		logging.LogInterface.WriteLog("MariaDBPlugin", "InitDatabase", "*", "INFO", []string{"Database schema updated to version", strconv.FormatInt(version, 10)})
 	}
 	return version, nil

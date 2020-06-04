@@ -5,6 +5,7 @@ import (
 	"flag"
 	"go-image-board/config"
 	"go-image-board/database"
+	"go-image-board/interfaces"
 	"go-image-board/logging"
 	"go-image-board/plugins"
 	"go-image-board/plugins/mariadbplugin"
@@ -15,6 +16,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"sync"
 	"time"
 
@@ -24,6 +26,7 @@ import (
 func main() {
 	//Commands
 	generateThumbsOnly := flag.Bool("thumbsonly", false, "Regenerates all thumbnails. You should run this if you change your thumbnail size or enable ffmpeg.")
+	generatedHashesOnly := flag.Bool("dhashonly", false, "Regenerates all dhashes. You should run this if you change hash method, or after updating past 1.0.3.8")
 	renameFilesOnly := flag.Bool("renameonly", false, "Renames all posts and corrects the names in the database. Use if changing naming convention of files.")
 	flag.Parse()
 
@@ -113,6 +116,35 @@ func main() {
 		}
 		logging.LogInterface.WriteLog("MAIN", "SERVER", "*", "INFO", []string{"Successfully connected to database"})
 		configConfirmed = true
+	}
+	if *generatedHashesOnly {
+		//We need wait group so that we don't end the application before goroutines
+		var wg sync.WaitGroup
+		//for each image in the database
+		page := uint64(0)
+		for true {
+			images, maxCount, err := database.DBInterface.SearchImages([]interfaces.TagInformation{}, page, config.Configuration.PageStride)
+			page += config.Configuration.PageStride
+			if err != nil {
+				logging.LogInterface.WriteLog("MAIN", "SERVER", "*", "ERROR", []string{"Error processing hashes.", err.Error()})
+				break
+			}
+			if len(images) <= 0 {
+				logging.LogInterface.WriteLog("MAIN", "SERVER", "*", "INFO", []string{"Finished queing images"})
+				break
+			}
+			logging.LogInterface.WriteLog("MAIN", "SERVER", "*", "INFO", []string{"Queing", strconv.FormatUint(page, 10), "of", strconv.FormatUint(maxCount, 10)})
+			for _, nextImage := range images {
+				wg.Add(1) //This magic thing will prevent program from closing before goroutines finish
+				go func(fileName string, imageID uint64) {
+					defer wg.Done()
+					routers.GeneratedHash(fileName, imageID)
+				}(nextImage.Location, nextImage.ID)
+			}
+		}
+		logging.LogInterface.WriteLog("MAIN", "SERVER", "*", "INFO", []string{"Waiting for images to finish processing"})
+		wg.Wait() //This will wait for all goroutines to finish
+		return    //We do not want to start server if used in cli
 	}
 	//Verify TLS Settings
 	if config.Configuration.UseTLS {
