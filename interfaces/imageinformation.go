@@ -24,3 +24,9 @@ type ImageInformation struct {
 	OrderInCollection uint64                  //Should be used in overview of a single collection
 	MemberCollections []CollectionInformation //Should be used in view of single image (For navigation of collections it's a member of)
 }
+
+//ImagedHash conveniently contains the vertical and horizontal dHashes of an image
+type ImagedHash struct {
+	ImagehHash uint64
+	ImagevHash uint64
+}

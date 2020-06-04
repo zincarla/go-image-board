@@ -6,6 +6,7 @@ import (
 	"go-image-board/interfaces"
 	"go-image-board/logging"
 	"math/rand"
+	"strconv"
 	"strings"
 )
 
@@ -38,14 +39,15 @@ func (DBConnection *MariaDBPlugin) SearchImages(Tags []interfaces.TagInformation
 	//This is the start of the query we want
 	sqlQuery := `SELECT ID, Name, Location `
 	sqlCountQuery := `SELECT COUNT(*) `
+	orderClause := `ORDER BY ID DESC LIMIT ? OFFSET ?;`
 	if len(IncludeTags) == 0 {
-		sqlQuery = sqlQuery + `FROM Images `
+		sqlQuery = `SELECT Images.ID, Name, Location ` + `FROM Images JOIN ImagedHashes ON Images.ID=ImagedHashes.ImageID `
 		sqlCountQuery = sqlCountQuery + `FROM Images `
 	} else {
 		sqlQuery = sqlQuery + `FROM (
-			SELECT ImageID as ID, Name, Location, COUNT(*) as MatchingTags
+			SELECT ImageTags.ImageID as ID, Images.Name, Images.Location, COUNT(*) as MatchingTags, ImagedHashes.hHash, ImagedHashes.vHash
 			FROM ImageTags 
-			INNER JOIN Images ON ImageTags.ImageID=Images.ID `
+			INNER JOIN Images ON ImageTags.ImageID=Images.ID JOIN ImagedHashes ON ImageTags.ImageID=ImagedHashes.ImageID `
 		sqlCountQuery = sqlCountQuery + `FROM ( 
 			SELECT ImageID as ID, Name, Location, COUNT(*) as MatchingTags
 			FROM ImageTags 
@@ -102,9 +104,16 @@ func (DBConnection *MariaDBPlugin) SearchImages(Tags []interfaces.TagInformation
 				if isTagValued == false {
 					return ToReturn, 0, errors.New("Failed get value of " + tag.Name)
 				}
-				metaTagQuery += "Images.ID IN (SELECT ImageID FROM (SELECT ImageID, COUNT(*) AS TagCount FROM `ImageTags` GROUP BY ImageID) TagCountTBL WHERE TagCountTBL.TagCount " + comparator + " " + tagStringValue + ") "
+				metaTagQuery += "Images.ID IN (SELECT TagCountTBL.ImageID FROM (SELECT ImageID, COUNT(*) AS TagCount FROM `ImageTags` GROUP BY ImageTags.ImageID) TagCountTBL WHERE TagCountTBL.TagCount " + comparator + " " + tagStringValue + ") "
 				sqlWhereClause = sqlWhereClause + metaTagQuery
 				continue //Skip over rest of code for this tag
+			} else if tag.Name == "OrderSimiliar" {
+				tagHashValues, isTagValued := tag.MetaValue.(interfaces.ImagedHash)
+				if isTagValued == false {
+					return ToReturn, 0, errors.New("Failed get value of " + tag.Name)
+				}
+				orderClause = `ORDER BY (BIT_COUNT(hHash ^ ` + strconv.FormatUint(tagHashValues.ImagehHash, 10) + `)+BIT_COUNT(vHash ^ ` + strconv.FormatUint(tagHashValues.ImagevHash, 10) + `)) ASC LIMIT ? OFFSET ?;`
+				continue
 			}
 
 			metaTagQuery = metaTagQuery + "Images." + tag.Name + " "
@@ -114,15 +123,15 @@ func (DBConnection *MariaDBPlugin) SearchImages(Tags []interfaces.TagInformation
 	}
 
 	if len(IncludeTags) > 0 {
-		sqlQuery = sqlQuery + sqlWhereClause + `GROUP BY ImageID) InnerStatement WHERE MatchingTags = ? `
-		sqlCountQuery = sqlCountQuery + sqlWhereClause + `GROUP BY ImageID) InnerStatement WHERE MatchingTags = ? `
+		sqlQuery = sqlQuery + sqlWhereClause + `GROUP BY ImageTags.ImageID) InnerStatement WHERE MatchingTags = ? `
+		sqlCountQuery = sqlCountQuery + sqlWhereClause + `GROUP BY ImageTags.ImageID) InnerStatement WHERE MatchingTags = ? `
 	} else {
 		sqlQuery = sqlQuery + sqlWhereClause
 		sqlCountQuery = sqlCountQuery + sqlWhereClause
 	}
 
 	//Add Order
-	sqlQuery = sqlQuery + `ORDER BY ID DESC LIMIT ? OFFSET ?;`
+	sqlQuery = sqlQuery + orderClause
 
 	//Now construct arguments list. Order must follow query order
 	/*
@@ -145,7 +154,7 @@ func (DBConnection *MariaDBPlugin) SearchImages(Tags []interfaces.TagInformation
 	//Add values for metatags
 	for _, tag := range MetaTags {
 		//Handle Complex Tags Here
-		if tag.Name == "InCollection" || tag.Name == "TagCount" { //Special Exception for cert MetaTags
+		if tag.Name == "InCollection" || tag.Name == "TagCount" || tag.Name == "OrderSimiliar" { //Special Exception for cert MetaTags
 			continue
 		}
 		//Otherwise use default

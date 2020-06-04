@@ -473,6 +473,28 @@ func (DBConnection *MariaDBPlugin) parseMetaTags(MetaTags []interfaces.TagInform
 			} else {
 				ErrorList = append(ErrorList, errors.New("could not parse tagcount tag"))
 			}
+		case ToAdd.Name == "ordersimiliar" && CollectionContext == false:
+			ToAdd.Name = "OrderSimiliar"
+			ToAdd.Description = "Changes the order of results so that similiar results to the specified image are shown"
+			ToAdd.IsComplexMeta = true
+			ToAdd.Comparator = "LIKE" //Not really used
+			stringValue, isString := ToAdd.MetaValue.(string)
+			if isString {
+				idValue, err := strconv.ParseUint(stringValue, 10, 64)
+				if err == nil {
+					hHash, vHash, err := DBConnection.GetImagedHash(idValue)
+					if err == nil {
+						ToAdd.Exists = true
+						ToAdd.MetaValue = interfaces.ImagedHash{ImagehHash: hHash, ImagevHash: vHash}
+					} else {
+						ErrorList = append(ErrorList, errors.New("internal error occured querying database for order"))
+					}
+				} else {
+					ErrorList = append(ErrorList, errors.New("could not find requested image for order tag"))
+				}
+			} else {
+				ErrorList = append(ErrorList, errors.New("could not parse order tag"))
+			}
 		case ToAdd.Name == "name":
 			ToAdd.Name = "Name"
 			ToAdd.Description = "Name of the item"

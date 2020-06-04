@@ -45,6 +45,8 @@ type DBInterface interface {
 	SetImageSource(ID uint64, Source string) error
 	//SetImagedHash changes a given image's dHash
 	SetImagedHash(ID uint64, hHash uint64, vHash uint64) error
+	//GetImagedHash changes a given image's dHash
+	GetImagedHash(ID uint64) (uint64, uint64, error)
 	//GetUserFilter returns the raw string of the user's filter
 	GetUserFilter(UserID uint64) (string, error)
 	//SearchUsers performs a search for users (Returns a list of UserInfos, or error)
