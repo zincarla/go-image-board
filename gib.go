@@ -158,6 +158,7 @@ func main() {
 					}(nextImage.Location, nextImage.ID)
 				}
 			}
+			wg.Wait() //This will wait for all goroutines to finish
 		}
 		logging.LogInterface.WriteLog("MAIN", "SERVER", "*", "INFO", []string{"Waiting for images to finish processing"})
 		wg.Wait() //This will wait for all goroutines to finish
