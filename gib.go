@@ -68,6 +68,9 @@ func main() {
 					routers.GenerateThumbnail(fileName)
 				}(file.Name())
 			}
+			if generatedThumbnails%config.Configuration.PageStride == 0 {
+				wg.Wait() //Throttle how fast we generate thumbnails
+			}
 		}
 		wg.Wait() //This will wait for all goroutines to finish
 		logging.LogInterface.WriteLog("Server", "Generate Thumbnails Flag", "*", "SUCCESS", []string{"Finished generating " + strconv.FormatUint(generatedThumbnails, 10) + " new thumbnails."})
