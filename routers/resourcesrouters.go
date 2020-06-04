@@ -71,7 +71,7 @@ func ThumbnailRouter(responseWriter http.ResponseWriter, request *http.Request) 
 	if _, err := os.Stat(thumbnailPath); err != nil {
 		switch ext := filepath.Ext(strings.ToLower(urlVariables["file"])); ext {
 		//If it does not, and it is an image, return the original image, more bandwidth but better looking site
-		case ".jpg", ".jpeg", ".bmp", ".gif", ".png", ".svg", ".webp", ".tiff", ".tif":
+		case ".jpg", ".jpeg", ".bmp", ".gif", ".png", ".svg", ".webp", ".tiff", ".tif", ".jfif":
 			thumbnailPath = config.JoinPath(config.Configuration.ImageDirectory, string(filepath.Separator)+urlVariables["file"])
 		//If a video or music file, pull up a play icon
 		case ".mpg", ".mov", ".webm", ".avi", ".mp4", ".mp3", ".ogg", ".wav":
@@ -91,7 +91,7 @@ func GenerateThumbnail(Name string) error {
 	//Switch on extension
 	//Each case will contain generators for that file type
 	switch ext := filepath.Ext(strings.ToLower(Name)); ext {
-	case ".jpg", ".jpeg", ".bmp", ".gif", ".png", ".webp", ".tiff", ".tif":
+	case ".jpg", ".jpeg", ".bmp", ".gif", ".png", ".webp", ".tiff", ".tif", ".jfif":
 		File, err := os.Open(config.JoinPath(config.Configuration.ImageDirectory, Name))
 		defer File.Close()
 		if err != nil {
@@ -150,7 +150,7 @@ func GenerateThumbnail(Name string) error {
 func GeneratedHash(Name string, ImageID uint64) error {
 	//Switch on extension
 	switch ext := filepath.Ext(strings.ToLower(Name)); ext {
-	case ".jpg", ".jpeg", ".bmp", ".gif", ".png", ".webp", ".tiff", ".tif":
+	case ".jpg", ".jpeg", ".bmp", ".gif", ".png", ".webp", ".tiff", ".tif", ".jfif":
 		//Load image
 		File, err := os.Open(config.JoinPath(config.Configuration.ImageDirectory, Name))
 		defer File.Close()

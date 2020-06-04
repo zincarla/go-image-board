@@ -534,7 +534,7 @@ func handleImageUpload(request *http.Request, userName string) (uint64, map[stri
 	source := request.FormValue("Source")
 	for _, fileHeader := range fileHeaders {
 		switch ext := strings.ToLower(filepath.Ext(fileHeader.Filename)); ext {
-		case ".jpg", ".jpeg", ".bmp", ".gif", ".png", ".svg", ".mpg", ".mov", ".webm", ".avi", ".mp4", ".mp3", ".ogg", ".wav", ".webp", ".tiff", ".tif":
+		case ".jpg", ".jpeg", ".jfif", ".bmp", ".gif", ".png", ".svg", ".mpg", ".mov", ".webm", ".avi", ".mp4", ".mp3", ".ogg", ".wav", ".webp", ".tiff", ".tif":
 			//Passes filter
 		default:
 			logging.LogInterface.WriteLog("ImageRouter", "handleImageUpload", userName, "WARN", []string{"Attempted to upload a file which did not pass filter", ext})

@@ -96,7 +96,7 @@ func GetEmbedForContent(imageLocation string) template.HTML {
 	ToReturn := ""
 
 	switch ext := filepath.Ext(strings.ToLower(imageLocation)); ext {
-	case ".jpg", ".jpeg", ".bmp", ".gif", ".png", ".svg", ".webp", ".tiff", ".tif":
+	case ".jpg", ".jpeg", ".bmp", ".gif", ".png", ".svg", ".webp", ".tiff", ".tif", ".jfif":
 		ToReturn = "<img src=\"/images/" + imageLocation + "\" alt=\"" + imageLocation + "\" id=\"IMGContent\" />"
 	case ".mpg", ".mov", ".webm", ".avi", ".mp4", ".mp3", ".ogg":
 		ToReturn = "<video controls loop> <source src=\"/images/" + imageLocation + "\" type=\"" + getMIME(ext, "video/mp4") + "\">Your browser does not support the video tag.</video>"
