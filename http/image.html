@@ -95,6 +95,10 @@
 				{{.ImageContentInfo.UploadTime.Format "Jan 02, 2006 15:04:05 UTC"}}
 				<h5>Uploader</h5>
 				<a href="/images?SearchTerms=uploader:{{.ImageContentInfo.UploaderName}}">{{.ImageContentInfo.UploaderName}}</a>
+				{{if gt .SimilarCount 0}}
+				<h5>Similar</h5>
+				There are {{.SimilarCount}} <a href="/images?SearchTerms=similar:{{.ImageContentInfo.ID}}">similar images</a> to this.
+				{{end}}
 				{{if and $UserNotNull $HasDeletePermissions}}
 				<br><br><a href="/images?command=delete&ID={{$ImageID}}&SearchTerms={{.OldQuery}}" onclick="return confirm('Are you sure you want to delete this image?');">Delete Image</a>
 				{{end}}

@@ -414,6 +414,16 @@ func ImageRouter(responseWriter http.ResponseWriter, request *http.Request) {
 	//Set Template with imageInfo
 	TemplateInput.ImageContentInfo = imageInfo
 
+	if config.Configuration.ShowSimilarOnImages {
+		similarTag, err := database.DBInterface.GetQueryTags("similar:"+strconv.FormatUint(imageInfo.ID, 10), false)
+		if err == nil {
+			_, similarCount, _ := database.DBInterface.SearchImages(similarTag, 0, config.Configuration.PageStride)
+			if similarCount > 1 {
+				TemplateInput.SimilarCount = similarCount - 1 //Remove the current image from count
+			}
+		}
+	}
+
 	//Check is source is a url
 	if _, err := url.ParseRequestURI(TemplateInput.ImageContentInfo.Source); err == nil {
 		//Source is url

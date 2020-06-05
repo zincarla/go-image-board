@@ -806,7 +806,7 @@ func (DBConnection *MariaDBPlugin) upgradeDatabase(version int64) (int64, error)
 			return version, err
 		}
 
-		if _, err := DBConnection.DBHandle.Exec("UPDATE DBVersion SET version = 12;"); err != nil {
+		if _, err := DBConnection.DBHandle.Exec("UPDATE DBVersion SET version = 13;"); err != nil {
 			logging.LogInterface.WriteLog("MariaDBPlugin", "InitDatabase", "*", "ERROR", []string{"Failed to update database version", err.Error()})
 			return version, err
 		}
