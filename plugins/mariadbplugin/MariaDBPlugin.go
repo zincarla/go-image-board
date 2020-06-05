@@ -15,7 +15,7 @@ import (
 )
 
 //TODO: Increment this whenever we alter the DB Schema, ensure you attempt to add update code below
-var currentDBVersion int64 = 12
+var currentDBVersion int64 = 13
 
 //TODO: Increment this when we alter the db schema and don't add update code to compensate
 var minSupportedDBVersion int64 // 0 by default
@@ -93,12 +93,12 @@ func (DBConnection *MariaDBPlugin) performFreshDBInstall() error {
 		logging.LogInterface.WriteLog("MariaDBPlugin", "performFreshDBInstall", "*", "ERROR", []string{"Failed to install database", err.Error()})
 		return err
 	}
-	_, err = DBConnection.DBHandle.Exec("CREATE TABLE ImageTags (ID BIGINT UNSIGNED NOT NULL AUTO_INCREMENT UNIQUE, ImageID BIGINT UNSIGNED NOT NULL, TagID BIGINT UNSIGNED NOT NULL, LinkerID BIGINT UNSIGNED NOT NULL, LinkTime TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL, UNIQUE INDEX ImageTagPair (TagID,ImageID), INDEX(ImageID), INDEX(LinkerID));")
+	_, err = DBConnection.DBHandle.Exec("CREATE TABLE ImageTags (ID BIGINT UNSIGNED NOT NULL AUTO_INCREMENT UNIQUE, ImageID BIGINT UNSIGNED NOT NULL, TagID BIGINT UNSIGNED NOT NULL, LinkerID BIGINT UNSIGNED NOT NULL, LinkTime TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL, UNIQUE INDEX ImageTagPair (TagID,ImageID), INDEX(ImageID), INDEX(LinkerID), CONSTRAINT fk_ImageTagsImageID FOREIGN KEY (ImageID) REFERENCES Images(ID), CONSTRAINT fk_ImageTagsTagID FOREIGN KEY (TagID) REFERENCES Tags(ID));")
 	if err != nil {
 		logging.LogInterface.WriteLog("MariaDBPlugin", "performFreshDBInstall", "*", "ERROR", []string{"Failed to install database", err.Error()})
 		return err
 	}
-	_, err = DBConnection.DBHandle.Exec("CREATE TABLE ImagedHashes (ID BIGINT UNSIGNED NOT NULL AUTO_INCREMENT UNIQUE, ImageID BIGINT UNSIGNED NOT NULL, vHash BIGINT UNSIGNED NOT NULL, hHash BIGINT UNSIGNED NOT NULL, UNIQUE INDEX(ImageID), INDEX(vHash), INDEX(hHash));")
+	_, err = DBConnection.DBHandle.Exec("CREATE TABLE ImagedHashes (ID BIGINT UNSIGNED NOT NULL AUTO_INCREMENT UNIQUE, ImageID BIGINT UNSIGNED NOT NULL, vHash BIGINT UNSIGNED NOT NULL, hHash BIGINT UNSIGNED NOT NULL, UNIQUE INDEX(ImageID), INDEX(vHash), INDEX(hHash), CONSTRAINT fk_ImagedHashesImageID FOREIGN KEY (ImageID) REFERENCES Images(ID));")
 	if err != nil {
 		logging.LogInterface.WriteLog("MariaDBPlugin", "performFreshDBInstall", "*", "ERROR", []string{"Failed to install database", err.Error()})
 		return err
@@ -137,12 +137,12 @@ func (DBConnection *MariaDBPlugin) performFreshDBInstall() error {
 		logging.LogInterface.WriteLog("MariaDBPlugin", "performFreshDBInstall", "*", "ERROR", []string{"Failed to install database", err.Error()})
 		return err
 	}
-	_, err = DBConnection.DBHandle.Exec("CREATE TABLE CollectionMembers (ID BIGINT UNSIGNED NOT NULL AUTO_INCREMENT UNIQUE, ImageID BIGINT UNSIGNED NOT NULL, CollectionID BIGINT UNSIGNED NOT NULL, LinkerID BIGINT UNSIGNED NOT NULL, LinkTime TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL, UNIQUE INDEX ImageCollectionPair (CollectionID,ImageID), OrderWeight BIGINT UNSIGNED NOT NULL);")
+	_, err = DBConnection.DBHandle.Exec("CREATE TABLE CollectionMembers (ID BIGINT UNSIGNED NOT NULL AUTO_INCREMENT UNIQUE, ImageID BIGINT UNSIGNED NOT NULL, CollectionID BIGINT UNSIGNED NOT NULL, LinkerID BIGINT UNSIGNED NOT NULL, LinkTime TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL, UNIQUE INDEX ImageCollectionPair (CollectionID,ImageID), OrderWeight BIGINT UNSIGNED NOT NULL, CONSTRAINT fk_CollectionMembersImageID FOREIGN KEY (ImageID) REFERENCES Images(ID), CONSTRAINT fk_CollectionMembersCollectionID FOREIGN KEY (CollectionID) REFERENCES Collections(ID));")
 	if err != nil {
 		logging.LogInterface.WriteLog("MariaDBPlugin", "performFreshDBInstall", "*", "ERROR", []string{"Failed to install database", err.Error()})
 		return err
 	}
-	_, err = DBConnection.DBHandle.Exec("CREATE TABLE CollectionTags (ID BIGINT UNSIGNED NOT NULL AUTO_INCREMENT UNIQUE, CollectionID BIGINT UNSIGNED NOT NULL, TagID BIGINT UNSIGNED NOT NULL, LinkerID BIGINT UNSIGNED NOT NULL, LinkTime TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL, UNIQUE INDEX CollectionTagPair (TagID,CollectionID));")
+	_, err = DBConnection.DBHandle.Exec("CREATE TABLE CollectionTags (ID BIGINT UNSIGNED NOT NULL AUTO_INCREMENT UNIQUE, CollectionID BIGINT UNSIGNED NOT NULL, TagID BIGINT UNSIGNED NOT NULL, LinkerID BIGINT UNSIGNED NOT NULL, LinkTime TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL, UNIQUE INDEX CollectionTagPair (TagID,CollectionID), CONSTRAINT fk_CollectionTagsCollectionID FOREIGN KEY (CollectionID) REFERENCES Collections(ID), CONSTRAINT fk_CollectionTagsTagID FOREIGN KEY (TagID) REFERENCES Tags(ID));")
 	if err != nil {
 		logging.LogInterface.WriteLog("MariaDBPlugin", "performFreshDBInstall", "*", "ERROR", []string{"Failed to install database", err.Error()})
 		return err
@@ -269,6 +269,7 @@ func (DBConnection *MariaDBPlugin) performFreshDBInstall() error {
 		DELETE FROM ImageTags WHERE ImageID=OLD.ID;
 		DELETE FROM ImageUserScores WHERE ImageID=OLD.ID;
 		DELETE FROM CollectionMembers WHERE ImageID=OLD.ID;
+		DELETE FROM ImagedHashes WHERE ImageID=OLD.ID;
 	END`
 	if _, err := DBConnection.DBHandle.Exec(sqlQuery); err != nil {
 		logging.LogInterface.WriteLog("MariaDBPlugin", "performFreshDBInstall", "*", "ERROR", []string{"Failed to install database", err.Error()})
@@ -762,6 +763,54 @@ func (DBConnection *MariaDBPlugin) upgradeDatabase(version int64) (int64, error)
 			return version, err
 		}
 		version = 12
+		logging.LogInterface.WriteLog("MariaDBPlugin", "InitDatabase", "*", "INFO", []string{"Database schema updated to version", strconv.FormatInt(version, 10)})
+	}
+	//Update version 12->13
+	if version == 12 {
+		_, err := DBConnection.DBHandle.Exec("ALTER TABLE ImagedHashes ADD CONSTRAINT fk_ImagedHashesImageID FOREIGN KEY (ImageID) REFERENCES Images(ID);")
+		if err != nil {
+			logging.LogInterface.WriteLog("MariaDBPlugin", "performFreshDBInstall", "*", "ERROR", []string{"Failed to install database", err.Error()})
+			return version, err
+		}
+		_, err = DBConnection.DBHandle.Exec("ALTER TABLE CollectionMembers ADD CONSTRAINT fk_CollectionMembersImageID FOREIGN KEY (ImageID) REFERENCES Images(ID), ADD CONSTRAINT fk_CollectionMembersCollectionID FOREIGN KEY (CollectionID) REFERENCES Collections(ID);")
+		if err != nil {
+			logging.LogInterface.WriteLog("MariaDBPlugin", "performFreshDBInstall", "*", "ERROR", []string{"Failed to install database", err.Error()})
+			return version, err
+		}
+		_, err = DBConnection.DBHandle.Exec("ALTER TABLE CollectionTags ADD CONSTRAINT fk_CollectionTagsCollectionID FOREIGN KEY (CollectionID) REFERENCES Collections(ID), ADD CONSTRAINT fk_CollectionTagsTagID FOREIGN KEY (TagID) REFERENCES Tags(ID);")
+		if err != nil {
+			logging.LogInterface.WriteLog("MariaDBPlugin", "performFreshDBInstall", "*", "ERROR", []string{"Failed to install database", err.Error()})
+			return version, err
+		}
+		_, err = DBConnection.DBHandle.Exec("ALTER TABLE ImageTags ADD CONSTRAINT fk_ImageTagsImageID FOREIGN KEY (ImageID) REFERENCES Images(ID), ADD CONSTRAINT fk_ImageTagsTagID FOREIGN KEY (TagID) REFERENCES Tags(ID);")
+		if err != nil {
+			logging.LogInterface.WriteLog("MariaDBPlugin", "performFreshDBInstall", "*", "ERROR", []string{"Failed to install database", err.Error()})
+			return version, err
+		}
+
+		_, err = DBConnection.DBHandle.Exec("DROP TRIGGER onImageDelete;")
+		if err != nil {
+			logging.LogInterface.WriteLog("MariaDBPlugin", "performFreshDBInstall", "*", "ERROR", []string{"Failed to install database", err.Error()})
+			return version, err
+		}
+
+		sqlQuery := `CREATE TRIGGER onImageDelete BEFORE DELETE ON Images
+		FOR EACH ROW BEGIN
+			DELETE FROM ImageTags WHERE ImageID=OLD.ID;
+			DELETE FROM ImageUserScores WHERE ImageID=OLD.ID;
+			DELETE FROM CollectionMembers WHERE ImageID=OLD.ID;
+			DELETE FROM ImagedHashes WHERE ImageID=OLD.ID;
+		END`
+		if _, err := DBConnection.DBHandle.Exec(sqlQuery); err != nil {
+			logging.LogInterface.WriteLog("MariaDBPlugin", "InitDatabase", "*", "ERROR", []string{"Failed to update database version", err.Error()})
+			return version, err
+		}
+
+		if _, err := DBConnection.DBHandle.Exec("UPDATE DBVersion SET version = 12;"); err != nil {
+			logging.LogInterface.WriteLog("MariaDBPlugin", "InitDatabase", "*", "ERROR", []string{"Failed to update database version", err.Error()})
+			return version, err
+		}
+		version = 13
 		logging.LogInterface.WriteLog("MariaDBPlugin", "InitDatabase", "*", "INFO", []string{"Database schema updated to version", strconv.FormatInt(version, 10)})
 	}
 	return version, nil
