@@ -21,7 +21,7 @@
 				{{$HasVotePermissions := or $CanVoteImage $CanModifyOwn}}
 				{{$HasSourcePermissions := or $CanSourceImage $CanModifyOwn}}
 
-				<h5>Collections{{if or $CanCreateCollection $CanModifyCollectionMembers}}{{if $UserNotNull}} (<a href="#" onclick="return ToggleFormDisplay('addCollectionForm');">add</a>){{end}}{{end}}</h5>
+				<h5>Collections{{if or $CanCreateCollection $CanModifyCollectionMembers}}{{if $UserNotNull}} (<a href="#" onclick="ToggleFormDisplay('addCollectionForm'); $('#addCollectionForm input[name=CollectionName]:first').select(); return false;">add</a>){{end}}{{end}}</h5>
 				<ul class="CollectionList">
 					{{range .ImageContentInfo.MemberCollections}}
 					<li>{{if ne .PreviousMemberID 0}}<a href="/image?ID={{.PreviousMemberID}}&SearchTerms={{$OldQuery}}"><div class="previousInCollection">&lt;</div></a>{{end}} <a href="/collectionimages?ID={{.ID}}">{{.Name}}</a><br>({{.OrderInCollection | inc}}/{{.Members}}) {{if ne .NextMemberID 0}}<a href="/image?ID={{.NextMemberID}}&SearchTerms={{$OldQuery}}"><div class="nextInCollection">&gt;</div></a>{{end}} </li>
@@ -36,7 +36,7 @@
 					<input type="submit" value="Add/Create">
 				</form>
 
-				<h5>Tags{{if and $UserNotNull $HasTagPermissions}} (<a href="#" onclick="return ToggleFormDisplay('addTagForm');">add</a>){{end}}</h5>
+				<h5>Tags{{if and $UserNotNull $HasTagPermissions}} (<a href="#" onclick="ToggleFormDisplay('addTagForm'); $('#AddNewTags').select(); return false;">add</a>){{end}}</h5>
 				<form action="/image" method="POST" id="addTagForm" class="displayHidden">
 					<h5>Add Tag</h5>
 					<input type="text" name="NewTags" placeholder="New Tags" id="AddNewTags" value=""> 
@@ -54,7 +54,7 @@
 					<li>{{.Name}} {{if $CanModifyTags}}<a href="/image?ID={{$ImageID}}&command=RemoveTag&TagID={{.ID}}&SearchTerms={{$OldQuery}}" onclick="return confirm('Are you sure you want to remove this tag from this image?');">-</a> {{end}}{{if ne .ID 0}}<a href="/tag?ID={{.ID}}&SearchTerms={{$OldQuery}}">?</a>{{else}}<a href="/about/tags.html?SearchTerms={{$OldQuery}}">?</a>{{end}}</li>
 					{{end}}
 				</ul>
-				<h5>Rating{{if and $UserNotNull $HasTagPermissions}} (<a href="#" onclick="return ToggleFormDisplay('changeRatingForm');">edit</a>){{end}}</h5>
+				<h5>Rating{{if and $UserNotNull $HasTagPermissions}} (<a href="#" onclick="ToggleFormDisplay('changeRatingForm'); $('#changeRatingForm input[name=NewRating]:first').select(); return false;">edit</a>){{end}}</h5>
 				<form action="/image" method="POST" id="changeRatingForm" class="displayHidden">
 					<h5>Change Rating <a href="/about/tags.html?SearchTerms={{$OldQuery}}">?</a></h5>
 					<input type="text" name="NewRating" placeholder="New Rating" value="{{.ImageContentInfo.Rating}}">
@@ -64,7 +64,7 @@
 					<input type="submit" value="Change">
 				</form>
 				{{.ImageContentInfo.Rating}} <a href="/about/tags.html?SearchTerms={{$OldQuery}}">?</a>
-				<h5>Source{{if and $UserNotNull $HasSourcePermissions}} (<a href="#" onclick="return ToggleFormDisplay('changeSourceForm');">edit</a>){{end}}</h5>
+				<h5>Source{{if and $UserNotNull $HasSourcePermissions}} (<a href="#" onclick="ToggleFormDisplay('changeSourceForm');$('#changeSourceForm input[name=NewSource]:first').select(); return false;">edit</a>){{end}}</h5>
 				<form action="/image" method="GET" id="changeSourceForm" class="displayHidden">
 					<input type="text" name="NewSource" placeholder="Source" value="{{.ImageContentInfo.Source}}">
 					<input type="hidden" name="ID" value="{{.ImageContentInfo.ID}}">
@@ -77,7 +77,7 @@
 				{{else}}
 				{{.ImageContentInfo.Source}}
 				{{end}}
-				<h5>Score{{if $HasVotePermissions}} (<a href="#" onclick="return ToggleFormDisplay('changeVoteForm');">vote</a>){{end}}</h5>
+				<h5>Score{{if $HasVotePermissions}} (<a href="#" onclick="ToggleFormDisplay('changeVoteForm'); $('#changeVoteForm input[name=NewVote]:first').select(); return false;">vote</a>){{end}}</h5>
 				<form action="/image" method="GET" id="changeVoteForm" class="displayHidden">
 					<input type="number" name="NewVote" placeholder="New Vote" value="{{.ImageContentInfo.UsersVotedScore}}" min="-10" max="10">
 					<input type="hidden" name="ID" value="{{.ImageContentInfo.ID}}">

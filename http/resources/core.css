@@ -344,7 +344,7 @@ video, audio {
 	background-color: lightgreen;
 	width: 100%;
 	margin-bottom: .2em;
-	height: 2.5em;
+	min-height: 2.5em;
 	box-sizing: border-box;
 	text-align: center;
 	position: relative;

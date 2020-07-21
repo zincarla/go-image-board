@@ -167,3 +167,14 @@ function CorrectImageOrient(imgID) {
         } //Otherwise not needed
     });
 }
+
+//Global Shortcuts
+var MousetrapShortcuts = "?=help\r\nr=random search\r\nq=edit search terms\r\nright arrow=next image\r\nleft arrow=prev image\r\nctrl+right arrow=next page\r\nCtrl+left arrow=prev page";
+Mousetrap.bind("?", function() { console.log(MousetrapShortcuts); });
+Mousetrap.bind("r", function() {$("#mainImageSearchForm :input[value='Random']").click();})
+Mousetrap.bind("q", function() {$("#mainImageSearchForm :input[name='SearchTerms']").select();$("#splashForm :input[name='SearchTerms']").select();})
+Mousetrap.bind("right", function() {$("#mainImageSearchForm .nextInCollection").click();})
+Mousetrap.bind("left", function() {$("#mainImageSearchForm .previousInCollection").click();})
+Mousetrap.bind("ctrl+right", function() {$(".CollectionList .nextInCollection").click();})
+Mousetrap.bind("ctrl+left", function() {$(".CollectionList .previousInCollection").click();})
+Mousetrap.bind("shift+q", function() {$("#SideMenu form[action=\"/collections\"] :input[name='SearchTerms']").select();$("#SideMenu form[action=\"/tags\"] :input[name='SearchTags']").select();})

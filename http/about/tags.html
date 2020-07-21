@@ -94,4 +94,28 @@
         <td>Images</td>
         <td>Location:.png</td>
     </tr>
+    <tr>
+        <td>Similar</td>
+        <td>Similar:[SomePostID]<br>Similar:[VisualThreshold]-[SomePostID]</td>
+        <td>Returns only images that have are visually similar to [SomePostID]. If specified, it will choose ones that are less than [VisualThreshold] different from [SomePostID] where [VisualThreshold] is between 0 and 128 with lower numbers being more similar. This tag will default to a decently selective threshold if one is not specified.</td> 
+        <td>*Automatically less or equal</td>
+        <td>Images</td>
+        <td>Similar:1<br>Similar:20-1</td>
+    </tr>
+</table>
+<h4>Example Searches</h4>
+<p>Tags may be joined together to perform searches. Some example searches are below.</p>
+<table>
+    <tr>
+        <th>Name</th>
+        <th>Search</th>
+    </tr>
+    <tr>
+        <td>Posts not in collections, that have few tags</td>
+        <td><a href="/images?SearchTerms=tagcount%3A<4+incollection%3An">TagCount:&lt;4 InCollection:n</a></td>
+    </tr>
+    <tr>
+        <td>Popular posts</td>
+        <td><a href="/images?SearchTerms=averagescore%3A>7">averagescore:&gt;7</a></td>
+    </tr>
 </table>
