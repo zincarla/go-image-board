@@ -445,6 +445,11 @@ func ImageRouter(responseWriter http.ResponseWriter, request *http.Request) {
 		logging.LogInterface.WriteLog("ImageRouter", "ImageRouter", "*", "ERROR", []string{"Failed to load tags", err.Error()})
 	}
 
+	if TemplateInput.ViewMode == "slideshow" {
+		replyWithTemplate("image-slideshow.html", TemplateInput, responseWriter)
+		return
+	}
+
 	replyWithTemplate("image.html", TemplateInput, responseWriter)
 }
 

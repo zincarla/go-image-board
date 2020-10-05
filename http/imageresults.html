@@ -4,15 +4,18 @@
 		<div id="BodyContent">
 			<div id="SideMenu" class="cellDefaultHidden">
 				{{template "mainSearchForm.html" .}}
-				{{if .StreamView}}
-				<a href="/images?SearchTerms={{.OldQuery}}&StreamViewPreference=false">
+				{{if eq .ViewMode "stream"}}
+				<a href="/images?SearchTerms={{.OldQuery}}&ViewMode=grid">
 					Grid View
 				</a>
 				{{else}}
-				<a href="/images?SearchTerms={{.OldQuery}}&StreamViewPreference=true">
+				<a href="/images?SearchTerms={{.OldQuery}}&ViewMode=stream">
 					Stream View
 				</a>
 				{{end}}
+				<br><a href="/images?SearchTerms={{.OldQuery}}&ViewMode=slideshow">
+					SlideShow View
+				</a>
 				<ul>
 				{{$OldQuery := .OldQuery}}
 				{{if .Tags}}
@@ -43,7 +46,7 @@
 			</div>
 			<div id="ImageGridContainer">
 				{{$OldQuery := .OldQuery}}
-				{{$StreamView := .StreamView}}
+				{{$StreamView := eq .ViewMode "stream"}}
 				{{range .ImageInfo}}
 					{{if $StreamView}}
 					<div class="Full ImageResultContainer">

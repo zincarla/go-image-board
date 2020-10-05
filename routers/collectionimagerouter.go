@@ -24,15 +24,20 @@ func CollectionImageRouter(responseWriter http.ResponseWriter, request *http.Req
 	var err error
 
 	//Change StremView if requested
-	if request.FormValue("StreamViewPreference") == "true" {
-		TemplateInput.StreamView = true
+	if request.FormValue("ViewMode") == "stream" {
+		TemplateInput.ViewMode = "stream"
 		_, _, session := getSessionInformation(request)
-		session.Values["StreamView"] = "true"
+		session.Values["ViewMode"] = "stream"
 		session.Save(request, responseWriter)
-	} else if request.FormValue("StreamViewPreference") == "false" {
-		TemplateInput.StreamView = false
+	} else if request.FormValue("ViewMode") == "slideshow" {
+		TemplateInput.ViewMode = "slideshow"
 		_, _, session := getSessionInformation(request)
-		session.Values["StreamView"] = ""
+		session.Values["ViewMode"] = "slideshow"
+		session.Save(request, responseWriter)
+	} else if request.FormValue("ViewMode") != "" { //default to grid on invalid modes
+		TemplateInput.ViewMode = "grid"
+		_, _, session := getSessionInformation(request)
+		session.Values["ViewMode"] = "grid"
 		session.Save(request, responseWriter)
 	}
 

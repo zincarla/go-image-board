@@ -44,8 +44,8 @@ type templateInput struct {
 	PreviousMemberID uint64
 	//NextMemberID When in a single image view, this should be set to the ID of the next image in the search (For next button)
 	NextMemberID uint64
-	//StreamView changes view from icons to pages of full content
-	StreamView bool
+	//ViewMode changes view mode, can be either "" for normal, stream, to view full images in stream, or slideshow for a auto-playing slideshow
+	ViewMode string
 	//RequestStart is start time for a user request
 	RequestStart time.Time
 	//RequestTime is time it took to process a user request in MS
@@ -112,9 +112,13 @@ func getNewTemplateInput(request *http.Request) templateInput {
 	}
 
 	//Keep view preference
-	sessionStreamView, isOk := session.Values["StreamView"].(string)
-	if isOk && strings.ToLower(sessionStreamView) == "true" {
-		TemplateInput.StreamView = true
+	sessionViewMode, isOk := session.Values["ViewMode"].(string)
+	if isOk && strings.ToLower(sessionViewMode) == "stream" {
+		TemplateInput.ViewMode = "stream"
+	} else if isOk && strings.ToLower(sessionViewMode) == "slideshow" {
+		TemplateInput.ViewMode = "slideshow"
+	} else {
+		TemplateInput.ViewMode = "grid"
 	}
 
 	//Grab user query information

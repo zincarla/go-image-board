@@ -98,6 +98,17 @@ ul {
 	max-height: calc(100vh - 5em); /*Full screen except top menu size and size of DL button*/
 	vertical-align: top;
 }
+#ImageGridContainer.SlideShowMode {
+	float:none;
+	width: 100%;
+	padding: 0px;
+}
+#ImageGridContainer.SlideShowMode > img {
+	max-width: 100%;
+	display:inline-block;
+	max-height: calc(100vh - 1.2em); /*Full screen except footer*/
+	vertical-align: top;
+}
 .resetHeight {
 	max-height: initial !important;
 }
@@ -177,6 +188,10 @@ body {
 }
 #Footer a {
 	color: #CECECE;
+}
+#Footer ul {
+	margin-top: 1px;
+	margin-bottom: 0px;
 }
 #Footer ul li {
 	margin-right: 5px;

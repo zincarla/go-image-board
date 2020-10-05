@@ -25,15 +25,20 @@ func ImageQueryRouter(responseWriter http.ResponseWriter, request *http.Request)
 	userQuery := TemplateInput.OldQuery
 
 	//Change StremView if requested
-	if request.FormValue("StreamViewPreference") == "true" {
-		TemplateInput.StreamView = true
+	if request.FormValue("ViewMode") == "stream" {
+		TemplateInput.ViewMode = "stream"
 		_, _, session := getSessionInformation(request)
-		session.Values["StreamView"] = "true"
+		session.Values["ViewMode"] = "stream"
 		session.Save(request, responseWriter)
-	} else if request.FormValue("StreamViewPreference") == "false" {
-		TemplateInput.StreamView = false
+	} else if request.FormValue("ViewMode") == "slideshow" {
+		TemplateInput.ViewMode = "slideshow"
 		_, _, session := getSessionInformation(request)
-		session.Values["StreamView"] = ""
+		session.Values["ViewMode"] = "slideshow"
+		session.Save(request, responseWriter)
+	} else if request.FormValue("ViewMode") != "" { //default to grid on invalid modes
+		TemplateInput.ViewMode = "grid"
+		_, _, session := getSessionInformation(request)
+		session.Values["ViewMode"] = "grid"
 		session.Save(request, responseWriter)
 	}
 
@@ -102,7 +107,7 @@ func ImageQueryRouter(responseWriter http.ResponseWriter, request *http.Request)
 			}
 		}
 		//Return random image if requested
-		if request.FormValue("SearchType") == "Random" {
+		if request.FormValue("SearchType") == "Random" || TemplateInput.ViewMode == "slideshow" {
 			imageInfo, err := database.DBInterface.GetRandomImage(userQTags)
 			if err == nil {
 				//redirect user to randomly selected image

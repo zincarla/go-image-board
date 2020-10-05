@@ -1,0 +1,34 @@
+{{template "header.html" .}}
+	<body>
+		<div id="BodyContent">
+			<div id="ImageGridContainer" class="SlideShowMode" style="text-align: center;">
+				{{$type := .ImageContentInfo.Location | getimagetype}}
+				{{.ImageContent}}
+				{{if eq $type "image"}}
+					<script>
+						function OnLoadCorrectImage() {
+							if (document.getElementById("IMGContent")) {
+								CorrectImageOrient("IMGContent");
+							}
+						}
+						window.addEventListener('load', OnLoadCorrectImage);
+					</script>
+				{{end}}
+				<script>
+					function OnLoadStartNextSlideTimer() {
+						setTimeout(RedirectNextSlide, 30000) //30seconds
+					}
+					function RedirectNextSlide() {
+						window.location.href = "/images?SearchType=Random&SearchTerms="+encodeURI("{{.OldQuery}}");
+					}
+					function QuitSlideShow() {
+						window.location.href = "/images?ViewMode=grid&SearchTerms="+encodeURI("{{.OldQuery}}");
+					}
+					window.addEventListener('load', OnLoadStartNextSlideTimer());
+					Mousetrap.bind("enter", QuitSlideShow)
+
+				</script>
+			</div>
+		</div>
+		<div style="position: fixed;bottom: 0px;left: 0px;"><a href="/images?ViewMode=grid&SearchTerms={{.OldQuery}}">Click here</a> or press Enter to exit slide show</div>
+{{template "footer.html" .}}
