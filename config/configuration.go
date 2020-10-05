@@ -121,7 +121,7 @@ func SaveConfiguration(Path string) error {
 func CreateSessionStore() {
 	if Configuration.SessionStoreKey == nil || len(Configuration.SessionStoreKey) < 2 {
 		Configuration.SessionStoreKey = [][]byte{securecookie.GenerateRandomKey(64), securecookie.GenerateRandomKey(32)}
-	} else if len(Configuration.SessionStoreKey[0]) != 64 || len(Configuration.SessionStoreKey[0]) != 32 {
+	} else if len(Configuration.SessionStoreKey[0]) != 64 || len(Configuration.SessionStoreKey[1]) != 32 {
 		Configuration.SessionStoreKey = [][]byte{securecookie.GenerateRandomKey(64), securecookie.GenerateRandomKey(32)}
 	}
 	if Configuration.CSRFKey == nil || len(Configuration.CSRFKey) != 32 {
