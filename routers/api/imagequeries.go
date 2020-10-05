@@ -9,6 +9,7 @@ import (
 	"go-image-board/routers"
 	"net/http"
 	"os"
+	"path"
 	"path/filepath"
 	"strconv"
 

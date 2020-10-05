@@ -6,6 +6,7 @@ import (
 	"go-image-board/logging"
 	"net/http"
 	"net/url"
+	"path"
 	"path/filepath"
 	"strconv"
 )
