@@ -6,6 +6,7 @@ import (
 	"go-image-board/logging"
 	"html/template"
 	"io/ioutil"
+	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -25,7 +26,7 @@ func CacheTemplates() error {
 	for _, file := range files {
 		filename := file.Name()
 		if strings.HasSuffix(filename, ".html") {
-			allFiles = append(allFiles, config.JoinPath(config.Configuration.HTTPRoot, filename))
+			allFiles = append(allFiles, path.Join(config.Configuration.HTTPRoot, filename))
 		}
 	}
 

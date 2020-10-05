@@ -3,8 +3,6 @@ package config
 import (
 	"encoding/json"
 	"os"
-	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/gorilla/securecookie"
@@ -34,7 +32,9 @@ type ConfigurationSettings struct {
 	//MaxHeaderBytes maximum amount of bytes allowed in a request header
 	MaxHeaderBytes int
 	//SessionStoreKey stores the key to the session store
-	SessionStoreKey []byte
+	SessionStoreKey [][]byte
+	//CSRFKey stores the master key for CSRF token
+	CSRFKey []byte
 	//HTTPRoot directory where template and html files are kept
 	HTTPRoot string
 	//MaxUploadBytes maximum allowed bytes for an upload
@@ -119,19 +119,13 @@ func SaveConfiguration(Path string) error {
 
 //CreateSessionStore will create a new key store given a byte slice. If the slice is nil, a random key will be used.
 func CreateSessionStore() {
-	if Configuration.SessionStoreKey == nil {
-		Configuration.SessionStoreKey = securecookie.GenerateRandomKey(64)
+	if Configuration.SessionStoreKey == nil || len(Configuration.SessionStoreKey) < 2 {
+		Configuration.SessionStoreKey = [][]byte{securecookie.GenerateRandomKey(64), securecookie.GenerateRandomKey(32)}
+	} else if len(Configuration.SessionStoreKey[0]) != 64 || len(Configuration.SessionStoreKey[0]) != 32 {
+		Configuration.SessionStoreKey = [][]byte{securecookie.GenerateRandomKey(64), securecookie.GenerateRandomKey(32)}
 	}
-	SessionStore = sessions.NewCookieStore(Configuration.SessionStoreKey)
-}
-
-//JoinPath is a utility function to join two system paths together regardless of whether the source ends in a slash
-func JoinPath(A string, B string) string {
-	if !strings.HasSuffix(A, string(filepath.Separator)) && !strings.HasPrefix(B, string(filepath.Separator)) {
-		A = A + string(filepath.Separator)
+	if Configuration.CSRFKey == nil || len(Configuration.CSRFKey) != 32 {
+		Configuration.CSRFKey = securecookie.GenerateRandomKey(32)
 	}
-	if strings.HasSuffix(A, string(filepath.Separator)) && strings.HasPrefix(B, string(filepath.Separator)) {
-		A = A[:len(A)-len(string(filepath.Separator))]
-	}
-	return A + B
+	SessionStore = sessions.NewCookieStore(Configuration.SessionStoreKey...)
 }

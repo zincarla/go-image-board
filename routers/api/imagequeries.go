@@ -99,9 +99,9 @@ func ImageAPIRouter(responseWriter http.ResponseWriter, request *http.Request) {
 			}
 			go routers.WriteAuditLogByName(UserName, "DELETE-IMAGE", UserName+" deleted image with API. "+requestedID+", "+imageInfo.Name+", "+imageInfo.Location)
 			//Third, delete Image from Disk
-			go os.Remove(config.JoinPath(config.Configuration.ImageDirectory, imageInfo.Location))
+			go os.Remove(path.Join(config.Configuration.ImageDirectory, imageInfo.Location))
 			//Last delete thumbnail from disk
-			go os.Remove(config.JoinPath(config.Configuration.ImageDirectory, "thumbs"+string(filepath.Separator)+imageInfo.Location+".png"))
+			go os.Remove(path.Join(config.Configuration.ImageDirectory, "thumbs"+string(filepath.Separator)+imageInfo.Location+".png"))
 			//Reply Success
 			ReplyWithJSON(responseWriter, request, GenericResponse{Result: "Successfully deleted image " + requestedID}, UserName)
 		} else {

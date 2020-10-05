@@ -33,7 +33,7 @@ import (
 func ResourceRouter(responseWriter http.ResponseWriter, request *http.Request) {
 	urlVariables := mux.Vars(request)
 	logging.LogInterface.WriteLog("ContentRouter", "ResourceRouter", "*", "SUCCESS", []string{"resources" + string(filepath.Separator) + urlVariables["file"]})
-	http.ServeFile(responseWriter, request, config.JoinPath(config.Configuration.HTTPRoot, "resources"+string(filepath.Separator)+urlVariables["file"]))
+	http.ServeFile(responseWriter, request, path.Join(config.Configuration.HTTPRoot, "resources"+string(filepath.Separator)+urlVariables["file"]))
 }
 
 //RedirectRouter handles requests to /redirect
@@ -53,8 +53,8 @@ func ResourceImageRouter(responseWriter http.ResponseWriter, request *http.Reque
 		}
 	}
 	urlVariables := mux.Vars(request)
-	logging.LogInterface.WriteLog("ContentRouter", "ResourceImageRouter", "*", "SUCCESS", []string{config.JoinPath(config.Configuration.ImageDirectory, urlVariables["file"])})
-	http.ServeFile(responseWriter, request, config.JoinPath(config.Configuration.ImageDirectory, urlVariables["file"]))
+	logging.LogInterface.WriteLog("ContentRouter", "ResourceImageRouter", "*", "SUCCESS", []string{path.Join(config.Configuration.ImageDirectory, urlVariables["file"])})
+	http.ServeFile(responseWriter, request, path.Join(config.Configuration.ImageDirectory, urlVariables["file"]))
 }
 
 //ThumbnailRouter handls requests to /thumbs
@@ -66,21 +66,21 @@ func ThumbnailRouter(responseWriter http.ResponseWriter, request *http.Request) 
 		}
 	}
 	urlVariables := mux.Vars(request)
-	thumbnailPath := config.JoinPath(config.Configuration.ImageDirectory, "thumbs"+string(filepath.Separator)+urlVariables["file"]+".png")
+	thumbnailPath := path.Join(config.Configuration.ImageDirectory, "thumbs"+string(filepath.Separator)+urlVariables["file"]+".png")
 	//Check if file does not exist
 	if _, err := os.Stat(thumbnailPath); err != nil {
 		switch ext := filepath.Ext(strings.ToLower(urlVariables["file"])); ext {
 		//If it does not, and it is an image, return the original image, more bandwidth but better looking site
 		case ".jpg", ".jpeg", ".bmp", ".gif", ".png", ".svg", ".webp", ".tiff", ".tif", ".jfif":
-			thumbnailPath = config.JoinPath(config.Configuration.ImageDirectory, string(filepath.Separator)+urlVariables["file"])
+			thumbnailPath = path.Join(config.Configuration.ImageDirectory, string(filepath.Separator)+urlVariables["file"])
 		//If a video or music file, pull up a play icon
 		case ".mpg", ".mov", ".webm", ".avi", ".mp4", ".mp3", ".ogg", ".wav":
-			thumbnailPath = config.JoinPath(config.Configuration.HTTPRoot, "resources"+string(filepath.Separator)+"playicon.svg")
+			thumbnailPath = path.Join(config.Configuration.HTTPRoot, "resources"+string(filepath.Separator)+"playicon.svg")
 		}
 	}
 	//Final fallback, just return a no image type icon
 	if _, err := os.Stat(thumbnailPath); err != nil {
-		thumbnailPath = config.JoinPath(config.Configuration.HTTPRoot, "resources"+string(filepath.Separator)+"noicon.svg")
+		thumbnailPath = path.Join(config.Configuration.HTTPRoot, "resources"+string(filepath.Separator)+"noicon.svg")
 	}
 
 	http.ServeFile(responseWriter, request, thumbnailPath)
@@ -92,7 +92,7 @@ func GenerateThumbnail(Name string) error {
 	//Each case will contain generators for that file type
 	switch ext := filepath.Ext(strings.ToLower(Name)); ext {
 	case ".jpg", ".jpeg", ".bmp", ".gif", ".png", ".webp", ".tiff", ".tif", ".jfif":
-		File, err := os.Open(config.JoinPath(config.Configuration.ImageDirectory, Name))
+		File, err := os.Open(path.Join(config.Configuration.ImageDirectory, Name))
 		defer File.Close()
 		if err != nil {
 			return err
@@ -115,7 +115,7 @@ func GenerateThumbnail(Name string) error {
 			newHeight = uint(float64(newHeight) * scale)
 		}
 		//Open the specified file at Path
-		NewFile, err := os.OpenFile(config.JoinPath(config.Configuration.ImageDirectory, "thumbs"+string(filepath.Separator)+Name+".png"), os.O_CREATE|os.O_RDWR, 0660)
+		NewFile, err := os.OpenFile(path.Join(config.Configuration.ImageDirectory, "thumbs"+string(filepath.Separator)+Name+".png"), os.O_CREATE|os.O_RDWR, 0660)
 		defer NewFile.Close()
 		if err != nil {
 			return err
@@ -133,7 +133,7 @@ func GenerateThumbnail(Name string) error {
 		//ffmpeg -i input.mp4 -vf  "thumbnail,scale=640:360" -frames:v 1 thumb.png
 		//Fire forget
 		sizeParam := "thumbnail,scale=" + strconv.FormatUint(uint64(config.Configuration.MaxThumbnailWidth), 10) + ":" + strconv.FormatUint(uint64(config.Configuration.MaxThumbnailHeight), 10)
-		ffmpegCMD := exec.Command(config.Configuration.FFMPEGPath, "-i", config.JoinPath(config.Configuration.ImageDirectory, Name), "-vf", sizeParam, "-frames:v", "1", config.JoinPath(config.Configuration.ImageDirectory, "thumbs"+string(filepath.Separator)+Name+".png"))
+		ffmpegCMD := exec.Command(config.Configuration.FFMPEGPath, "-i", path.Join(config.Configuration.ImageDirectory, Name), "-vf", sizeParam, "-frames:v", "1", path.Join(config.Configuration.ImageDirectory, "thumbs"+string(filepath.Separator)+Name+".png"))
 		_, err := ffmpegCMD.Output()
 		if err != nil {
 			logging.LogInterface.WriteLog("resourcesrouters", "GenerateThumbnail", "*", "ERROR", []string{"Failed to use FFMPEG", Name, err.Error()})
@@ -152,7 +152,7 @@ func GeneratedHash(Name string, ImageID uint64) error {
 	switch ext := filepath.Ext(strings.ToLower(Name)); ext {
 	case ".jpg", ".jpeg", ".bmp", ".gif", ".png", ".webp", ".tiff", ".tif", ".jfif":
 		//Load image
-		File, err := os.Open(config.JoinPath(config.Configuration.ImageDirectory, Name))
+		File, err := os.Open(path.Join(config.Configuration.ImageDirectory, Name))
 		defer File.Close()
 		if err != nil {
 			return err

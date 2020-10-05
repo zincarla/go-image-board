@@ -78,9 +78,9 @@ func ImageQueryRouter(responseWriter http.ResponseWriter, request *http.Request)
 		}
 		go WriteAuditLogByName(TemplateInput.UserName, "DELETE-IMAGE", TemplateInput.UserName+" deleted image. "+request.FormValue("ID")+", "+ImageInfo.Name+", "+ImageInfo.Location)
 		//Third, delete Image from Disk
-		go os.Remove(config.JoinPath(config.Configuration.ImageDirectory, ImageInfo.Location))
+		go os.Remove(path.Join(config.Configuration.ImageDirectory, ImageInfo.Location))
 		//Last delete thumbnail from disk
-		go os.Remove(config.JoinPath(config.Configuration.ImageDirectory, "thumbs"+string(filepath.Separator)+ImageInfo.Location+".png"))
+		go os.Remove(path.Join(config.Configuration.ImageDirectory, "thumbs"+string(filepath.Separator)+ImageInfo.Location+".png"))
 	}
 
 	//Get the page offset

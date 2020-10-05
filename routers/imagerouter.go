@@ -570,7 +570,7 @@ func handleImageUpload(request *http.Request, userName string) (uint64, map[stri
 				continue
 			}
 
-			filePath := config.JoinPath(config.Configuration.ImageDirectory, hashName)
+			filePath := path.Join(config.Configuration.ImageDirectory, hashName)
 			//Check if file exists, if so, skip
 			if _, err := os.Stat(filePath); err == nil {
 				var duplicateID uint64
