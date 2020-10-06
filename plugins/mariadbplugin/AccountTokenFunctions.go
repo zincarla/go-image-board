@@ -21,26 +21,26 @@ func (DBConnection *MariaDBPlugin) ValidateToken(userName string, tokenID string
 	}
 	if err != nil && validTokenID.Valid && validTokenIP.Valid {
 		//User's token in DB is blank
-		logging.LogInterface.WriteLog("MariaDBPlugin", "ValidateToken", userName, "ERROR", []string{"Token Invalid", userName, tokenID, ip})
+		logging.WriteLog(logging.LogLevelError,"MariaDBPlugin/ValidateToken", userName, logging.ResultFailure, []string{"Token Invalid", userName, tokenID, ip})
 		return errors.New("Token invalid")
 	}
 
 	UUIDBytes := uuid.FromStringOrNil(tokenID)
 	if uuid.Equal(UUIDBytes, uuid.UUID{}) == true {
 		//Token provided is blank
-		//logging.LogInterface.WriteLog("MariaDBPlugin", "ValidateToken", userName, "ERROR", []string{"Blank token provided", userName, tokenID, ip}) //This happens for ALL unauth users. Log spam.
+		//logging.WriteLog(logging.LogLevelError,"MariaDBPlugin/ValidateToken", userName, logging.ResultFailure, []string{"Blank token provided", userName, tokenID, ip}) //This happens for ALL unauth users. Log spam.
 		return errors.New("Token provided is blank")
 	}
 
 	if validTokenIP.String != ip {
 		//Token is registered for a different IP
-		logging.LogInterface.WriteLog("MariaDBPlugin", "ValidateToken", userName, "ERROR", []string{"Token for a different IP", userName, tokenID, ip})
+		logging.WriteLog(logging.LogLevelError,"MariaDBPlugin/ValidateToken", userName, logging.ResultFailure, []string{"Token for a different IP", userName, tokenID, ip})
 		return errors.New("Token invalid")
 	}
 
 	if bytes.Equal(UUIDBytes.Bytes(), uuid.FromStringOrNil(validTokenID.String).Bytes()) == false {
 		//Tokens do not match
-		logging.LogInterface.WriteLog("MariaDBPlugin", "ValidateToken", userName, "ERROR", []string{"Tokens don't match", userName, tokenID, ip})
+		logging.WriteLog(logging.LogLevelError,"MariaDBPlugin/ValidateToken", userName, logging.ResultFailure, []string{"Tokens don't match", userName, tokenID, ip})
 		return errors.New("Token invalid")
 	}
 
@@ -51,12 +51,12 @@ func (DBConnection *MariaDBPlugin) ValidateToken(userName string, tokenID string
 func (DBConnection *MariaDBPlugin) GenerateToken(userName string, ip string) (string, error) {
 	newToken, err := uuid.NewV4()
 	if err != nil {
-		logging.LogInterface.WriteLog("MariaDBPlugin", "GenerateToken", userName, "ERROR", []string{"Failed to generate a token!", userName, ip, err.Error()})
+		logging.WriteLog(logging.LogLevelError,"MariaDBPlugin/GenerateToken", userName, logging.ResultFailure, []string{"Failed to generate a token!", userName, ip, err.Error()})
 		return "", errors.New("failed to generate a token")
 	}
 	_, err = DBConnection.DBHandle.Exec("UPDATE Users SET TokenID=?, IP=? WHERE Name = ?", newToken.String(), ip, userName)
 	if err != nil {
-		logging.LogInterface.WriteLog("MariaDBPlugin", "GenerateToken", userName, "ERROR", []string{"Failed to save token", userName, ip, err.Error()})
+		logging.WriteLog(logging.LogLevelError,"MariaDBPlugin/GenerateToken", userName, logging.ResultFailure, []string{"Failed to save token", userName, ip, err.Error()})
 		return "", errors.New("failed to generate a token, check if user exists")
 	}
 	return newToken.String(), nil
@@ -66,9 +66,9 @@ func (DBConnection *MariaDBPlugin) GenerateToken(userName string, ip string) (st
 func (DBConnection *MariaDBPlugin) RevokeToken(userName string) error {
 	_, err := DBConnection.DBHandle.Exec("UPDATE Users SET TokenID=NULL, IP=NULL WHERE Name = ?", userName)
 	if err == nil {
-		logging.LogInterface.WriteLog("MariaDBPlugin", "RevokeToken", userName, "SUCCESS", []string{"Token revoked!", userName})
+		logging.WriteLog(logging.LogLevelError,"MariaDBPlugin/RevokeToken", userName, logging.ResultSuccess, []string{"Token revoked!", userName})
 	} else {
-		logging.LogInterface.WriteLog("MariaDBPlugin", "RevokeToken", userName, "ERROR", []string{"Token not revoked", userName, err.Error()})
+		logging.WriteLog(logging.LogLevelError,"MariaDBPlugin/RevokeToken", userName, logging.ResultFailure, []string{"Token not revoked", userName, err.Error()})
 	}
 	return err
 }

@@ -23,7 +23,7 @@ func RootRouter(responseWriter http.ResponseWriter, request *http.Request) {
 
 //BadConfigRouter is served when the config failed to load
 func BadConfigRouter(responseWriter http.ResponseWriter, request *http.Request) {
-	logging.LogInterface.WriteLog("ContentRouter", "BadConfigRouter", "*", "SUCCESS", []string{path.Join(config.Configuration.HTTPRoot, "resources"+string(filepath.Separator)+"updateconfig.html")})
+	logging.WriteLog(logging.LogLevelVerbose, "rootrouter/BadConfigRouter", "", logging.ResultSuccess, []string{path.Join(config.Configuration.HTTPRoot, "resources"+string(filepath.Separator)+"updateconfig.html")})
 	//Do not cache this file
 	//Otherwise can cause headaches once issue is fixed and server is rebooted as client will just reshow config instead of working service
 	responseWriter.Header().Add("Cache-Control", "no-cache, private, max-age=0")
@@ -37,7 +37,7 @@ func WriteAuditLog(UserID uint64, Type string, Info string) error {
 
 	if err := database.DBInterface.AddAuditLog(UserID, Type, Info); err != nil {
 		sid := strconv.FormatUint(UserID, 10)
-		logging.LogInterface.WriteLog("RootRouter", "writeAuditLog", sid, "ERROR", []string{"Failed to write audit entry.", err.Error(), Type, Info})
+		logging.WriteLog(logging.LogLevelError, "rootrouter/writeAuditLog", sid, logging.ResultFailure, []string{"Failed to write audit entry.", err.Error(), Type, Info})
 		return err
 	}
 	return nil
@@ -47,7 +47,7 @@ func WriteAuditLog(UserID uint64, Type string, Info string) error {
 func WriteAuditLogByName(UserName string, Type string, Info string) error {
 	userID, err := database.DBInterface.GetUserID(UserName)
 	if err != nil {
-		logging.LogInterface.WriteLog("RootRouter", "writeAuditLog", UserName, "ERROR", []string{"Could not get user id for audit log.", err.Error(), Type, Info})
+		logging.WriteLog(logging.LogLevelError, "rootrouter/writeAuditLog", UserName, logging.ResultFailure, []string{"Could not get user id for audit log.", err.Error(), Type, Info})
 	}
 	return WriteAuditLog(userID, Type, Info)
 }

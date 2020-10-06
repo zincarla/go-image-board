@@ -43,7 +43,7 @@ func UsersAPIRouter(responseWriter http.ResponseWriter, request *http.Request) {
 		//Perform Query
 		userInfo, count, err := database.DBInterface.SearchUsers(requestedName, pageStart, pageStride)
 		if err != nil {
-			logging.LogInterface.WriteLog("UserQueryAPI", "UserAPIRouter", UserName, "ERROR", []string{"Failed to query users", err.Error()})
+			logging.WriteLog(logging.LogLevelError, "userqueries/UserAPIRouter", UserName, logging.ResultFailure, []string{"Failed to query users", err.Error()})
 			ReplyWithJSONError(responseWriter, request, "Internal Database Error Occured", UserName, http.StatusInternalServerError)
 			return
 		}

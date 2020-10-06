@@ -14,7 +14,7 @@ func (DBConnection *MariaDBPlugin) UpdateUserVoteScore(UserID uint64, ImageID ui
 	count := 0
 	err := DBConnection.DBHandle.QueryRow(sqlQuery, UserID, ImageID).Scan(&count)
 	if err != nil {
-		logging.LogInterface.WriteLog("MariaDBPlugin", "UpdateUserVoteScore", "*", "ERROR", []string{"Failed to verify score existance", err.Error()})
+		logging.WriteLog(logging.LogLevelError,"MariaDBPlugin/UpdateUserVoteScore", "", logging.ResultFailure, []string{"Failed to verify score existance", err.Error()})
 		return err
 	}
 	if count > 0 {
@@ -26,10 +26,10 @@ func (DBConnection *MariaDBPlugin) UpdateUserVoteScore(UserID uint64, ImageID ui
 	}
 	_, err = DBConnection.DBHandle.Exec(sqlQuery, Score, UserID, ImageID)
 	if err != nil {
-		logging.LogInterface.WriteLog("MariaDBPlugin", "UpdateUserVoteScore", "*", "ERROR", []string{"Failed to update/add score", err.Error()})
+		logging.WriteLog(logging.LogLevelError,"MariaDBPlugin/UpdateUserVoteScore", "", logging.ResultFailure, []string{"Failed to update/add score", err.Error()})
 		return err
 	}
-	logging.LogInterface.WriteLog("MariaDBPlugin", "UpdateUserVoteScore", "*", "SUCCESS", []string{"Score added/updated"})
+	logging.WriteLog(logging.LogLevelError,"MariaDBPlugin/UpdateUserVoteScore", "", logging.ResultSuccess, []string{"Score added/updated"})
 	go DBConnection.UpdateScoreOnImage(ImageID)
 	return nil
 }
@@ -40,13 +40,13 @@ func (DBConnection *MariaDBPlugin) UpdateScoreOnImage(ImageID uint64) error {
 	var count, sum, average float64
 	err := DBConnection.DBHandle.QueryRow(sqlQuery, ImageID).Scan(&count, &sum, &average)
 	if err != nil {
-		logging.LogInterface.WriteLog("MariaDBPlugin", "UpdateScoreOnImage", "*", "ERROR", []string{"Failed to pull score metrics", err.Error()})
+		logging.WriteLog(logging.LogLevelError,"MariaDBPlugin/UpdateScoreOnImage", "", logging.ResultFailure, []string{"Failed to pull score metrics", err.Error()})
 		return err
 	}
 	sqlQuery = "UPDATE Images SET ScoreTotal = ?, ScoreAverage = ?, ScoreVoters = ? WHERE ID=?;"
 	_, err = DBConnection.DBHandle.Exec(sqlQuery, sum, average, count, ImageID)
 	if err != nil {
-		logging.LogInterface.WriteLog("MariaDBPlugin", "UpdateScoreOnImage", "*", "ERROR", []string{"Failed to update score for image", err.Error()})
+		logging.WriteLog(logging.LogLevelError,"MariaDBPlugin/UpdateScoreOnImage", "", logging.ResultFailure, []string{"Failed to update score for image", err.Error()})
 		return err
 	}
 	return nil
@@ -60,7 +60,7 @@ func (DBConnection *MariaDBPlugin) GetUserVoteScore(UserID uint64, ImageID uint6
 	err := DBConnection.DBHandle.QueryRow(sqlQuery, UserID, ImageID).Scan(&score)
 	if err != nil {
 		if err != sql.ErrNoRows {
-			logging.LogInterface.WriteLog("MariaDBPlugin", "UpdateUserVoteScore", "*", "ERROR", []string{"Failed to verify score existance", err.Error()})
+			logging.WriteLog(logging.LogLevelError,"MariaDBPlugin/UpdateUserVoteScore", "", logging.ResultFailure, []string{"Failed to verify score existance", err.Error()})
 			return 0, err
 		}
 	}

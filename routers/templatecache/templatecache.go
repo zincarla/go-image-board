@@ -20,7 +20,7 @@ func CacheTemplates() error {
 	var allFiles []string
 	files, err := ioutil.ReadDir(config.Configuration.HTTPRoot)
 	if err != nil {
-		logging.LogInterface.WriteLog("templatcache", "CacheTemplates", "*", "ERROR", []string{err.Error()})
+		logging.WriteLog(logging.LogLevelError, "templatcache/CacheTemplates", "", logging.ResultFailure, []string{err.Error()})
 		return err
 	}
 	for _, file := range files {
@@ -84,11 +84,11 @@ func CacheTemplates() error {
 
 	templates, err = templates.ParseFiles(allFiles...)
 	if err != nil {
-		logging.LogInterface.WriteLog("TemplateCache", "CacheTemplates", "*", "ERROR", []string{err.Error()})
+		logging.WriteLog(logging.LogLevelCritical, "templatecacheCacheTemplates", "", logging.ResultFailure, []string{err.Error()})
 		return err
 	}
 	TemplateCache = templates
-	logging.LogInterface.WriteLog("TemplateCache", "CacheTemplates", "*", "INFO", []string{"Added Templates", strconv.Itoa(len(allFiles))})
+	logging.WriteLog(logging.LogLevelInfo, "templatecacheCacheTemplates", "", logging.ResultInfo, []string{"Added Templates", strconv.Itoa(len(allFiles))})
 	return nil
 }
 
@@ -104,7 +104,7 @@ func GetEmbedForContent(imageLocation string) template.HTML {
 	case ".wav":
 		ToReturn = "<audio controls loop> <source src=\"/images/" + imageLocation + "\" type=\"" + getMIME(ext, "audio/wav") + "\">Your browser does not support the audio tag.</audio>"
 	default:
-		logging.LogInterface.WriteLog("ImageRouter", "getEmbedForConent", "*", "WARN", []string{"File uploaded, but did not match a filter during download", imageLocation})
+		logging.WriteLog(logging.LogLevelError, "templatecache/GetEmbedForContent", "", logging.ResultFailure, []string{"File uploaded, but did not match a filter during download", imageLocation})
 		ToReturn = "<p>File format not supported. Click download.</p>"
 	}
 

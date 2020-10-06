@@ -37,12 +37,12 @@ func TagNameAPIRouter(responseWriter http.ResponseWriter, request *http.Request)
 		//Perform Query
 		tagInfo, count, err := database.DBInterface.SearchTags(requestedName, 0, 5, true, true)
 		if err != nil {
-			logging.LogInterface.WriteLog("TagQueries", "TagNameAPIRouter", "*", "ERROR", []string{"Failed to query tags", err.Error()})
+			logging.WriteLog(logging.LogLevelError, "tagqueries/TagNameAPIRouter", "", logging.ResultFailure, []string{"Failed to query tags", err.Error()})
 			ReplyWithJSONError(responseWriter, request, "Internal Database Error Occured", UserName, http.StatusInternalServerError)
 			return
 		}
 
-		ReplyWithJSON(responseWriter, request, TagSearchResult{Tags: tagInfo, ResultCount: count, ServerStride: 5}, "*")
+		ReplyWithJSON(responseWriter, request, TagSearchResult{Tags: tagInfo, ResultCount: count, ServerStride: 5}, "")
 	} else {
 		ReplyWithJSONError(responseWriter, request, "unknown method used", UserName, http.StatusBadRequest)
 	}
@@ -150,12 +150,12 @@ func TagsAPIRouter(responseWriter http.ResponseWriter, request *http.Request) {
 		//Perform Query
 		tagInfo, count, err := database.DBInterface.SearchTags(requestedName, pageStart, pageStride, false, false)
 		if err != nil {
-			logging.LogInterface.WriteLog("TagQueries", "TagsAPIRouter", "*", "ERROR", []string{"Failed to query tags", err.Error()})
+			logging.WriteLog(logging.LogLevelError, "tagqueries/TagsAPIRouter", "", logging.ResultFailure, []string{"Failed to query tags", err.Error()})
 			ReplyWithJSONError(responseWriter, request, "Internal Database Error Occured", UserName, http.StatusInternalServerError)
 			return
 		}
 
-		ReplyWithJSON(responseWriter, request, TagSearchResult{Tags: tagInfo, ResultCount: count, ServerStride: pageStride}, "*")
+		ReplyWithJSON(responseWriter, request, TagSearchResult{Tags: tagInfo, ResultCount: count, ServerStride: pageStride}, "")
 	} else {
 		ReplyWithJSONError(responseWriter, request, "unknown method used", UserName, http.StatusBadRequest)
 	}

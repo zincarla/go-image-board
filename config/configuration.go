@@ -67,6 +67,8 @@ type ConfigurationSettings struct {
 	TLSKeyPath string
 	//ShowSimilarOnImages If enabled, shows similar count and link when viewing an image
 	ShowSimilarOnImages bool
+	//TargetLogLevel increase or decrease log verbosity
+	TargetLogLevel int64
 }
 
 //SessionStore contains cookie information

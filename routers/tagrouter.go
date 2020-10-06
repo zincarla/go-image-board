@@ -32,7 +32,7 @@ func TagsRouter(responseWriter http.ResponseWriter, request *http.Request) {
 	tag, totalResults, err := database.DBInterface.SearchTags(TagSearch, pageStart, pageStride, false, false)
 	if err != nil {
 		TemplateInput.Message = "Error pulling tags"
-		logging.LogInterface.WriteLog("TagsRouter", "TagsRouter", "*", "ERROR", []string{"Failed to pull tags ", err.Error()})
+		logging.WriteLog(logging.LogLevelError, "tagrouter/TagsRouter", "", logging.ResultFailure, []string{"Failed to pull tags ", err.Error()})
 	} else {
 		TemplateInput.Tags = tag
 		TemplateInput.TotalResults = totalResults
@@ -65,13 +65,13 @@ func TagRouter(responseWriter http.ResponseWriter, request *http.Request) {
 		iID, err := strconv.ParseUint(ID, 10, 32)
 		if err != nil {
 			TemplateInput.Message += "Error parsing tag id. "
-			logging.LogInterface.WriteLog("TagsRouter", "TagRouter", "*", "ERROR", []string{"Failed to parse tag id ", err.Error()})
+			logging.WriteLog(logging.LogLevelError, "tagrouter/TagRouter", "", logging.ResultFailure, []string{"Failed to parse tag id ", err.Error()})
 			break
 		}
 		tagInfo, err := database.DBInterface.GetTag(iID, false)
 		if err != nil {
 			TemplateInput.Message += "Error getting tag info. "
-			logging.LogInterface.WriteLog("TagsRouter", "TagRouter", "*", "ERROR", []string{"Failed to get tag info ", err.Error()})
+			logging.WriteLog(logging.LogLevelError, "tagrouter/TagRouter", "", logging.ResultFailure, []string{"Failed to get tag info ", err.Error()})
 			break
 		}
 
@@ -90,7 +90,7 @@ func TagRouter(responseWriter http.ResponseWriter, request *http.Request) {
 			aliasedTags, err = database.DBInterface.GetQueryTags(request.FormValue("aliasedTagName"), false)
 			if err != nil || len(aliasedTags) != 1 {
 				TemplateInput.Message += "Error parsing alias information. Ensure you are not putting in multiple tags to alias, and that you are not pointing the alias to an alias."
-				logging.LogInterface.WriteLog("TagsRouter", "TagRouter", "*", "ERROR", []string{"Failed to parse alias id "})
+				logging.WriteLog(logging.LogLevelError, "tagrouter/TagRouter", "", logging.ResultFailure, []string{"Failed to parse alias id "})
 				break
 			}
 			aliasID = aliasedTags[0].ID
@@ -112,7 +112,7 @@ func TagRouter(responseWriter http.ResponseWriter, request *http.Request) {
 		//Translate UserID
 		userID, err := database.DBInterface.GetUserID(TemplateInput.UserName)
 		if err != nil {
-			logging.LogInterface.WriteLog("TagRouter", "bulkAddTag", TemplateInput.UserName, "ERROR", []string{"Could not get valid user id", err.Error()})
+			logging.WriteLog(logging.LogLevelError, "tagrouter/TagRouter/bulkAddTag", TemplateInput.UserName, logging.ResultFailure, []string{"Could not get valid user id", err.Error()})
 			TemplateInput.Message += "You muse be logged in to perform that action"
 			break
 		}
@@ -139,7 +139,7 @@ func TagRouter(responseWriter http.ResponseWriter, request *http.Request) {
 		err = database.DBInterface.BulkAddTag(userNewQTags[0].ID, userOldQTags[0].ID, userID)
 		if err != nil {
 			TemplateInput.Message += "Error adding tags (SQL). "
-			logging.LogInterface.WriteLog("tagrouter", "TagRouter", TemplateInput.UserName, "ERROR", []string{"Failed to bulk add tags due to a SQL error", err.Error(), newTagQuery, oldTagQuery})
+			logging.WriteLog(logging.LogLevelError, "tagrouter/TagRouter/bulkAddTag", TemplateInput.UserName, logging.ResultFailure, []string{"Failed to bulk add tags due to a SQL error", err.Error(), newTagQuery, oldTagQuery})
 		} else {
 			TemplateInput.Message += "Tags added successfully. "
 			go WriteAuditLog(userID, "ADD-BULKIMAGETAG", TemplateInput.UserName+" bulk added tags to images. "+oldTagQuery+"->"+newTagQuery)
@@ -155,7 +155,7 @@ func TagRouter(responseWriter http.ResponseWriter, request *http.Request) {
 		//Translate UserID
 		userID, err := database.DBInterface.GetUserID(TemplateInput.UserName)
 		if err != nil {
-			logging.LogInterface.WriteLog("TagRouter", "replaceTag", TemplateInput.UserName, "ERROR", []string{"Could not get valid user id", err.Error()})
+			logging.WriteLog(logging.LogLevelError, "tagrouter/TagRouter/replaceTag", TemplateInput.UserName, logging.ResultFailure, []string{"Could not get valid user id", err.Error()})
 			TemplateInput.Message += "You muse be logged in to perform that action"
 			break
 		}
@@ -182,7 +182,7 @@ func TagRouter(responseWriter http.ResponseWriter, request *http.Request) {
 		err = database.DBInterface.ReplaceImageTags(userOldQTags[0].ID, userNewQTags[0].ID, userID)
 		if err != nil {
 			TemplateInput.Message += "Error adding tags (SQL). "
-			logging.LogInterface.WriteLog("tagrouter", "TagRouter", TemplateInput.UserName, "ERROR", []string{"Failed to bulk replace tags due to a SQL error", err.Error(), newTagQuery, oldTagQuery})
+			logging.WriteLog(logging.LogLevelError, "tagrouter/TagRouter/replaceTag", TemplateInput.UserName, logging.ResultFailure, []string{"Failed to bulk replace tags due to a SQL error", err.Error(), newTagQuery, oldTagQuery})
 		} else {
 			TemplateInput.Message += "Tags replaced successfully. "
 			go WriteAuditLog(userID, "REPLACE-BULKIMAGETAG", TemplateInput.UserName+" bulk added tags to images. "+oldTagQuery+"->"+newTagQuery)
@@ -200,13 +200,13 @@ func TagRouter(responseWriter http.ResponseWriter, request *http.Request) {
 		iID, err := strconv.ParseUint(ID, 10, 32)
 		if err != nil {
 			TemplateInput.Message += "Error parsing tag id. "
-			logging.LogInterface.WriteLog("TagsRouter", "TagRouter", "*", "ERROR", []string{"Failed to parse tag id ", err.Error()})
+			logging.WriteLog(logging.LogLevelError, "tagrouter/TagRouter/delete", "", logging.ResultFailure, []string{"Failed to parse tag id ", err.Error()})
 			break
 		}
 		tagInfo, err := database.DBInterface.GetTag(iID, false)
 		if err != nil {
 			TemplateInput.Message += "Error getting tag info. "
-			logging.LogInterface.WriteLog("TagsRouter", "TagRouter", "*", "ERROR", []string{"Failed to get tag info ", err.Error()})
+			logging.WriteLog(logging.LogLevelError, "tagrouter/TagRouter/delete", "", logging.ResultFailure, []string{"Failed to get tag info ", err.Error()})
 			break
 		}
 
@@ -237,20 +237,20 @@ func TagRouter(responseWriter http.ResponseWriter, request *http.Request) {
 		iID, err := strconv.ParseUint(ID, 10, 32)
 		if err != nil {
 			TemplateInput.Message += "Error parsing tag id. "
-			logging.LogInterface.WriteLog("TagsRouter", "TagRouter", "*", "ERROR", []string{"Failed to parse tag id ", err.Error()})
+			logging.WriteLog(logging.LogLevelError, "tagrouter/TagRouter", "", logging.ResultFailure, []string{"Failed to parse tag id ", err.Error()})
 		} else {
 			//Populate Tag
 			tag, err := database.DBInterface.GetTag(iID, true)
 			if err != nil {
 				TemplateInput.Message += "Error pulling tag"
-				logging.LogInterface.WriteLog("TagsRouter", "TagsRouter", "*", "ERROR", []string{"Failed to pull tags ", err.Error()})
+				logging.WriteLog(logging.LogLevelError, "tagrouter/TagRouter", "", logging.ResultFailure, []string{"Failed to pull tags ", err.Error()})
 			} else {
 				if tag.IsAlias {
 					aliasInfo, err := database.DBInterface.GetTag(tag.AliasedID, true)
 					TemplateInput.AliasTagInfo = aliasInfo
 					if err != nil {
 						TemplateInput.Message += "Error pulling tag alias information. "
-						logging.LogInterface.WriteLog("TagsRouter", "TagsRouter", "*", "ERROR", []string{"Failed to pull tags alias ", err.Error()})
+						logging.WriteLog(logging.LogLevelError, "tagrouter/TagRouter", "", logging.ResultFailure, []string{"Failed to pull tags alias ", err.Error()})
 					} else {
 						TemplateInput.TagContentInfo = tag
 						TemplateInput.AliasTagInfo = aliasInfo

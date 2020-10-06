@@ -123,7 +123,7 @@ func CollectionImageRouter(responseWriter http.ResponseWriter, request *http.Req
 
 			collectionID, err = database.DBInterface.NewCollection(request.FormValue("CollectionName"), "", TemplateInput.UserID)
 			if err != nil {
-				logging.LogInterface.WriteLog("CollectionImageRouter", "CollectionImageRouter", TemplateInput.UserName, "ERROR", []string{"failed to create collection", err.Error()})
+				logging.WriteLog(logging.LogLevelError, "collectionimagerouter/CollectionImageRouter", TemplateInput.UserName, logging.ResultFailure, []string{"failed to create collection", err.Error()})
 				TemplateInput.Message += "Failed to create new collection. SQL Error. "
 				break
 			}
@@ -131,7 +131,7 @@ func CollectionImageRouter(responseWriter http.ResponseWriter, request *http.Req
 			TemplateInput.Message += "New collection created successfully. "
 
 			if err := database.DBInterface.AddCollectionMember(collectionID, append([]uint64{}, parsedImageID), TemplateInput.UserID); err != nil {
-				logging.LogInterface.WriteLog("CollectionImageRouter", "CollectionImageRouter", TemplateInput.UserName, "ERROR", []string{"failed to add image to new collection", err.Error()})
+				logging.WriteLog(logging.LogLevelError, "collectionimagerouter/CollectionImageRouter", TemplateInput.UserName, logging.ResultFailure, []string{"failed to add image to new collection", err.Error()})
 				TemplateInput.Message += "Failed to add image to new collection. SQL Error. "
 				break
 			}
@@ -140,7 +140,7 @@ func CollectionImageRouter(responseWriter http.ResponseWriter, request *http.Req
 
 			break
 		} else if err != nil {
-			logging.LogInterface.WriteLog("CollectionImageRouter", "CollectionImageRouter", TemplateInput.UserName, "ERROR", []string{"failed to query collection", err.Error()})
+			logging.WriteLog(logging.LogLevelError, "collectionimagerouter/CollectionImageRouter", TemplateInput.UserName, logging.ResultFailure, []string{"failed to query collection", err.Error()})
 			TemplateInput.Message += "Failed to query collection."
 			break
 		}
@@ -237,7 +237,7 @@ func CollectionImageRouter(responseWriter http.ResponseWriter, request *http.Req
 		collectionInfo, err := database.DBInterface.GetCollection(collectionID)
 		if err != nil {
 			TemplateInput.Message += "Failed to get the requested collection " + request.FormValue("ID")
-			logging.LogInterface.WriteLog("CollectionRouter", "CollectionRouter", "*", "ERROR", []string{"Failed to get collection", strconv.FormatUint(collectionID, 10), err.Error()})
+			logging.WriteLog(logging.LogLevelError, "collectionimagerouter/CollectionImageRouter", "", logging.ResultFailure, []string{"Failed to get collection", strconv.FormatUint(collectionID, 10), err.Error()})
 
 		} else {
 			TemplateInput.CollectionInfo = collectionInfo
@@ -250,10 +250,10 @@ func CollectionImageRouter(responseWriter http.ResponseWriter, request *http.Req
 				TemplateInput.Tags, err = database.DBInterface.GetCollectionTags(collectionInfo.ID)
 				if err != nil {
 					TemplateInput.Message += "Failed to get collection tags."
-					logging.LogInterface.WriteLog("CollectionRouter", "CollectionRouter", "*", "ERROR", []string{"Failed to get collection tags", strconv.FormatUint(collectionID, 10), err.Error()})
+					logging.WriteLog(logging.LogLevelError, "collectionimagerouter/CollectionImageRouter", "", logging.ResultFailure, []string{"Failed to get collection tags", strconv.FormatUint(collectionID, 10), err.Error()})
 				}
 			} else {
-				logging.LogInterface.WriteLog("CollectionRouter", "CollectionRouter", "*", "ERROR", []string{"Failed to get collection images", strconv.FormatUint(collectionID, 10), err.Error()})
+				logging.WriteLog(logging.LogLevelError, "collectionimagerouter/CollectionImageRouter", "", logging.ResultFailure, []string{"Failed to get collection images", strconv.FormatUint(collectionID, 10), err.Error()})
 				TemplateInput.Message += "Failed to get collection members."
 			}
 		}
@@ -338,7 +338,7 @@ func CollectionImageOrderRouter(responseWriter http.ResponseWriter, request *htt
 	collectionInfo, err := database.DBInterface.GetCollection(collectionID)
 	if err != nil {
 		TemplateInput.Message += "Failed to get the requested collection " + request.FormValue("ID")
-		logging.LogInterface.WriteLog("CollectionRouter", "CollectionRouter", "*", "ERROR", []string{"Failed to get collection", strconv.FormatUint(collectionID, 10), err.Error()})
+		logging.WriteLog(logging.LogLevelError, "collectionimagerouter/CollectionImageRouter", "", logging.ResultFailure, []string{"Failed to get collection", strconv.FormatUint(collectionID, 10), err.Error()})
 
 	} else {
 		TemplateInput.CollectionInfo = collectionInfo
@@ -348,7 +348,7 @@ func CollectionImageOrderRouter(responseWriter http.ResponseWriter, request *htt
 			TemplateInput.ImageInfo = imageInfo
 			TemplateInput.TotalResults = MaxCount
 		} else {
-			logging.LogInterface.WriteLog("CollectionRouter", "CollectionRouter", "*", "ERROR", []string{"Failed to get collection images", strconv.FormatUint(collectionID, 10), err.Error()})
+			logging.WriteLog(logging.LogLevelError, "collectionimagerouter/CollectionImageOrderRouter", "", logging.ResultFailure, []string{"Failed to get collection images", strconv.FormatUint(collectionID, 10), err.Error()})
 			TemplateInput.Message += "Failed to get collection members."
 		}
 	}

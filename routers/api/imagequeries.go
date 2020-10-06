@@ -138,7 +138,7 @@ func ImagesAPIRouter(responseWriter http.ResponseWriter, request *http.Request) 
 			//add user's global filters to query
 			userFilterTags, err := database.DBInterface.GetUserFilterTags(UserID, true)
 			if err != nil {
-				logging.LogInterface.WriteLog("API", "ImagesAPIRouter", UserName, "ERROR", []string{"Failed to load user's filter", err.Error()})
+				logging.WriteLog(logging.LogLevelError, "imagequeries/ImagesAPIRouter", UserName, logging.ResultFailure, []string{"Failed to load user's filter", err.Error()})
 			} else {
 				userQTags = interfaces.RemoveDuplicateTags(append(userQTags, userFilterTags...))
 			}
@@ -147,7 +147,7 @@ func ImagesAPIRouter(responseWriter http.ResponseWriter, request *http.Request) 
 			imageInfo, MaxCount, err := database.DBInterface.SearchImages(userQTags, pageStart, pageStride)
 			ReplyWithJSON(responseWriter, request, ImageSearchResult{Images: imageInfo, ResultCount: MaxCount, ServerStride: pageStride}, UserName)
 		} else {
-			logging.LogInterface.WriteLog("API", "ImagesAPIRouter", UserName, "ERROR", []string{"Failed to parse user query", err.Error()})
+			logging.WriteLog(logging.LogLevelError, "imagequeries/ImagesAPIRouter", UserName, logging.ResultFailure, []string{"Failed to parse user query", err.Error()})
 			ReplyWithJSONError(responseWriter, request, "failed to parse your query", UserName, http.StatusInternalServerError)
 		}
 	} else {

@@ -40,17 +40,17 @@ func (DBConnection *MariaDBPlugin) NewTag(Name string, Description string, Uploa
 	Name = prepareTagName(Name)
 
 	if len(Name) < 3 || len(Name) > 255 || len(Description) > 255 {
-		logging.LogInterface.WriteLog("MariaDBPlugin", "NewTag", "*", "ERROR", []string{"Failed to add tag dues to size of name/description", Name, Description})
+		logging.WriteLog(logging.LogLevelError,"MariaDBPlugin/NewTag", "", logging.ResultFailure, []string{"Failed to add tag dues to size of name/description", Name, Description})
 		return 0, errors.New("name or description outside of right sizes")
 	}
 
 	resultInfo, err := DBConnection.DBHandle.Exec("INSERT INTO Tags (Name, Description, UploaderID) VALUES (?, ?, ?);", Name, Description, UploaderID)
 	if err != nil {
-		logging.LogInterface.WriteLog("MariaDBPlugin", "NewTag", "*", "ERROR", []string{"Failed to add tag", err.Error()})
+		logging.WriteLog(logging.LogLevelError,"MariaDBPlugin/NewTag", "", logging.ResultFailure, []string{"Failed to add tag", err.Error()})
 		return 0, err
 	}
 	id, _ := resultInfo.LastInsertId()
-	logging.LogInterface.WriteLog("MariaDBPlugin", "NewTag", "*", "SUCCESS", []string{"Tag added", strconv.FormatUint(uint64(id), 10)})
+	logging.WriteLog(logging.LogLevelError,"MariaDBPlugin/NewTag", "", logging.ResultSuccess, []string{"Tag added", strconv.FormatUint(uint64(id), 10)})
 
 	return uint64(id), err
 }
@@ -60,21 +60,21 @@ func (DBConnection *MariaDBPlugin) DeleteTag(TagID uint64) error {
 	//Ensure not in use
 	var useCount int
 	if err := DBConnection.DBHandle.QueryRow("SELECT COUNT(*) AS UseCount FROM ImageTags WHERE TagID = ?", TagID).Scan(&useCount); err != nil {
-		logging.LogInterface.WriteLog("MariaDBPlugin", "DeleteTag", "*", "ERROR", []string{"Failed to get tag use information", err.Error()})
+		logging.WriteLog(logging.LogLevelError,"MariaDBPlugin/DeleteTag", "", logging.ResultFailure, []string{"Failed to get tag use information", err.Error()})
 		return errors.New("failed to check tag to delete usage")
 	}
 
 	if useCount > 0 {
-		logging.LogInterface.WriteLog("MariaDBPlugin", "DeleteTag", "*", "ERROR", []string{"Tag to delete is still in use", strconv.FormatUint(TagID, 10), "in use", strconv.Itoa(useCount)})
+		logging.WriteLog(logging.LogLevelError,"MariaDBPlugin/DeleteTag", "", logging.ResultFailure, []string{"Tag to delete is still in use", strconv.FormatUint(TagID, 10), "in use", strconv.Itoa(useCount)})
 		return errors.New("tag to delete is still in use")
 	}
 
 	//Delete
 	_, err := DBConnection.DBHandle.Exec("DELETE FROM Tags WHERE ID=?;", TagID)
 	if err != nil {
-		logging.LogInterface.WriteLog("MariaDBPlugin", "DeleteTag", "*", "ERROR", []string{"Failed to delete tag", err.Error(), strconv.FormatUint(TagID, 10)})
+		logging.WriteLog(logging.LogLevelError,"MariaDBPlugin/DeleteTag", "", logging.ResultFailure, []string{"Failed to delete tag", err.Error(), strconv.FormatUint(TagID, 10)})
 	} else {
-		logging.LogInterface.WriteLog("MariaDBPlugin", "DeleteTag", "*", "SUCCESS", []string{"Tag deleted", strconv.FormatUint(TagID, 10)})
+		logging.WriteLog(logging.LogLevelError,"MariaDBPlugin/DeleteTag", "", logging.ResultSuccess, []string{"Tag deleted", strconv.FormatUint(TagID, 10)})
 	}
 	return err
 }
@@ -113,10 +113,10 @@ func (DBConnection *MariaDBPlugin) AddTag(TagIDs []uint64, ImageID uint64, Linke
 	queryArray = append(queryArray, LinkerID)                                //For duplicate key update
 	sqlQuery := "INSERT INTO ImageTags (TagID, ImageID, LinkerID) VALUES" + values
 	if _, err := DBConnection.DBHandle.Exec(sqlQuery, queryArray...); err != nil {
-		logging.LogInterface.WriteLog("MariaDBPlugin", "AddTag", "*", "ERROR", []string{"Tags not added to image", strconv.FormatUint(ImageID, 10), sqlQuery, err.Error()})
+		logging.WriteLog(logging.LogLevelError,"MariaDBPlugin/AddTag", "", logging.ResultFailure, []string{"Tags not added to image", strconv.FormatUint(ImageID, 10), sqlQuery, err.Error()})
 		return err
 	}
-	logging.LogInterface.WriteLog("MariaDBPlugin", "AddTag", "*", "SUCCESS", []string{"Tags added", strconv.FormatUint(ImageID, 10)})
+	logging.WriteLog(logging.LogLevelError,"MariaDBPlugin/AddTag", "", logging.ResultSuccess, []string{"Tags added", strconv.FormatUint(ImageID, 10)})
 	return nil
 }
 
@@ -226,7 +226,7 @@ func (DBConnection *MariaDBPlugin) UpdateTag(TagID uint64, Name string, Descript
 	//Cleanup name
 	Name = prepareTagName(Name)
 	if len(Name) < 3 || len(Name) > 255 || len(Description) > 255 {
-		logging.LogInterface.WriteLog("MariaDBPlugin", "UpdateTag", "*", "ERROR", []string{"Failed to update tag dues to size", Name, Description})
+		logging.WriteLog(logging.LogLevelError,"MariaDBPlugin/UpdateTag", "", logging.ResultFailure, []string{"Failed to update tag dues to size", Name, Description})
 		return errors.New("name or description outside of right sizes")
 	}
 
@@ -240,10 +240,10 @@ func (DBConnection *MariaDBPlugin) UpdateTag(TagID uint64, Name string, Descript
 
 	_, err := DBConnection.DBHandle.Exec("UPDATE Tags SET Name = ?, Description=?, AliasedID=?, IsAlias=? WHERE ID=?;", Name, Description, AliasedID, IsAlias, TagID)
 	if err != nil {
-		logging.LogInterface.WriteLog("MariaDBPlugin", "UpdateTag", "*", "ERROR", []string{"Failed to update tag", err.Error()})
+		logging.WriteLog(logging.LogLevelError,"MariaDBPlugin/UpdateTag", "", logging.ResultFailure, []string{"Failed to update tag", err.Error()})
 		return err
 	}
-	logging.LogInterface.WriteLog("MariaDBPlugin", "UpdateTag", "*", "SUCCESS", []string{"Image added"})
+	logging.WriteLog(logging.LogLevelError,"MariaDBPlugin/UpdateTag", "", logging.ResultSuccess, []string{"Image added"})
 
 	if IsAlias {
 		go DBConnection.ReplaceImageTags(TagID, AliasedID, RequestorID)
@@ -292,7 +292,7 @@ func (DBConnection *MariaDBPlugin) SearchTags(name string, PageStart uint64, Pag
 	var MaxResults uint64
 	err := DBConnection.DBHandle.QueryRow(sqlCountQuery, queryArray...).Scan(&MaxResults)
 	if err != nil {
-		logging.LogInterface.WriteLog("MariaDBPlugin", "SearchTags", "*", "ERROR", []string{"Error running count query", sqlCountQuery, err.Error()})
+		logging.WriteLog(logging.LogLevelError,"MariaDBPlugin/SearchTags", "", logging.ResultFailure, []string{"Error running count query", sqlCountQuery, err.Error()})
 		return nil, 0, err
 	}
 	//

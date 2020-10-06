@@ -15,7 +15,7 @@ func (DBConnection *MariaDBPlugin) SetSecurityQuestions(userName string, questio
 	answerThreeHash, errC := getPasswordHash(answerThree)
 
 	if errA != nil || errB != nil || errC != nil {
-		logging.LogInterface.WriteLog("MariaDBPlugin", "RevokeToken", userName, "ERROR", []string{"Failed to hash security question answers", userName})
+		logging.WriteLog(logging.LogLevelError, "MariaDBPlugin/RevokeToken", userName, logging.ResultFailure, []string{"Failed to hash security question answers", userName})
 		return errors.New("Failed to set answers")
 	}
 
@@ -25,23 +25,23 @@ func (DBConnection *MariaDBPlugin) SetSecurityQuestions(userName string, questio
 	err := DBConnection.DBHandle.QueryRow("SELECT SecQuestionOne, SecAnswerOne FROM Users WHERE Name = ?", userName).Scan(&secQuestionOne, &secAnswerOne)
 	//If question one is set
 	if err != nil {
-		logging.LogInterface.WriteLog("MariaDBPlugin", "SetSecurityQuestions", userName, "ERROR", []string{"Security questions failed to update. Challenge could not be loaded SQL Error.", userName, err.Error()})
+		logging.WriteLog(logging.LogLevelError, "MariaDBPlugin/SetSecurityQuestions", userName, logging.ResultFailure, []string{"Security questions failed to update. Challenge could not be loaded SQL Error.", userName, err.Error()})
 		return errors.New("sql error occured attempt to load old question")
 	}
 	if secQuestionOne.Valid && secQuestionOne.String != "" {
 		//Challenge needed/Require that the user entered in the answer to q1
 		if bcrypt.CompareHashAndPassword([]byte(secAnswerOne.String), challengeAnswer) != nil {
 			//Challenge failed/If we fail, log it, and quit without setting questions
-			logging.LogInterface.WriteLog("MariaDBPlugin", "SetSecurityQuestions", userName, "ERROR", []string{"Security questions failed to update. Challenge answer incorrect or SQL error.", userName})
+			logging.WriteLog(logging.LogLevelError, "MariaDBPlugin/SetSecurityQuestions", userName, logging.ResultFailure, []string{"Security questions failed to update. Challenge answer incorrect or SQL error.", userName})
 			return errors.New("provided answer did not pass challenge")
 		}
 	}
 
 	_, err = DBConnection.DBHandle.Exec("UPDATE Users SET SecQuestionOne=?, SecQuestionTwo=?, SecQuestionThree=?, SecAnswerOne=?, SecAnswerTwo=?, SecAnswerThree=? WHERE Name = ? AND Disabled = FALSE", questionOne, questionTwo, questionThree, string(answerOneHash), string(answerTwoHash), string(answerThreeHash), userName)
 	if err == nil {
-		logging.LogInterface.WriteLog("MariaDBPlugin", "SetSecurityQuestions", userName, "SUCCESS", []string{"Security questions updated!", userName})
+		logging.WriteLog(logging.LogLevelError, "MariaDBPlugin/SetSecurityQuestions", userName, logging.ResultSuccess, []string{"Security questions updated!", userName})
 	} else {
-		logging.LogInterface.WriteLog("MariaDBPlugin", "SetSecurityQuestions", userName, "ERROR", []string{"Security questions failed to update", userName, err.Error()})
+		logging.WriteLog(logging.LogLevelError, "MariaDBPlugin/SetSecurityQuestions", userName, logging.ResultFailure, []string{"Security questions failed to update", userName, err.Error()})
 	}
 	return err
 }
@@ -50,7 +50,7 @@ func (DBConnection *MariaDBPlugin) SetSecurityQuestions(userName string, questio
 func (DBConnection *MariaDBPlugin) ValidateSecurityQuestions(userName string, answerOne []byte, answerTwo []byte, answerThree []byte) error {
 	//Ensure answers have values
 	if answerOne == nil || answerTwo == nil || answerThree == nil {
-		logging.LogInterface.WriteLog("MariaDBPlugin", "ValidateSecurityQuestions", userName, "ERROR", []string{"No answers?", userName})
+		logging.WriteLog(logging.LogLevelError, "MariaDBPlugin/ValidateSecurityQuestions", userName, logging.ResultFailure, []string{"No answers?", userName})
 		return errors.New("Security Question validation failed, provide answers")
 	}
 
@@ -59,10 +59,10 @@ func (DBConnection *MariaDBPlugin) ValidateSecurityQuestions(userName string, an
 	if err != nil || secQuestionOne == "" || secQuestionTwo == "" || secQuestionThree == "" {
 
 		if err != nil {
-			logging.LogInterface.WriteLog("MariaDBPlugin", "ValidateSecurityQuestions", userName, "ERROR", []string{"User does not exist?", err.Error(), userName})
+			logging.WriteLog(logging.LogLevelError, "MariaDBPlugin/ValidateSecurityQuestions", userName, logging.ResultFailure, []string{"User does not exist?", err.Error(), userName})
 			return err
 		}
-		logging.LogInterface.WriteLog("MariaDBPlugin", "ValidateSecurityQuestions", userName, "ERROR", []string{"Questions do not exist for user", userName})
+		logging.WriteLog(logging.LogLevelError, "MariaDBPlugin/ValidateSecurityQuestions", userName, logging.ResultFailure, []string{"Questions do not exist for user", userName})
 		return errors.New("Questions do not exist for user")
 	}
 
@@ -81,17 +81,17 @@ func (DBConnection *MariaDBPlugin) ValidateSecurityQuestions(userName string, an
 	}
 
 	if bcrypt.CompareHashAndPassword([]byte(secAnswerOne.String), answerOne) != nil {
-		logging.LogInterface.WriteLog("CSVAuthN", "ValidateSecurityQuestions", userName, "ERROR", []string{"Answer 1 incorrect", userName})
+		logging.WriteLog(logging.LogLevelError, "MariaDBPlugin/ValidateSecurityQuestions", userName, logging.ResultFailure, []string{"Answer 1 incorrect", userName})
 		return errors.New("Security Question validation failed")
 	}
 
 	if bcrypt.CompareHashAndPassword([]byte(secAnswerTwo.String), answerTwo) != nil {
-		logging.LogInterface.WriteLog("CSVAuthN", "ValidateSecurityQuestions", userName, "ERROR", []string{"Answer 2 incorrect", userName})
+		logging.WriteLog(logging.LogLevelError, "MariaDBPlugin/ValidateSecurityQuestions", userName, logging.ResultFailure, []string{"Answer 2 incorrect", userName})
 		return errors.New("Security Question validation failed")
 	}
 
 	if bcrypt.CompareHashAndPassword([]byte(secAnswerThree.String), answerThree) != nil {
-		logging.LogInterface.WriteLog("CSVAuthN", "ValidateSecurityQuestions", userName, "ERROR", []string{"Answer 3 incorrect", userName})
+		logging.WriteLog(logging.LogLevelError, "MariaDBPlugin/ValidateSecurityQuestions", userName, logging.ResultFailure, []string{"Answer 3 incorrect", userName})
 		return errors.New("Security Question validation failed")
 	}
 

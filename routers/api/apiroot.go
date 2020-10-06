@@ -39,7 +39,7 @@ func ReplyWithJSON(responseWriter http.ResponseWriter, request *http.Request, js
 func ReplyWithJSONStatus(responseWriter http.ResponseWriter, request *http.Request, jsonObject interface{}, userName string, statusCode int) {
 	response, err := json.Marshal(jsonObject)
 	if err != nil {
-		logging.LogInterface.WriteLog("APIRouter", "ReplyWithJSONStatus", userName, "ERROR", []string{"Error generating JSON during reply", err.Error()})
+		logging.WriteLog(logging.LogLevelError, "apiroot/ReplyWithJSONStatus", userName, logging.ResultFailure, []string{"Error generating JSON during reply", err.Error()})
 		http.Error(responseWriter, "internal error generating response", http.StatusInternalServerError)
 		return
 	}
@@ -50,7 +50,7 @@ func ReplyWithJSONStatus(responseWriter http.ResponseWriter, request *http.Reque
 
 //ReplyWithJSONError replies to a request with an error response
 func ReplyWithJSONError(responseWriter http.ResponseWriter, request *http.Request, errorText string, userName string, statusCode int) {
-	logging.LogInterface.WriteLog("APIRoot", "ReplyWithJSONError", userName, "ERROR", []string{errorText})
+	logging.WriteLog(logging.LogLevelError, "apiroot/ReplyWithJSONError", userName, logging.ResultFailure, []string{errorText})
 	ReplyWithJSONStatus(responseWriter, request, ErrorResponse{Error: errorText}, userName, statusCode)
 }
 
@@ -77,7 +77,7 @@ func ValidateAPIUser(responseWriter http.ResponseWriter, request *http.Request) 
 				userID, err := database.DBInterface.GetUserID(userName)
 				if err == nil {
 					if err := database.DBInterface.ValidateToken(userName, tokenID, ip); err != nil {
-						logging.LogInterface.WriteLog("APIRoot", "ValidateAPIUser", userName, "SUCCESS", []string{"Validated by header"})
+						logging.WriteLog(logging.LogLevelError, "apiroot/ValidateAPIUser", userName, logging.ResultSuccess, []string{"Validated by header"})
 						return true, userID, userName //Valid auth header
 					}
 					errMSG = "Token is invalid"
@@ -90,7 +90,7 @@ func ValidateAPIUser(responseWriter http.ResponseWriter, request *http.Request) 
 	}
 
 	responseWriter.Header().Add("WWW-Authenticate", "Newauth realm=\"gib-api\"") //IANA requires a WWW-Authenticate header with StatusUnauthorized
-	ReplyWithJSONError(responseWriter, request, "Unauthenticated request, please login first. "+errMSG, "*", http.StatusUnauthorized)
+	ReplyWithJSONError(responseWriter, request, "Unauthenticated request, please login first. "+errMSG, "", http.StatusUnauthorized)
 	return false, 0, ""
 }
 

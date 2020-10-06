@@ -66,7 +66,7 @@ func replyWithTemplate(templateName string, templateInputInterface interface{}, 
 	}
 	err := templateToUse.ExecuteTemplate(responseWriter, templateName, templateInputInterface)
 	if err != nil {
-		logging.LogInterface.WriteLog("routertemplate", "replyWithTemplate", "*", "ERROR", []string{"Parse Error", err.Error()})
+		logging.WriteLog(logging.LogLevelError, "routertemplate/replyWithTemplate", "", logging.ResultFailure, []string{"Parse Error", err.Error()})
 		http.Error(responseWriter, "", http.StatusInternalServerError)
 		return
 	}
@@ -82,7 +82,7 @@ func ValidateUserLogon(request *http.Request) (uint64, string, string) {
 		if err == nil {
 			return userID, userNameT, tokenIDT
 		}
-		logging.LogInterface.WriteLog("routertemplate", "getNewTemplateInput", userNameT, "ERROR", []string{"Failed to get UserID: ", err.Error()})
+		logging.WriteLog(logging.LogLevelWarning, "routertemplate/ValidateUserLogon", userNameT, logging.ResultFailure, []string{"Failed to get UserID: ", err.Error()})
 	}
 	return 0, "", ""
 }
@@ -107,7 +107,7 @@ func getNewTemplateInput(request *http.Request) templateInput {
 		if err == nil {
 			TemplateInput.UserID = userID
 		} else {
-			logging.LogInterface.WriteLog("routertemplate", "getNewTemplateInput", userNameT, "ERROR", []string{"Failed to get UserID: ", err.Error()})
+			logging.WriteLog(logging.LogLevelError, "routertemplate/getNewTemplateInput", userNameT, logging.ResultFailure, []string{"Failed to get UserID: ", err.Error()})
 		}
 	}
 
@@ -134,7 +134,7 @@ func getNewTemplateInput(request *http.Request) templateInput {
 		_, totalImages, err = database.DBInterface.SearchImages(make([]interfaces.TagInformation, 0), 0, 1)
 		//Don't really care if this has a transient issue
 		if err != nil {
-			logging.LogInterface.WriteLog("routertemplate", "getNewTemplateInput", "*", "WARNING", []string{"failed to update count cache", err.Error()})
+			logging.WriteLog(logging.LogLevelWarning, "routertemplate/getNewTemplateInput", "", logging.ResultFailure, []string{"failed to update count cache", err.Error()})
 		}
 		totalCacheTime = time.Now()
 	}

@@ -62,7 +62,7 @@ func LogonAPIRouter(responseWriter http.ResponseWriter, request *http.Request) {
 	decoder := json.NewDecoder(request.Body)
 	var logonData logonInput
 	if err := decoder.Decode(&logonData); err != nil {
-		ReplyWithJSONError(responseWriter, request, "Failed to parse request data, expecting JSON of Username and Password", "*", http.StatusBadRequest)
+		ReplyWithJSONError(responseWriter, request, "Failed to parse request data, expecting JSON of Username and Password", "", http.StatusBadRequest)
 		return
 	}
 	//Parse user logon request
@@ -77,7 +77,7 @@ func LogonAPIRouter(responseWriter http.ResponseWriter, request *http.Request) {
 			// Set some session values.
 			Token, err := database.DBInterface.GenerateToken(logonData.Username, ip)
 			if err != nil {
-				logging.LogInterface.WriteLog("AccountLogonAPIRouter", "LogonHandler", logonData.Username, "ERROR", []string{"Account Validation", err.Error()})
+				logging.WriteLog(logging.LogLevelError, "account/LogonAPIRouter", logonData.Username, logging.ResultFailure, []string{"Account Validation", err.Error()})
 				ReplyWithJSONError(responseWriter, request, "failed to generate token", logonData.Username, http.StatusInternalServerError)
 				return
 			}
@@ -86,16 +86,16 @@ func LogonAPIRouter(responseWriter http.ResponseWriter, request *http.Request) {
 			// Save it before we write to the response/return from the handler.
 			session.Save(request, responseWriter)
 			go routers.WriteAuditLogByName(logonData.Username, "LOGON", logonData.Username+" successfully logged on with API.")
-			logging.LogInterface.WriteLog("AccountLogonAPIRouter", "LogonHandler", logonData.Username, "SUCCESS", []string{"Account Validation"})
+			logging.WriteLog(logging.LogLevelError, "account/LogonAPIRouter", logonData.Username, logging.ResultSuccess, []string{"Account Validation"})
 			ReplyWithJSON(responseWriter, request, GenericResponse{Result: "Successfully signed in"}, logonData.Username)
 			return
 		}
 		go routers.WriteAuditLogByName(logonData.Username, "LOGON", logonData.Username+" failed to log in. "+err.Error())
 		responseWriter.Header().Add("WWW-Authenticate", "Newauth realm=\"gib-api\"")
-		ReplyWithJSONError(responseWriter, request, "wrong username or password", "*", http.StatusUnauthorized)
+		ReplyWithJSONError(responseWriter, request, "wrong username or password", "", http.StatusUnauthorized)
 		return
 	}
-	ReplyWithJSONError(responseWriter, request, "either username or password was blank", "*", http.StatusBadRequest)
+	ReplyWithJSONError(responseWriter, request, "either username or password was blank", "", http.StatusBadRequest)
 	return
 }
 
@@ -115,7 +115,7 @@ func LogoutAPIRouter(responseWriter http.ResponseWriter, request *http.Request) 
 	if TokenID != "" {
 		err := database.DBInterface.RevokeToken(UserName)
 		if err != nil {
-			logging.LogInterface.WriteLog("AccountLogoutAPIRouter", "LogoutHandler", UserName, "WARN", []string{"Account logout was requested but an error occured during token removal", err.Error()})
+			logging.WriteLog(logging.LogLevelError, "account/LogoutAPIRouter", UserName, logging.ResultFailure, []string{"Account logout was requested but an error occured during token removal", err.Error()})
 		}
 	}
 	go routers.WriteAuditLogByName(UserName, "LOGOUT", UserName+" manually logged out of API.")

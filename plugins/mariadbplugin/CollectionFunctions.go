@@ -16,16 +16,16 @@ import (
 //NewCollection adds a collection with the provided information
 func (DBConnection *MariaDBPlugin) NewCollection(Name string, Description string, UploaderID uint64) (uint64, error) {
 	if len(Name) < 3 || len(Name) > 255 || len(Description) > 255 {
-		logging.LogInterface.WriteLog("MariaDBPlugin", "NewCollection", "*", "ERROR", []string{"Failed to add collection due to name/description size", Name, Description})
+		logging.WriteLog(logging.LogLevelError,"MariaDBPlugin/NewCollection", "", logging.ResultFailure, []string{"Failed to add collection due to name/description size", Name, Description})
 		return 0, errors.New("name or description outside size range")
 	}
 
 	resultInfo, err := DBConnection.DBHandle.Exec("INSERT INTO Collections (Name, Description, UploaderID) VALUES (?, ?, ?);", Name, Description, UploaderID)
 	if err != nil {
-		logging.LogInterface.WriteLog("MariaDBPlugin", "NewCollection", "*", "ERROR", []string{"Failed to add collection", err.Error()})
+		logging.WriteLog(logging.LogLevelError,"MariaDBPlugin/NewCollection", "", logging.ResultFailure, []string{"Failed to add collection", err.Error()})
 		return 0, err
 	}
-	logging.LogInterface.WriteLog("MariaDBPlugin", "NewCollection", "*", "SUCCESS", []string{"Collection added"})
+	logging.WriteLog(logging.LogLevelError,"MariaDBPlugin/NewCollection", "", logging.ResultSuccess, []string{"Collection added"})
 	id, _ := resultInfo.LastInsertId()
 	return uint64(id), err
 }
@@ -35,16 +35,16 @@ func (DBConnection *MariaDBPlugin) DeleteCollection(CollectionID uint64) error {
 	//Ensure not in use
 	_, err := DBConnection.DBHandle.Exec("DELETE FROM CollectionMembers WHERE CollectionID=?;", CollectionID)
 	if err != nil {
-		logging.LogInterface.WriteLog("MariaDBPlugin", "DeleteCollection", "*", "ERROR", []string{"Colleciton to delete is still in use and members could not be removed", strconv.FormatUint(CollectionID, 10)})
+		logging.WriteLog(logging.LogLevelError,"MariaDBPlugin/DeleteCollection", "", logging.ResultFailure, []string{"Colleciton to delete is still in use and members could not be removed", strconv.FormatUint(CollectionID, 10)})
 		return errors.New("could not remove members from collection before deleting collection")
 	}
 
 	//Delete
 	_, err = DBConnection.DBHandle.Exec("DELETE FROM Collections WHERE ID=?;", CollectionID)
 	if err != nil {
-		logging.LogInterface.WriteLog("MariaDBPlugin", "DeleteCollection", "*", "ERROR", []string{"Failed to delete collection", err.Error(), strconv.FormatUint(CollectionID, 10)})
+		logging.WriteLog(logging.LogLevelError,"MariaDBPlugin/DeleteCollection", "", logging.ResultFailure, []string{"Failed to delete collection", err.Error(), strconv.FormatUint(CollectionID, 10)})
 	} else {
-		logging.LogInterface.WriteLog("MariaDBPlugin", "DeleteCollection", "*", "SUCCESS", []string{"Collection deleted", strconv.FormatUint(CollectionID, 10)})
+		logging.WriteLog(logging.LogLevelError,"MariaDBPlugin/DeleteCollection", "", logging.ResultSuccess, []string{"Collection deleted", strconv.FormatUint(CollectionID, 10)})
 	}
 	return err
 }
@@ -53,16 +53,16 @@ func (DBConnection *MariaDBPlugin) DeleteCollection(CollectionID uint64) error {
 func (DBConnection *MariaDBPlugin) UpdateCollection(CollectionID uint64, Name string, Description string) error {
 	//Cleanup name
 	if len(Name) < 3 || len(Name) > 255 || len(Description) > 255 {
-		logging.LogInterface.WriteLog("MariaDBPlugin", "UpdateCollection", "*", "ERROR", []string{"Failed to update collection due to size of name/description", Name, Description})
+		logging.WriteLog(logging.LogLevelError,"MariaDBPlugin/UpdateCollection", "", logging.ResultFailure, []string{"Failed to update collection due to size of name/description", Name, Description})
 		return errors.New("name or description outside of right sizes")
 	}
 
 	_, err := DBConnection.DBHandle.Exec("UPDATE Collections SET Name = ?, Description=? WHERE ID=?;", Name, Description, CollectionID)
 	if err != nil {
-		logging.LogInterface.WriteLog("MariaDBPlugin", "UpdateCollection", "*", "ERROR", []string{"Failed to update collection", err.Error()})
+		logging.WriteLog(logging.LogLevelError,"MariaDBPlugin/UpdateCollection", "", logging.ResultFailure, []string{"Failed to update collection", err.Error()})
 		return err
 	}
-	logging.LogInterface.WriteLog("MariaDBPlugin", "UpdateCollection", "*", "SUCCESS", []string{"Collection updated"})
+	logging.WriteLog(logging.LogLevelError,"MariaDBPlugin/UpdateCollection", "", logging.ResultSuccess, []string{"Collection updated"})
 	return nil
 }
 
@@ -94,7 +94,7 @@ func (DBConnection *MariaDBPlugin) GetCollections(PageStart uint64, PageStride u
 	//Run the count query (Count query does not use start/stride)
 	err := DBConnection.DBHandle.QueryRow(sqlCountQuery).Scan(&MaxResults)
 	if err != nil {
-		logging.LogInterface.WriteLog("MariaDBPlugin", "GetCollections", "*", "ERROR", []string{"Error running count query", sqlCountQuery, err.Error()})
+		logging.WriteLog(logging.LogLevelError,"MariaDBPlugin/GetCollections", "", logging.ResultFailure, []string{"Error running count query", sqlCountQuery, err.Error()})
 		return nil, 0, err
 	}
 
@@ -203,7 +203,7 @@ func (DBConnection *MariaDBPlugin) AddCollectionMember(CollectionID uint64, Imag
 	lastOrder := uint64(0)
 	memberCount := uint64(0)
 	if err := DBConnection.DBHandle.QueryRow("SELECT IFNULL(MAX(OrderWeight),0) AS LastWeight, COUNT(*) AS MemberCount FROM CollectionMembers WHERE CollectionID = ?", CollectionID).Scan(&lastOrder, &memberCount); err != nil {
-		logging.LogInterface.WriteLog("MariaDBPlugin", "AddCollectionMember", "*", "ERROR", []string{"Could not get count of members in collection", strconv.FormatUint(CollectionID, 10)})
+		logging.WriteLog(logging.LogLevelError,"MariaDBPlugin/AddCollectionMember", "", logging.ResultFailure, []string{"Could not get count of members in collection", strconv.FormatUint(CollectionID, 10)})
 		return errors.New("could not get count of members in collection")
 	}
 
@@ -228,10 +228,10 @@ func (DBConnection *MariaDBPlugin) AddCollectionMember(CollectionID uint64, Imag
 	//Add image
 	sqlQuery := "INSERT INTO CollectionMembers (CollectionID, ImageID, LinkerID, OrderWeight) VALUES" + values
 	if _, err := DBConnection.DBHandle.Exec(sqlQuery, queryArray...); err != nil {
-		logging.LogInterface.WriteLog("MariaDBPlugin", "AddCollectionMember", "*", "ERROR", []string{"Image not added to collection", strconv.FormatUint(CollectionID, 10), idString, err.Error()})
+		logging.WriteLog(logging.LogLevelError,"MariaDBPlugin/AddCollectionMember", "", logging.ResultFailure, []string{"Image not added to collection", strconv.FormatUint(CollectionID, 10), idString, err.Error()})
 		return err
 	}
-	logging.LogInterface.WriteLog("MariaDBPlugin", "AddCollectionMember", "*", "SUCCESS", []string{"Image added to collection", strconv.FormatUint(CollectionID, 10), idString})
+	logging.WriteLog(logging.LogLevelError,"MariaDBPlugin/AddCollectionMember", "", logging.ResultSuccess, []string{"Image added to collection", strconv.FormatUint(CollectionID, 10), idString})
 	return nil
 }
 
@@ -255,14 +255,14 @@ func (DBConnection *MariaDBPlugin) RemoveCollectionMember(CollectionID uint64, I
 
 	//Delete Image
 	if _, err := DBConnection.DBHandle.Exec("DELETE FROM CollectionMembers WHERE CollectionID =? AND ImageID = ?;", CollectionID, ImageID); err != nil {
-		logging.LogInterface.WriteLog("MariaDBPlugin", "RemoveCollectionMember", "*", "ERROR", []string{"Image not removed from collection", strconv.FormatUint(CollectionID, 10), strconv.FormatUint(ImageID, 10), err.Error()})
+		logging.WriteLog(logging.LogLevelError,"MariaDBPlugin/RemoveCollectionMember", "", logging.ResultFailure, []string{"Image not removed from collection", strconv.FormatUint(CollectionID, 10), strconv.FormatUint(ImageID, 10), err.Error()})
 		return err
 	}
-	logging.LogInterface.WriteLog("MariaDBPlugin", "RemoveCollectionMember", "*", "SUCCESS", []string{"Image removed from collection", strconv.FormatUint(CollectionID, 10), strconv.FormatUint(ImageID, 10)})
+	logging.WriteLog(logging.LogLevelError,"MariaDBPlugin/RemoveCollectionMember", "", logging.ResultSuccess, []string{"Image removed from collection", strconv.FormatUint(CollectionID, 10), strconv.FormatUint(ImageID, 10)})
 
 	//Decrement Order
 	if _, err := DBConnection.DBHandle.Exec("UPDATE CollectionMembers SET OrderWeight = OrderWeight - 1 WHERE OrderWeight > ? AND CollectionID=?;", Order, CollectionID); err != nil {
-		logging.LogInterface.WriteLog("MariaDBPlugin", "RemoveCollectionMember", "*", "ERROR", []string{"Could not update Order after member removed from collection", strconv.FormatUint(CollectionID, 10), strconv.FormatUint(ImageID, 10), err.Error()})
+		logging.WriteLog(logging.LogLevelError,"MariaDBPlugin/RemoveCollectionMember", "", logging.ResultFailure, []string{"Could not update Order after member removed from collection", strconv.FormatUint(CollectionID, 10), strconv.FormatUint(ImageID, 10), err.Error()})
 		return err
 	}
 
@@ -274,13 +274,13 @@ func (DBConnection *MariaDBPlugin) UpdateCollectionMember(CollectionID uint64, I
 	//Get Current Order
 	var BeforeOrder uint64
 	if err := DBConnection.DBHandle.QueryRow("SELECT OrderWeight FROM CollectionMembers WHERE ImageID=? AND CollectionID=?", ImageID, CollectionID).Scan(&BeforeOrder); err != nil {
-		logging.LogInterface.WriteLog("MariaDBPlugin", "UpdateCollectionMember", "*", "ERROR", []string{"Could not get previous order to update collectionmember", strconv.FormatUint(CollectionID, 10), strconv.FormatUint(ImageID, 10), err.Error()})
+		logging.WriteLog(logging.LogLevelError,"MariaDBPlugin/UpdateCollectionMember", "", logging.ResultFailure, []string{"Could not get previous order to update collectionmember", strconv.FormatUint(CollectionID, 10), strconv.FormatUint(ImageID, 10), err.Error()})
 		return err
 	}
 
 	var MemberCount uint64
 	if err := DBConnection.DBHandle.QueryRow("SELECT COUNT(*) FROM CollectionMembers WHERE CollectionID=?", CollectionID).Scan(&MemberCount); err != nil {
-		logging.LogInterface.WriteLog("MariaDBPlugin", "UpdateCollectionMember", "*", "ERROR", []string{"Could not validate order", strconv.FormatUint(CollectionID, 10), strconv.FormatUint(ImageID, 10), err.Error()})
+		logging.WriteLog(logging.LogLevelError,"MariaDBPlugin/UpdateCollectionMember", "", logging.ResultFailure, []string{"Could not validate order", strconv.FormatUint(CollectionID, 10), strconv.FormatUint(ImageID, 10), err.Error()})
 		return err
 	}
 
@@ -291,19 +291,19 @@ func (DBConnection *MariaDBPlugin) UpdateCollectionMember(CollectionID uint64, I
 
 	//Set order for image
 	if _, err := DBConnection.DBHandle.Exec("UPDATE CollectionMembers SET OrderWeight = ? WHERE ImageID=? AND CollectionID=?;", Order, ImageID, CollectionID); err != nil {
-		logging.LogInterface.WriteLog("MariaDBPlugin", "UpdateCollectionMember", "*", "ERROR", []string{"Could not set Order of member in collection", strconv.FormatUint(CollectionID, 10), strconv.FormatUint(ImageID, 10), err.Error()})
+		logging.WriteLog(logging.LogLevelError,"MariaDBPlugin/UpdateCollectionMember", "", logging.ResultFailure, []string{"Could not set Order of member in collection", strconv.FormatUint(CollectionID, 10), strconv.FormatUint(ImageID, 10), err.Error()})
 		return err
 	}
 
 	//Decrement Order
 	if _, err := DBConnection.DBHandle.Exec("UPDATE CollectionMembers SET OrderWeight = OrderWeight - 1 WHERE OrderWeight >= ? AND CollectionID=? AND ImageID<>?;", BeforeOrder, CollectionID, ImageID); err != nil {
-		logging.LogInterface.WriteLog("MariaDBPlugin", "UpdateCollectionMember", "*", "ERROR", []string{"Could not decrement Order of members in collection", strconv.FormatUint(CollectionID, 10), strconv.FormatUint(ImageID, 10), err.Error()})
+		logging.WriteLog(logging.LogLevelError,"MariaDBPlugin/UpdateCollectionMember", "", logging.ResultFailure, []string{"Could not decrement Order of members in collection", strconv.FormatUint(CollectionID, 10), strconv.FormatUint(ImageID, 10), err.Error()})
 		return err
 	}
 
 	//Increment Order
 	if _, err := DBConnection.DBHandle.Exec("UPDATE CollectionMembers SET OrderWeight = OrderWeight + 1 WHERE OrderWeight >= ? AND CollectionID=? AND ImageID<>?;", Order, CollectionID, ImageID); err != nil {
-		logging.LogInterface.WriteLog("MariaDBPlugin", "UpdateCollectionMember", "*", "ERROR", []string{"Could not increment Order of members in collection", strconv.FormatUint(CollectionID, 10), strconv.FormatUint(ImageID, 10), err.Error()})
+		logging.WriteLog(logging.LogLevelError,"MariaDBPlugin/UpdateCollectionMember", "", logging.ResultFailure, []string{"Could not increment Order of members in collection", strconv.FormatUint(CollectionID, 10), strconv.FormatUint(ImageID, 10), err.Error()})
 		return err
 	}
 
@@ -343,7 +343,7 @@ func (DBConnection *MariaDBPlugin) GetCollectionMembers(CollectionID uint64, Pag
 	//Run the count query (Count query does not use start/stride)
 	err := DBConnection.DBHandle.QueryRow(sqlCountQuery, CollectionID).Scan(&MaxResults)
 	if err != nil {
-		logging.LogInterface.WriteLog("MariaDBPlugin", "GetCollectionMembers", "*", "ERROR", []string{"Error running count query", sqlCountQuery, err.Error()})
+		logging.WriteLog(logging.LogLevelError,"MariaDBPlugin/GetCollectionMembers", "", logging.ResultFailure, []string{"Error running count query", sqlCountQuery, err.Error()})
 		return nil, 0, err
 	}
 

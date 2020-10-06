@@ -87,7 +87,7 @@ func ModUserRouter(responseWriter http.ResponseWriter, request *http.Request) {
 		if modUserID, err := database.DBInterface.GetUserID(request.FormValue("userName")); err == nil {
 			if TemplateInput.ModUserData, err = database.DBInterface.GetUser(modUserID); err != nil {
 				TemplateInput.Message += "Could not get userdata. "
-				logging.LogInterface.WriteLog("moduserrouter", "ModUserRouter", TemplateInput.UserName, "ERROR", []string{"SQL error occured getting userdata ", err.Error()})
+				logging.WriteLog(logging.LogLevelError, "moduserrouter/ModUserRouter", TemplateInput.UserName, logging.ResultFailure, []string{"SQL error occured getting userdata ", err.Error()})
 			}
 		} else {
 			TemplateInput.Message += "Could not get userdata, do they exist? "

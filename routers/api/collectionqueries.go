@@ -187,7 +187,7 @@ func CollectionsAPIRouter(responseWriter http.ResponseWriter, request *http.Requ
 			//add user's global filters to query
 			userFilterTags, err := database.DBInterface.GetUserFilterTags(UserID, true)
 			if err != nil {
-				logging.LogInterface.WriteLog("API", "CollectionsAPIRouter", UserName, "ERROR", []string{"Failed to load user's filter", err.Error()})
+				logging.WriteLog(logging.LogLevelError, "collectionqueries/CollectionsAPIRouter", UserName, logging.ResultFailure, []string{"Failed to load user's filter", err.Error()})
 			} else {
 				userQTags = interfaces.RemoveDuplicateTags(append(userQTags, userFilterTags...))
 			}
@@ -196,7 +196,7 @@ func CollectionsAPIRouter(responseWriter http.ResponseWriter, request *http.Requ
 			collectionInfo, MaxCount, err := database.DBInterface.SearchCollections(userQTags, pageStart, pageStride)
 			ReplyWithJSON(responseWriter, request, CollectionSearchResult{Collections: collectionInfo, ResultCount: MaxCount, ServerStride: pageStride}, UserName)
 		} else {
-			logging.LogInterface.WriteLog("API", "CollectionsAPIRouter", UserName, "ERROR", []string{"Failed to load user's filter", err.Error()})
+			logging.WriteLog(logging.LogLevelError, "collectionqueries/CollectionsAPIRouter", UserName, logging.ResultFailure, []string{"Failed to load user's filter", err.Error()})
 			ReplyWithJSONError(responseWriter, request, "failed to parse your query", UserName, http.StatusInternalServerError)
 		}
 	} else {

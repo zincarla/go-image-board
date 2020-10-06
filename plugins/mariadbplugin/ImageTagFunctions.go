@@ -46,10 +46,10 @@ func (DBConnection *MariaDBPlugin) GetImageTags(ImageID uint64) ([]interfaces.Ta
 //RemoveTag remove a tag association
 func (DBConnection *MariaDBPlugin) RemoveTag(TagID uint64, ImageID uint64) error {
 	if _, err := DBConnection.DBHandle.Exec("DELETE FROM ImageTags WHERE TagID=? AND ImageID=?;", TagID, ImageID); err != nil {
-		logging.LogInterface.WriteLog("MariaDBPlugin", "RemoveTag", "*", "WARN", []string{"Tag to remove was not on image", strconv.FormatUint(TagID, 10), strconv.FormatUint(ImageID, 10), err.Error()})
+		logging.WriteLog(logging.LogLevelError,"MariaDBPlugin/RemoveTag", "", logging.ResultFailure, []string{"Tag to remove was not on image", strconv.FormatUint(TagID, 10), strconv.FormatUint(ImageID, 10), err.Error()})
 		return err
 	}
-	logging.LogInterface.WriteLog("MariaDBPlugin", "RemoveTag", "*", "SUCCESS", []string{"Tag removed", strconv.FormatUint(TagID, 10), strconv.FormatUint(ImageID, 10)})
+	logging.WriteLog(logging.LogLevelError,"MariaDBPlugin/RemoveTag", "", logging.ResultSuccess, []string{"Tag removed", strconv.FormatUint(TagID, 10), strconv.FormatUint(ImageID, 10)})
 	return nil
 }
 
@@ -83,13 +83,13 @@ func (DBConnection *MariaDBPlugin) ReplaceImageTags(OldTagID uint64, NewTagID ui
 	);`
 	_, err := DBConnection.DBHandle.Exec(query, NewTagID, LinkerID, OldTagID, NewTagID)
 	if err != nil {
-		logging.LogInterface.WriteLog("MariaDBPlugin", "ReplaceImageTags", "*", "ERROR", []string{"Failed to update imagetags", err.Error()})
+		logging.WriteLog(logging.LogLevelError,"MariaDBPlugin/ReplaceImageTags", "", logging.ResultFailure, []string{"Failed to update imagetags", err.Error()})
 		return err
 	}
 	//Remove any instances of old tag, first query replaces the old tag on all images, but does not allow duplicates. This query will remove the old tag that would have been replaced if it would not have lead to a duplicate.
 	_, err = DBConnection.DBHandle.Exec("DELETE FROM ImageTags WHERE TagID=?;", OldTagID)
 	if err != nil {
-		logging.LogInterface.WriteLog("MariaDBPlugin", "ReplaceImageTags", "*", "ERROR", []string{"Failed to remove old instances of tag", err.Error()})
+		logging.WriteLog(logging.LogLevelError,"MariaDBPlugin/ReplaceImageTags", "", logging.ResultFailure, []string{"Failed to remove old instances of tag", err.Error()})
 		return err
 	}
 	return nil
@@ -115,10 +115,10 @@ func (DBConnection *MariaDBPlugin) BulkAddTag(TagID uint64, OldTagID uint64, Lin
 	}
 
 	if _, err := DBConnection.DBHandle.Exec("INSERT INTO ImageTags (TagID, ImageID, LinkerID) SELECT ?, ImageID, ? FROM ImageTags WHERE TagID=? AND ImageID NOT IN (SELECT ImageID FROM ImageTags WHERE TagID=?);", TagID, LinkerID, OldTagID, TagID); err != nil {
-		logging.LogInterface.WriteLog("MariaDBPlugin", "BulkAddTag", "*", "ERROR", []string{"Tag not added to image", strconv.FormatUint(OldTagID, 10), strconv.FormatUint(TagID, 10), err.Error()})
+		logging.WriteLog(logging.LogLevelError,"MariaDBPlugin/BulkAddTag", "", logging.ResultFailure, []string{"Tag not added to image", strconv.FormatUint(OldTagID, 10), strconv.FormatUint(TagID, 10), err.Error()})
 		return err
 	}
-	logging.LogInterface.WriteLog("MariaDBPlugin", "BulkAddTag", "*", "SUCCESS", []string{"Tags added", strconv.FormatUint(OldTagID, 10), strconv.FormatUint(TagID, 10)})
+	logging.WriteLog(logging.LogLevelError,"MariaDBPlugin/BulkAddTag", "", logging.ResultSuccess, []string{"Tags added", strconv.FormatUint(OldTagID, 10), strconv.FormatUint(TagID, 10)})
 	return nil
 }
 

@@ -32,9 +32,9 @@ func (DBConnection *MariaDBPlugin) CreateUser(userName string, password []byte, 
 	}
 	_, err = DBConnection.DBHandle.Exec("INSERT INTO Users (Name, EMail, PasswordHash, Permissions) VALUES (?, ?, ?, ?);", userName, email, string(hash), permissions)
 	if err != nil {
-		logging.LogInterface.WriteLog("MariaDBPlugin", "CreateUser", "*", "ERROR", []string{"Failed to create new user", err.Error()})
+		logging.WriteLog(logging.LogLevelError, "MariaDBPlugin/CreateUser", "", logging.ResultFailure, []string{"Failed to create new user", err.Error()})
 	}
-	logging.LogInterface.WriteLog("MariaDBPlugin", "CreateUser", userName, "SUCCESS", []string{"New user added to database", userName})
+	logging.WriteLog(logging.LogLevelError, "MariaDBPlugin/CreateUser", userName, logging.ResultSuccess, []string{"New user added to database", userName})
 	return err
 }
 
@@ -45,7 +45,7 @@ func (DBConnection *MariaDBPlugin) ValidateUser(userName string, password []byte
 	row := DBConnection.DBHandle.QueryRow("SELECT PasswordHash, Disabled FROM Users WHERE Name = ?", userName)
 	err := row.Scan(&userPassword, &userDisabled)
 	if err != nil {
-		logging.LogInterface.WriteLog("MariaDBPlugin", "ValidateUser", userName, "ERROR", []string{"Username and Password not correct", userName, err.Error()})
+		logging.WriteLog(logging.LogLevelError, "MariaDBPlugin/ValidateUser", userName, logging.ResultFailure, []string{"Username and Password not correct", userName, err.Error()})
 		return err
 	}
 	if userDisabled {
@@ -53,9 +53,9 @@ func (DBConnection *MariaDBPlugin) ValidateUser(userName string, password []byte
 	}
 	result := bcrypt.CompareHashAndPassword([]byte(userPassword), password)
 	if result == nil {
-		logging.LogInterface.WriteLog("MariaDBPlugin", "ValidateUser", userName, "SUCCESS", []string{"Username and Password Correct", userName})
+		logging.WriteLog(logging.LogLevelError, "MariaDBPlugin/ValidateUser", userName, logging.ResultSuccess, []string{"Username and Password Correct", userName})
 	} else {
-		logging.LogInterface.WriteLog("MariaDBPlugin", "ValidateUser", userName, "ERROR", []string{"Password incorrect", userName})
+		logging.WriteLog(logging.LogLevelError, "MariaDBPlugin/ValidateUser", userName, logging.ResultFailure, []string{"Password incorrect", userName})
 	}
 	return result
 }
@@ -66,7 +66,7 @@ func (DBConnection *MariaDBPlugin) GetUserID(userName string) (uint64, error) {
 	row := DBConnection.DBHandle.QueryRow("SELECT ID FROM Users WHERE Name = ?", userName)
 	err := row.Scan(&userID)
 	if err != nil {
-		logging.LogInterface.WriteLog("MariaDBPlugin", "GetUserID", userName, "ERROR", []string{"Username does not exist", userName})
+		logging.WriteLog(logging.LogLevelError, "MariaDBPlugin/GetUserID", userName, logging.ResultFailure, []string{"Username does not exist", userName})
 		return 0, err
 	}
 	return userID, nil
@@ -78,7 +78,7 @@ func (DBConnection *MariaDBPlugin) GetUserPermissionSet(userName string) (interf
 	row := DBConnection.DBHandle.QueryRow("SELECT Permissions FROM Users WHERE Name = ?", userName)
 	err := row.Scan(&userPermission)
 	if err != nil {
-		logging.LogInterface.WriteLog("MariaDBPlugin", "GetUserID", userName, "ERROR", []string{"Username does not exist", userName})
+		logging.WriteLog(logging.LogLevelError, "MariaDBPlugin/GetUserID", userName, logging.ResultFailure, []string{"Username does not exist", userName})
 		return 0, err
 	}
 	return interfaces.UserPermission(userPermission), nil
@@ -134,9 +134,9 @@ func (DBConnection *MariaDBPlugin) SetUserPassword(userName string, password []b
 func (DBConnection *MariaDBPlugin) RemoveUser(userName string) error {
 	_, err := DBConnection.DBHandle.Exec("DELETE FROM Users WHERE Name = ?", userName)
 	if err == nil {
-		logging.LogInterface.WriteLog("MariaDBPlugin", "RemoveUser", userName, "SUCCESS", []string{"User removed", userName})
+		logging.WriteLog(logging.LogLevelError, "MariaDBPlugin/RemoveUser", userName, logging.ResultSuccess, []string{"User removed", userName})
 	} else {
-		logging.LogInterface.WriteLog("MariaDBPlugin", "RemoveUser", userName, "ERROR", []string{"User not removed", userName, err.Error()})
+		logging.WriteLog(logging.LogLevelError, "MariaDBPlugin/RemoveUser", userName, logging.ResultFailure, []string{"User not removed", userName, err.Error()})
 	}
 	return err
 }
@@ -173,7 +173,7 @@ func (DBConnection *MariaDBPlugin) GetUserFilter(UserID uint64) (string, error) 
 	var userFilter string
 	err := DBConnection.DBHandle.QueryRow("SELECT SearchFilter FROM Users WHERE ID = ?", UserID).Scan(&userFilter)
 	if err != nil {
-		logging.LogInterface.WriteLog("MariaDBPlugin", "GetUserQueryTags", "*", "ERROR", []string{"Failed to get user filter", err.Error()})
+		logging.WriteLog(logging.LogLevelError, "MariaDBPlugin/GetUserQueryTags", "", logging.ResultFailure, []string{"Failed to get user filter", err.Error()})
 	}
 	return userFilter, nil
 }
@@ -199,7 +199,7 @@ func (DBConnection *MariaDBPlugin) SearchUsers(searchString string, PageStart ui
 	var MaxResults uint64
 	err := DBConnection.DBHandle.QueryRow(sqlCountQuery, queryArray...).Scan(&MaxResults)
 	if err != nil {
-		logging.LogInterface.WriteLog("MariaDBPlugin", "SearchUsers", "*", "ERROR", []string{"Error running search query", sqlCountQuery, err.Error()})
+		logging.WriteLog(logging.LogLevelError, "MariaDBPlugin/SearchUsers", "", logging.ResultFailure, []string{"Error running search query", sqlCountQuery, err.Error()})
 		return nil, 0, err
 	}
 	//

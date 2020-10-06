@@ -33,7 +33,7 @@ import (
 //ResourceRouter handles requests to /resources
 func ResourceRouter(responseWriter http.ResponseWriter, request *http.Request) {
 	urlVariables := mux.Vars(request)
-	logging.LogInterface.WriteLog("ContentRouter", "ResourceRouter", "*", "SUCCESS", []string{"resources" + string(filepath.Separator) + urlVariables["file"]})
+	logging.WriteLog(logging.LogLevelVerbose, "resourcesrouters/ResourceRouter", "", logging.ResultSuccess, []string{"resources" + string(filepath.Separator) + urlVariables["file"]})
 	http.ServeFile(responseWriter, request, path.Join(config.Configuration.HTTPRoot, "resources"+string(filepath.Separator)+urlVariables["file"]))
 }
 
@@ -41,7 +41,7 @@ func ResourceRouter(responseWriter http.ResponseWriter, request *http.Request) {
 func RedirectRouter(responseWriter http.ResponseWriter, request *http.Request) {
 	TemplateInput := getNewTemplateInput(request)
 	TemplateInput.RedirectLink = request.FormValue("RedirectLink")
-	logging.LogInterface.WriteLog("ContentRouter", "RedirectRouter", "*", "INFO", []string{request.FormValue("RedirectLink")})
+	logging.WriteLog(logging.LogLevelVerbose, "resourcesrouters/RedirectRouter", "", logging.ResultInfo, []string{request.FormValue("RedirectLink")})
 	replyWithTemplate("redirect.html", TemplateInput, responseWriter)
 }
 
@@ -54,7 +54,7 @@ func ResourceImageRouter(responseWriter http.ResponseWriter, request *http.Reque
 		}
 	}
 	urlVariables := mux.Vars(request)
-	logging.LogInterface.WriteLog("ContentRouter", "ResourceImageRouter", "*", "SUCCESS", []string{path.Join(config.Configuration.ImageDirectory, urlVariables["file"])})
+	logging.WriteLog(logging.LogLevelVerbose, "resourcesrouters/ResourceImageRouter", "", logging.ResultSuccess, []string{path.Join(config.Configuration.ImageDirectory, urlVariables["file"])})
 	http.ServeFile(responseWriter, request, path.Join(config.Configuration.ImageDirectory, urlVariables["file"]))
 }
 
@@ -124,7 +124,7 @@ func GenerateThumbnail(Name string) error {
 		thumbnailImage := resize.Resize(uint(newWidth), uint(newHeight), originalImage, resize.Lanczos3)
 		return png.Encode(NewFile, thumbnailImage)
 	case ".mpg", ".mov", ".webm", ".avi", ".mp4":
-		logging.LogInterface.WriteLog("resourcesrouters", "GenerateThumbnail", "*", "DEBUG", []string{"Video detected", Name})
+		logging.WriteLog(logging.LogLevelDebug, "resourcesrouters/GenerateThumbnail", "", logging.ResultInfo, []string{"Video detected", Name})
 
 		//Short circuit if can't support with FFMPEG
 		if !config.Configuration.UseFFMPEG {
@@ -137,10 +137,10 @@ func GenerateThumbnail(Name string) error {
 		ffmpegCMD := exec.Command(config.Configuration.FFMPEGPath, "-i", path.Join(config.Configuration.ImageDirectory, Name), "-vf", sizeParam, "-frames:v", "1", path.Join(config.Configuration.ImageDirectory, "thumbs"+string(filepath.Separator)+Name+".png"))
 		_, err := ffmpegCMD.Output()
 		if err != nil {
-			logging.LogInterface.WriteLog("resourcesrouters", "GenerateThumbnail", "*", "ERROR", []string{"Failed to use FFMPEG", Name, err.Error()})
+			logging.WriteLog(logging.LogLevelError, "resourcesrouters/GenerateThumbnail", "", logging.ResultFailure, []string{"Failed to use FFMPEG", Name, err.Error()})
 			return err
 		}
-		logging.LogInterface.WriteLog("resourcesrouters", "GenerateThumbnail", "*", "INFO", []string{"FFMPEG output success", Name})
+		logging.WriteLog(logging.LogLevelInfo, "resourcesrouters/GenerateThumbnail", "", logging.ResultInfo, []string{"FFMPEG output success", Name})
 		return nil
 	default:
 		return errors.New("No thumbnail method for file type")

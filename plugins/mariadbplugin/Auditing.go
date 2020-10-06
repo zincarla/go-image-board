@@ -8,7 +8,7 @@ import (
 func (DBConnection *MariaDBPlugin) AddAuditLog(UserID uint64, Type string, Info string) error {
 	if len(Type) > 40 || len(Info) > 10240 {
 
-		logging.LogInterface.WriteLog("Auditing", "AddAuditLog", "*", "WARN", []string{"either the type, or the info is too long for the audit log table", Type, Info})
+		logging.WriteLog(logging.LogLevelError, "MariaDBPlugin/AddAuditLog", "", logging.ResultFailure, []string{"either the type, or the info is too long for the audit log table", Type, Info})
 		Info = Info[:10240]
 		Type = Type[:40]
 		//return errors.New("either the type, or the info is too long for the audit log table")

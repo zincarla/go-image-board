@@ -169,7 +169,7 @@ func (DBConnection *MariaDBPlugin) SearchImages(Tags []interfaces.TagInformation
 	//Run the count query (Count query does not use start/stride, so run this before we add those)
 	err := DBConnection.DBHandle.QueryRow(sqlCountQuery, queryArray...).Scan(&MaxResults)
 	if err != nil {
-		logging.LogInterface.WriteLog("MariaDBPlugin", "SearchImages", "*", "ERROR", []string{"Error running search query", sqlCountQuery, err.Error()})
+		logging.WriteLog(logging.LogLevelError,"MariaDBPlugin/SearchImages", "", logging.ResultFailure, []string{"Error running search query", sqlCountQuery, err.Error()})
 		return nil, 0, err
 	}
 
@@ -400,7 +400,7 @@ func (DBConnection *MariaDBPlugin) getPrevNexImage(Tags []interfaces.TagInformat
 	//Run the count query (Count query does not use start/stride, so run this before we add those)
 	/*err := DBConnection.DBHandle.QueryRow(sqlCountQuery, queryArray...).Scan(&MaxResults) //Uneeded
 	if err != nil {
-		logging.LogInterface.WriteLog("MariaDBPlugin", "SearchImages", "*", "ERROR", []string{"Error running search query", sqlCountQuery, err.Error()})
+		logging.WriteLog(logging.LogLevelError,"MariaDBPlugin/SearchImages", "", logging.ResultFailure, []string{"Error running search query", sqlCountQuery, err.Error()})
 		return nil, 0, err
 	}*/
 

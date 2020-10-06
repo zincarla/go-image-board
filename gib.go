@@ -39,18 +39,18 @@ func main() {
 	configPath := "." + string(filepath.Separator) + "configuration" + string(filepath.Separator) + "config.json"
 	err := config.LoadConfiguration(configPath)
 	if err != nil {
-		logging.LogInterface.WriteLog("MAIN", "SERVER", "*", "Warning", []string{err.Error(), "Will use/save default file"})
+		logging.WriteLog(logging.LogLevelWarning, "main/main", "", logging.ResultFailure, []string{err.Error(), "Will use/save default file"})
 	}
 	//Add any missing configs
 	fixMissingConfigs()
 	if *generateThumbsOnly {
-		logging.LogInterface.WriteLog("Server", "Generate Thumbnails Flag", "*", "INFO", []string{"Generate thumbnails flag detected. Server will not start and instead just generate thumbnails. This may take some time."})
+		logging.WriteLog(logging.LogLevelInfo, "main/main", "", logging.ResultInfo, []string{"Generate thumbnails flag detected. Server will not start and instead just generate thumbnails. This may take some time."})
 		//We need wait group so that we don't end the application before goroutines
 		var wg sync.WaitGroup
 		//list files
 		files, err := ioutil.ReadDir(config.Configuration.ImageDirectory)
 		if err != nil {
-			logging.LogInterface.WriteLog("main", "generateThumbs", "CLI", "ERROR", []string{err.Error()})
+			logging.WriteLog(logging.LogLevelError, "main/main", "", logging.ResultFailure, []string{"failed to get files to generate new thumbnails", err.Error()})
 			return
 		}
 		//for each image
@@ -73,7 +73,7 @@ func main() {
 			}
 		}
 		wg.Wait() //This will wait for all goroutines to finish
-		logging.LogInterface.WriteLog("Server", "Generate Thumbnails Flag", "*", "SUCCESS", []string{"Finished generating " + strconv.FormatUint(generatedThumbnails, 10) + " new thumbnails."})
+		logging.WriteLog(logging.LogLevelInfo, "main/main", "", logging.ResultSuccess, []string{"Finished generating " + strconv.FormatUint(generatedThumbnails, 10) + " new thumbnails."})
 		return //We do not want to start server if used in cli
 	}
 
@@ -87,15 +87,15 @@ func main() {
 	api.Throttle.Init()
 
 	//If we can, start the database
-	//logging.LogInterface.WriteLog("MAIN", "SERVER", "*", "Information", []string{fmt.Sprintf("%+v", config.Configuration)})
+	//logging.WriteLog("main/main", "", "Information", []string{fmt.Sprintf("%+v", config.Configuration)})
 	if config.Configuration.DBName == "" || config.Configuration.DBPassword == "" || config.Configuration.DBUser == "" || config.Configuration.DBHost == "" {
-		logging.LogInterface.WriteLog("MAIN", "SERVER", "*", "Warning", []string{"Missing database information. (Instance, User, Password?)"})
+		logging.WriteLog(logging.LogLevelCritical, "main/main", "", logging.ResultFailure, []string{"Missing database information. (Instance, User, Password?)"})
 	} else {
 		//Initialize DB Connection
 		database.DBInterface = &mariadbplugin.MariaDBPlugin{}
 		err = database.DBInterface.InitDatabase()
 		if err != nil {
-			logging.LogInterface.WriteLog("MAIN", "SERVER", "*", "ERROR", []string{"Failed to connect to database. Will keep trying. ", err.Error()})
+			logging.WriteLog(logging.LogLevelError, "main/main", "", logging.ResultFailure, []string{"Failed to connect to database. Will keep trying. ", err.Error()})
 			//Wait group for ending server
 			serverEndedWG := &sync.WaitGroup{}
 			serverEndedWG.Add(1)
@@ -121,15 +121,15 @@ func main() {
 			waitCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			//Not defering cancel as this is the main function, instead calling it below after it is uneeded
 			if err := server.Shutdown(waitCtx); err != nil {
-				logging.LogInterface.WriteLog("MAIN", "SERVER", "*", "ERROR", []string{"Error shutting down temp server. ", err.Error()})
+				logging.WriteLog(logging.LogLevelError, "main/main", "", logging.ResultFailure, []string{"Error shutting down temp server. ", err.Error()})
 			}
 			cancel()
 		}
-		logging.LogInterface.WriteLog("MAIN", "SERVER", "*", "INFO", []string{"Successfully connected to database"})
+		logging.WriteLog(logging.LogLevelInfo, "main/main", "", logging.ResultInfo, []string{"Successfully connected to database"})
 		configConfirmed = true
 	}
 	if *generatedHashesOnly {
-		logging.LogInterface.WriteLog("Server", "Generate dHashes Flag", "*", "INFO", []string{"Generate dHashes flag detected. Server will not start and instead just generate dHashes. This will take some time."})
+		logging.WriteLog(logging.LogLevelInfo, "main/main", "", logging.ResultInfo, []string{"Generate dHashes flag detected. Server will not start and instead just generate dHashes. This will take some time."})
 		//We need wait group so that we don't end the application before goroutines
 		var wg sync.WaitGroup
 		//for each image in the database
@@ -139,14 +139,14 @@ func main() {
 			images, maxCount, err := database.DBInterface.SearchImages([]interfaces.TagInformation{}, page, config.Configuration.PageStride)
 			page += config.Configuration.PageStride
 			if err != nil {
-				logging.LogInterface.WriteLog("MAIN", "SERVER", "*", "ERROR", []string{"Error processing hashes.", err.Error()})
+				logging.WriteLog(logging.LogLevelError, "main/main", "", logging.ResultFailure, []string{"Error processing hashes.", err.Error()})
 				break
 			}
 			if len(images) <= 0 {
-				logging.LogInterface.WriteLog("MAIN", "SERVER", "*", "INFO", []string{"Finished queing images"})
+				logging.WriteLog(logging.LogLevelInfo, "main/main", "", logging.ResultInfo, []string{"Finished queing images"})
 				break
 			}
-			logging.LogInterface.WriteLog("MAIN", "SERVER", "*", "INFO", []string{"Queing", strconv.FormatUint(page, 10), "of", strconv.FormatUint(maxCount, 10)})
+			logging.WriteLog(logging.LogLevelInfo, "main/main", "", logging.ResultInfo, []string{"Queing", strconv.FormatUint(page, 10), "of", strconv.FormatUint(maxCount, 10)})
 			for _, nextImage := range images {
 				var dhashExists error
 				if *missingOnly {
@@ -163,9 +163,9 @@ func main() {
 			}
 			wg.Wait() //This will wait for all goroutines to finish
 		}
-		logging.LogInterface.WriteLog("MAIN", "SERVER", "*", "INFO", []string{"Waiting for images to finish processing"})
+		logging.WriteLog(logging.LogLevelInfo, "main/main", "", logging.ResultInfo, []string{"Waiting for images to finish processing"})
 		wg.Wait() //This will wait for all goroutines to finish
-		logging.LogInterface.WriteLog("Server", "Generate dHashes Flag", "*", "SUCCESS", []string{"Finished generating " + strconv.FormatUint(processedImages, 10) + " new dHashes."})
+		logging.WriteLog(logging.LogLevelInfo, "main/main", "", logging.ResultSuccess, []string{"Finished generating " + strconv.FormatUint(processedImages, 10) + " new dHashes."})
 
 		return //We do not want to start server if used in cli
 	}
@@ -173,10 +173,10 @@ func main() {
 	if config.Configuration.UseTLS {
 		if _, err := os.Stat(config.Configuration.TLSCertPath); err != nil {
 			configConfirmed = false
-			logging.LogInterface.WriteLog("MAIN", "SERVER", "*", "ERROR", []string{"Failed to stat TLS Cert file, does it exist? Does this application have permission to it?"})
+			logging.WriteLog(logging.LogLevelCritical, "main/main", "", logging.ResultFailure, []string{"Failed to stat TLS Cert file, does it exist? Does this application have permission to it?"})
 		} else if _, err := os.Stat(config.Configuration.TLSKeyPath); err != nil {
 			configConfirmed = false
-			logging.LogInterface.WriteLog("MAIN", "SERVER", "*", "ERROR", []string{"Failed to stat TLS Key file, does it exist? Does this application have permission to it?"})
+			logging.WriteLog(logging.LogLevelCritical, "main/main", "", logging.ResultFailure, []string{"Failed to stat TLS Key file, does it exist? Does this application have permission to it?"})
 		}
 	}
 	//Setup request routers
@@ -187,7 +187,6 @@ func main() {
 		//Placing the rename function here, we need a validated connection to database for this to work
 		if *renameFilesOnly {
 			renameAllImages()
-
 			return //We only wanted to rename
 		}
 		//Web routers
@@ -240,15 +239,15 @@ func main() {
 		MaxHeaderBytes: config.Configuration.MaxHeaderBytes,
 	}
 	//Serve requests. Log on failure.
-	logging.LogInterface.WriteLog("MAIN", "SERVER", "*", "INFO", []string{"Server now listening"})
+	logging.WriteLog(logging.LogLevelInfo, "main/main", "", logging.ResultInfo, []string{"Server now listening"})
 	if config.Configuration.UseTLS == false || configConfirmed == false {
 		err = server.ListenAndServe()
 	} else {
-		logging.LogInterface.WriteLog("MAIN", "SERVER", "*", "INFO", []string{"via tls"})
+		logging.WriteLog(logging.LogLevelInfo, "main/main", "", logging.ResultInfo, []string{"via tls"})
 		err = server.ListenAndServeTLS(config.Configuration.TLSCertPath, config.Configuration.TLSKeyPath)
 	}
 	if err != nil {
-		logging.LogInterface.WriteLog("MAIN", "SERVER", "*", "ERROR", []string{err.Error()})
+		logging.WriteLog(logging.LogLevelCritical, "main/main", "", logging.ResultFailure, []string{err.Error()})
 	}
 }
 
@@ -288,8 +287,8 @@ func fixMissingConfigs() {
 
 func badConfigServerListenAndServe(serverEndedWG *sync.WaitGroup, server *http.Server) {
 	defer serverEndedWG.Done()
-	logging.LogInterface.WriteLog("MAIN", "SERVER", "*", "INFO", []string{"Temp server now listening"})
+	logging.WriteLog(logging.LogLevelInfo, "main/main", "", logging.ResultInfo, []string{"Temp server now listening"})
 	if err := server.ListenAndServe(); err != http.ErrServerClosed {
-		logging.LogInterface.WriteLog("MAIN", "SERVER", "*", "ERROR", []string{"Error occured on temp server stop", err.Error()})
+		logging.WriteLog(logging.LogLevelError, "main/main", "", logging.ResultFailure, []string{"Error occured on temp server stop", err.Error()})
 	}
 }
