@@ -69,6 +69,10 @@ type ConfigurationSettings struct {
 	ShowSimilarOnImages bool
 	//TargetLogLevel increase or decrease log verbosity
 	TargetLogLevel int64
+	//LoggingWhiteList regex based white-list for logging
+	LoggingWhiteList string
+	//LoggingWhiteList regex based white-list for logging
+	LoggingBlackList string
 }
 
 //SessionStore contains cookie information

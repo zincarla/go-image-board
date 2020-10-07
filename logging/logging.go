@@ -1,7 +1,6 @@
 package logging
 
 import (
-	"go-image-board/config"
 	"go-image-board/interfaces"
 )
 
@@ -10,9 +9,7 @@ var LogInterface interfaces.LogPlugin
 
 //WriteLog writes logs to the back end logger with filtering based on config settings
 func WriteLog(logLevel int64, logSource string, user string, result string, details []string) {
-	if logLevel <= config.Configuration.TargetLogLevel {
-		LogInterface.WriteLog(logLevel, logSource, user, result, details)
-	}
+	LogInterface.WriteLog(logLevel, logSource, user, result, details)
 }
 
 //Is the log referencing a success or failure?
