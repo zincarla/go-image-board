@@ -35,6 +35,12 @@ func ImageQueryRouter(responseWriter http.ResponseWriter, request *http.Request)
 		TemplateInput.ViewMode = "slideshow"
 		_, _, session := getSessionInformation(request)
 		session.Values["ViewMode"] = "slideshow"
+		if request.FormValue("slideshowspeed") != "" {
+			parsedSSS, err := strconv.ParseInt(request.FormValue("slideshowspeed"), 10, 64)
+			if err == nil && parsedSSS > 0 {
+				session.Values["slideshowspeed"] = parsedSSS
+			}
+		}
 		session.Save(request, responseWriter)
 	} else if request.FormValue("ViewMode") != "" { //default to grid on invalid modes
 		TemplateInput.ViewMode = "grid"

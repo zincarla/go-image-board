@@ -16,7 +16,8 @@
 				{{end}}
 				<script>
 					function OnLoadStartNextSlideTimer() {
-						setTimeout(RedirectNextSlide, 30000) //30seconds
+						var time = {{.SlideShowSpeed}}
+						setTimeout(RedirectNextSlide, time*1000) //30seconds
 					}
 					function RedirectNextSlide() {
 						window.location.href = "/images?SearchType=Random&SearchTerms="+encodeURI("{{.OldQuery}}");

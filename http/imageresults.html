@@ -13,9 +13,14 @@
 					Stream View
 				</a>
 				{{end}}
-				<br><a href="/images?SearchTerms={{.OldQuery}}&ViewMode=slideshow">
-					SlideShow View
-				</a>
+				<br>
+				<a href="#" onclick="ToggleFormDisplay('startSlideShow'); return false;">SlideShow</a>
+					<form method="GET" action="/images" id="startSlideShow" class="displayHidden">
+						<input type="hidden" value="{{.OldQuery}}" name="SearchTerms">
+						<input type="hidden" value="slideshow" name="ViewMode">
+						<label>Speed (Seconds)</label><input type="number" value="{{.SlideShowSpeed}}" name="slideshowspeed">
+						<input type="submit" value="Start Slideshow">
+					</form>
 				<ul>
 				{{$OldQuery := .OldQuery}}
 				{{if .Tags}}

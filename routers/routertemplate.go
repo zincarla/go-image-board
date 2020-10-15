@@ -46,6 +46,8 @@ type templateInput struct {
 	NextMemberID uint64
 	//ViewMode changes view mode, can be either "" for normal, stream, to view full images in stream, or slideshow for a auto-playing slideshow
 	ViewMode string
+	//SlideShowSpeed controls speed of slideshow in seconds
+	SlideShowSpeed int64
 	//RequestStart is start time for a user request
 	RequestStart time.Time
 	//RequestTime is time it took to process a user request in MS
@@ -119,6 +121,13 @@ func getNewTemplateInput(request *http.Request) templateInput {
 		TemplateInput.ViewMode = "slideshow"
 	} else {
 		TemplateInput.ViewMode = "grid"
+	}
+
+	slideShowSpeed, isOk := session.Values["slideshowspeed"].(int64)
+	if isOk {
+		TemplateInput.SlideShowSpeed = slideShowSpeed
+	} else {
+		TemplateInput.SlideShowSpeed = 30
 	}
 
 	//Grab user query information
