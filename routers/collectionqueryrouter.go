@@ -7,6 +7,9 @@ import (
 	"go-image-board/logging"
 	"net/http"
 	"net/url"
+	"os"
+	"path"
+	"path/filepath"
 	"strconv"
 )
 
@@ -123,6 +126,11 @@ func CollectionsRouter(responseWriter http.ResponseWriter, request *http.Request
 			if err != nil {
 				TemplateInput.Message += "Failed to delete image. "
 				go WriteAuditLogByName(TemplateInput.UserName, "DELETE-IMAGE", TemplateInput.UserName+" failed to delete image.")
+			} else {
+				//Delete Image from Disk
+				go os.Remove(path.Join(config.Configuration.ImageDirectory, ImageInfo.Location))
+				//Delete thumbnail from disk
+				go os.Remove(path.Join(config.Configuration.ImageDirectory, "thumbs"+string(filepath.Separator)+ImageInfo.Location+".png"))
 			}
 		}
 
