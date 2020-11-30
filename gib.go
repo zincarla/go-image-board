@@ -221,6 +221,8 @@ func main() {
 				logging.WriteLog(logging.LogLevelError, "main/main", "", logging.ResultFailure, []string{"Failed to get image from database due to an unexpected db error, it will be skipped", file.Name(), err.Error()})
 			}
 		}
+
+		return //We do not want to start server if used in cli
 	}
 	//Verify TLS Settings
 	if config.Configuration.UseTLS {
