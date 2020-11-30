@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"flag"
 	"go-image-board/config"
 	"go-image-board/database"
@@ -15,6 +16,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"path"
 	"path/filepath"
 	"strconv"
 	"sync"
@@ -29,6 +31,7 @@ func main() {
 	generatedHashesOnly := flag.Bool("dhashonly", false, "Regenerates all dhashes. You should run this if you change hash method, or after updating past 1.0.3.8")
 	missingOnly := flag.Bool("missingonly", false, "When used with dhashonly or thumbsonly, prevents deleting pre-existing entries.")
 	renameFilesOnly := flag.Bool("renameonly", false, "Renames all posts and corrects the names in the database. Use if changing naming convention of files.")
+	removeOrphanFiles := flag.Bool("removeorphanfiles", false, "Removes images and thumbnails that do not have an associated database entry.")
 	flag.Parse()
 
 	//Load succeeded
@@ -172,6 +175,52 @@ func main() {
 		logging.WriteLog(logging.LogLevelInfo, "main/main", "", logging.ResultSuccess, []string{"Finished generating " + strconv.FormatUint(processedImages, 10) + " new dHashes."})
 
 		return //We do not want to start server if used in cli
+	}
+	if *removeOrphanFiles {
+		//Scan image directory
+		files, err := ioutil.ReadDir(config.Configuration.ImageDirectory)
+		if err != nil {
+			logging.WriteLog(logging.LogLevelCritical, "main/main", "", logging.ResultFailure, []string{"Failed to get images from directory", err.Error()})
+			return
+		}
+		for _, file := range files {
+			//Search database for matching image entry
+			_, err := database.DBInterface.GetImageByFileName(file.Name())
+			if err != nil && err == sql.ErrNoRows {
+				logging.WriteLog(logging.LogLevelWarning, "main/main", "", logging.ResultInfo, []string{"Failed to get image from database, it will be deleted", file.Name()})
+				//If database entry does not exist, delete the image
+				err = os.Remove(path.Join(config.Configuration.ImageDirectory, file.Name()))
+				if err != nil {
+					logging.WriteLog(logging.LogLevelError, "main/main", "", logging.ResultFailure, []string{"Failed to delete image", file.Name(), err.Error()})
+				}
+			} else if err != nil {
+				logging.WriteLog(logging.LogLevelError, "main/main", "", logging.ResultFailure, []string{"Failed to get image from database due to an unexpected db error, it will be skipped", file.Name(), err.Error()})
+			}
+		}
+		//Rinse&repeat with the thumbnails
+		files, err = ioutil.ReadDir(path.Join(config.Configuration.ImageDirectory, "thumbs"))
+		if err != nil {
+			logging.WriteLog(logging.LogLevelCritical, "main/main", "", logging.ResultFailure, []string{"Failed to get images from directory", err.Error()})
+			return
+		}
+		for _, file := range files {
+			//Search database for matching image entry
+			imageName := file.Name()
+			if len(imageName) > 4 { //Strip .png to get original name
+				imageName = imageName[:len(imageName)-4]
+			}
+			_, err := database.DBInterface.GetImageByFileName(imageName)
+			if err != nil && err == sql.ErrNoRows {
+				logging.WriteLog(logging.LogLevelWarning, "main/main", "", logging.ResultInfo, []string{"Failed to get image from database, it will be deleted", file.Name()})
+				//If database entry does not exist, delete the image
+				err = os.Remove(path.Join(config.Configuration.ImageDirectory, file.Name()))
+				if err != nil {
+					logging.WriteLog(logging.LogLevelError, "main/main", "", logging.ResultFailure, []string{"Failed to delete thumbnail", file.Name(), err.Error()})
+				}
+			} else if err != nil {
+				logging.WriteLog(logging.LogLevelError, "main/main", "", logging.ResultFailure, []string{"Failed to get image from database due to an unexpected db error, it will be skipped", file.Name(), err.Error()})
+			}
+		}
 	}
 	//Verify TLS Settings
 	if config.Configuration.UseTLS {
