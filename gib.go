@@ -213,7 +213,7 @@ func main() {
 			if err != nil && err == sql.ErrNoRows {
 				logging.WriteLog(logging.LogLevelWarning, "main/main", "", logging.ResultInfo, []string{"Failed to get image from database, it will be deleted", file.Name()})
 				//If database entry does not exist, delete the image
-				err = os.Remove(path.Join(config.Configuration.ImageDirectory, file.Name()))
+				err = os.Remove(path.Join(path.Join(config.Configuration.ImageDirectory, "thumbs"), file.Name()))
 				if err != nil {
 					logging.WriteLog(logging.LogLevelError, "main/main", "", logging.ResultFailure, []string{"Failed to delete thumbnail", file.Name(), err.Error()})
 				}
