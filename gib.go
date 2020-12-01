@@ -63,6 +63,9 @@ func main() {
 		//for each image
 		generatedThumbnails := uint64(0)
 		for _, file := range files {
+			if file.IsDir() {
+				continue
+			}
 			//Delete thumbnail
 			thumbNailPath := config.Configuration.ImageDirectory + string(filepath.Separator) + "thumbs" + string(filepath.Separator) + file.Name() + ".png"
 			if _, err := os.Stat(thumbNailPath); *missingOnly == false || (err != nil && os.IsNotExist(err)) {
@@ -184,6 +187,9 @@ func main() {
 			return
 		}
 		for _, file := range files {
+			if file.IsDir() {
+				continue
+			}
 			//Search database for matching image entry
 			_, err := database.DBInterface.GetImageByFileName(file.Name())
 			if err != nil && err == sql.ErrNoRows {
@@ -204,6 +210,9 @@ func main() {
 			return
 		}
 		for _, file := range files {
+			if file.IsDir() {
+				continue
+			}
 			//Search database for matching image entry
 			imageName := file.Name()
 			if len(imageName) > 4 { //Strip .png to get original name
