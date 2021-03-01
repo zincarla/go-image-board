@@ -129,7 +129,7 @@ func ValidateAPIUserWriteAccess(responseWriter http.ResponseWriter, request *htt
 	//Get user permission info
 	permissions, err := database.DBInterface.GetUserPermissionSet(UserName)
 	if err != nil {
-		ReplyWithJSONError(responseWriter, request, "Could not validate your permission, internal databse error", UserName, http.StatusForbidden)
+		ReplyWithJSONError(responseWriter, request, "Could not validate your permission, internal database error", UserName, http.StatusForbidden)
 		return false, permissions
 	}
 	//Validate Permission to delete using api

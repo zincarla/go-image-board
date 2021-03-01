@@ -121,7 +121,7 @@ function GenerateUserSearchMenu(searchQuery, pageStride, pageOffset, maxCount, t
     pageMenu = "<a href=\"#\" onclick=\"return SearchUsers('"+formID+"', 0);\">&#x3C;&#x3C;</a>"
     //Short circuit on param issues
     if (pageOffset < 0) {
-        pageOffset = 0
+        pageOffset = 0;
     }
     if (pageStride < 0 || maxCount <=0) {
         document.getElementById(targetID).innerHTML = "1";
@@ -129,28 +129,121 @@ function GenerateUserSearchMenu(searchQuery, pageStride, pageOffset, maxCount, t
     }
 
     lastPage = Math.ceil(maxCount / pageStride);
-    maxPage = lastPage
-    currentPage = Math.floor(pageOffset/pageStride) + 1
-    minPage = currentPage -3
+    maxPage = lastPage;
+    currentPage = Math.floor(pageOffset/pageStride) + 1;
+    minPage = currentPage -3;
     if (minPage < 1) {
-		minPage = 1
+		minPage = 1;
 	}
 	if (maxPage > currentPage+3) {
-		maxPage = currentPage + 3
+		maxPage = currentPage + 3;
     }
     
     for (processPage = minPage; processPage <= maxPage; processPage++) {
         if (processPage != currentPage) {
-            pageMenu = pageMenu + ", <a href=\"#\" onclick=\"return SearchUsers('"+formID+"', "+((processPage-1)*pageStride)+");\">"+processPage+"</a>"
+            pageMenu = pageMenu + ", <a href=\"#\" onclick=\"return SearchUsers('"+formID+"', "+((processPage-1)*pageStride)+");\">"+processPage+"</a>";
         } else {
-            pageMenu = pageMenu + ", "+processPage
+            pageMenu = pageMenu + ", "+processPage;
         }
     }
 
-    pageMenu = pageMenu + ", <a href=\"#\" onclick=\"return SearchUsers('"+formID+"', "+((lastPage-1)*pageStride)+");\">&#x3E;&#x3E;</a>"
+    pageMenu = pageMenu + ", <a href=\"#\" onclick=\"return SearchUsers('"+formID+"', "+((lastPage-1)*pageStride)+");\">&#x3E;&#x3E;</a>";
 
     document.getElementById(targetID).innerHTML = pageMenu;
 }
+
+//Helper functions for API
+function GetImageType(path) {
+    text = "";
+
+    path = "."+path.toLowerCase().split('.').pop();
+
+    switch(path) {
+        case ".wav":
+        case ".mp3":
+        case ".ogg":
+            text = "audio";
+            break;
+        case ".mpg":
+        case ".mov":
+        case ".webm":
+        case ".avi":
+        case ".mp4":
+        case ".gif":
+            text = "video";
+            break;
+        default:
+            text = "image";
+    } 
+
+    return text;
+}
+function GetEmbedForContent(imageLocation) {
+    ToReturn = ""
+    
+    ext = "."+imageLocation.toLowerCase().split('.').pop();
+    console.log("Path for GetEmbedContent is "+imageLocation+" with extension of "+ext);
+
+	switch(ext) {
+        case ".jpg":
+        case ".jpeg":
+        case ".bmp":
+        case ".gif":
+        case ".png":
+        case ".svg":
+        case ".webp":
+        case ".tiff":
+        case ".tif":
+        case ".jfif":
+            ToReturn = "<img src=\"/images/" + imageLocation + "\" alt=\"" + imageLocation + "\" id=\"IMGContent\" />";
+            break;
+        case ".mpg":
+        case ".mov":
+        case ".webm":
+        case ".avi":
+        case ".mp4":
+        case ".mp3":
+        case ".ogg":
+            ToReturn = "<video controls loop> <source src=\"/images/" + imageLocation + "\" type=\"" + getMIME(ext, "video/mp4") + "\">Your browser does not support the video tag.</video>";
+            break;
+        case ".wav":
+            ToReturn = "<audio controls loop> <source src=\"/images/" + imageLocation + "\" type=\"" + getMIME(ext, "audio/wav") + "\">Your browser does not support the audio tag.</audio>";
+            break;
+        default:
+            ToReturn = "<p>File format not supported. Click download.</p>";
+    }
+
+    console.log("Return for GetEmbedContent is "+ToReturn);
+    
+    wrapper = document.createElement('div');
+    wrapper.innerHTML= ToReturn;
+
+	return wrapper.firstChild;
+}
+function getMIME(extension, fallback) {
+	switch (extension) {
+	case ".mp4":
+		return "video/mp4"
+	case ".webm":
+		return "video/webm"
+	case ".avi":
+		return "video/avi"
+	case ".mpg":
+		return "video/mpeg"
+	case ".mov":
+		return "video/quicktime"
+	case ".ogg":
+		return "video/ogg"
+	case ".mp3":
+		return "audio/mpeg3"
+	case ".wav":
+		return "audio/wav"
+	default:
+		return fallback
+	}
+}
+
+
 
 function CorrectImageOrient(imgID) {
     var imgElement = document.getElementById(imgID);

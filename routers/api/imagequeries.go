@@ -31,7 +31,6 @@ func ImageAPIRouter(responseWriter http.ResponseWriter, request *http.Request) {
 	if !UserAPIValidated {
 		return //User not logged in and was already handled
 	}
-
 	//Validate Permission to use api
 	UserAPIWriteValidated, permissions := ValidateAPIUserWriteAccess(responseWriter, request, UserName)
 	if !UserAPIWriteValidated {
@@ -40,7 +39,6 @@ func ImageAPIRouter(responseWriter http.ResponseWriter, request *http.Request) {
 
 	//Get variables for URL mux from Gorilla
 	urlVariables := mux.Vars(request)
-
 	if request.Method == http.MethodGet {
 		//Query for a images's information, will return ImageInformation
 		requestedID := urlVariables["ImageID"]

@@ -447,7 +447,7 @@ func ImageRouter(responseWriter http.ResponseWriter, request *http.Request) {
 	}
 
 	if TemplateInput.ViewMode == "slideshow" {
-		replyWithTemplate("image-slideshow.html", TemplateInput, responseWriter)
+		replyWithTemplate("image-slideshow-js.html", TemplateInput, responseWriter)
 		return
 	}
 
