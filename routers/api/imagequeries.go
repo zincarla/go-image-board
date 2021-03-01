@@ -12,6 +12,7 @@ import (
 	"path"
 	"path/filepath"
 	"strconv"
+	"strings"
 
 	"github.com/gorilla/mux"
 )
@@ -141,6 +142,18 @@ func ImagesAPIRouter(responseWriter http.ResponseWriter, request *http.Request) 
 				logging.WriteLog(logging.LogLevelError, "imagequeries/ImagesAPIRouter", UserName, logging.ResultFailure, []string{"Failed to load user's filter", err.Error()})
 			} else {
 				userQTags = interfaces.RemoveDuplicateTags(append(userQTags, userFilterTags...))
+			}
+
+			//Return random image if requested
+			if strings.ToLower(request.FormValue("SearchType")) == "random" {
+				imageInfo, err := database.DBInterface.GetRandomImage(userQTags)
+				if err == nil {
+					ReplyWithJSON(responseWriter, request, ImageSearchResult{Images: []interfaces.ImageInformation{imageInfo}, ResultCount: 1, ServerStride: pageStride}, UserName)
+					return
+				}
+				logging.WriteLog(logging.LogLevelError, "imagequeries/ImagesAPIRouter", UserName, logging.ResultFailure, []string{"Failed to perform random query", err.Error()})
+				ReplyWithJSONError(responseWriter, request, "failed query", UserName, http.StatusInternalServerError)
+				return
 			}
 
 			//Perform Query
