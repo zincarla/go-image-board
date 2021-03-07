@@ -4,13 +4,13 @@
 		<div id="BodyContent">
 			<div id="SideMenu" class="cellDefaultHidden">
 				{{template "mainSearchForm.html" .}}
-				{{if ne .UserID 0}}
+				{{if ne .UserInformation.ID 0}}
 				<a href="/logon?command=logout">Logout</a>
 				{{end}}
 			</div>
 			<div id="ImageGridContainer">
 				<div class="narrowCenteredContainer">
-					{{if eq .UserID 0}}
+					{{if eq .UserInformation.ID 0}}
 					<form method="post" action="/logon" id="logonForm" class="display{{if ne .QuestionOne ""}}Hidden{{else}}Block{{end}}">
 						<h2>Logon</h2><br>
 						UserName: <input type="text" name="userName"/><br>
@@ -25,10 +25,10 @@
 					
 					<form method="post" action="/logon" id="resetPasswordForm" class="display{{if ne .QuestionOne ""}}Block{{else}}Hidden{{end}}">
 						<h2>Reset Password</h2><br>
-						{{if eq .UserName ""}}
+						{{if eq .UserInformation.Name ""}}
 						UserName: <input type="text" name="userName"/><br>
 						{{else}}
-						<input type="hidden" name="userName" value="{{.UserName}}"/><br>
+						<input type="hidden" name="userName" value="{{.UserInformation.Name}}"/><br>
 						{{end}}
 						{{if ne .QuestionOne ""}}
 						Question 1: {{.QuestionOne}}<br>
@@ -62,7 +62,7 @@
 					{{else}}
 					<form method="post" action="/logon" id="changePWForm">
 						<h2>Change Password</h2><br>
-						UserName: <input type="text" name="userName" value="{{.UserName}}"/><br>
+						UserName: <input type="text" name="userName" value="{{.UserInformation.Name}}"/><br>
 						Current Password: <input type="password" name="oldpassword"/><br>
 						New Password: <input type="password" name="newpassword"/><br>
 						Confirm New Password: <input type="password" name="confirmpassword"/><br>

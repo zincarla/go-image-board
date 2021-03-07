@@ -29,26 +29,22 @@ func CollectionNameAPIRouter(responseWriter http.ResponseWriter, request *http.R
 		return //User not logged in and was already handled
 	}
 
-	if request.Method == http.MethodGet {
-		//Query for a collection's information, will return CollectionInformation
-		requestedName := request.FormValue("CollectionName")
+	//Query for a collection's information, will return CollectionInformation
+	requestedName := request.FormValue("CollectionName")
 
-		if requestedName != "" {
-			collection, err := database.DBInterface.GetCollectionByName(requestedName)
-			if err != nil {
-				if err == sql.ErrNoRows {
-					ReplyWithJSONError(responseWriter, request, "No collection found by that Name", UserName, http.StatusNotFound)
-					return
-				}
-				ReplyWithJSONError(responseWriter, request, "Internal Database Error", UserName, http.StatusInternalServerError)
+	if requestedName != "" {
+		collection, err := database.DBInterface.GetCollectionByName(requestedName)
+		if err != nil {
+			if err == sql.ErrNoRows {
+				ReplyWithJSONError(responseWriter, request, "No collection found by that Name", UserName, http.StatusNotFound)
 				return
 			}
-			ReplyWithJSON(responseWriter, request, collection, UserName)
-		} else {
-			ReplyWithJSONError(responseWriter, request, "Please specify CollectionName", UserName, http.StatusBadRequest)
+			ReplyWithJSONError(responseWriter, request, "Internal Database Error", UserName, http.StatusInternalServerError)
+			return
 		}
+		ReplyWithJSON(responseWriter, request, collection, UserName)
 	} else {
-		ReplyWithJSONError(responseWriter, request, "unknown method used", UserName, http.StatusBadRequest)
+		ReplyWithJSONError(responseWriter, request, "Please specify CollectionName", UserName, http.StatusBadRequest)
 	}
 }
 

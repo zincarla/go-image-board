@@ -23,9 +23,9 @@
 				{{$CanRemoveFromCollection:= .UserPermissions.HasPermission 16384}}
 				{{$CollectionID := .CollectionInfo.ID}}
 
-				{{$IsOwn := eq .ImageContentInfo.UploaderID .UserID}}
+				{{$IsOwn := eq .ImageContentInfo.UploaderID .UserInformation.ID}}
 				{{$CanModifyOwn := and .UserControlsOwn $IsOwn}}
-				{{$UserNotNull := ne .UserName ""}}
+				{{$UserNotNull := ne .UserInformation.Name ""}}
 
 				{{$HasDeletePermissions := or $CanDeleteCollection $CanModifyOwn}}
 				{{$HasRemoveFromPermissions := or $CanRemoveFromCollection $CanModifyOwn}}

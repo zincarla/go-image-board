@@ -5,7 +5,6 @@ import (
 	"go-image-board/database"
 	"go-image-board/logging"
 	"net/http"
-	"net/url"
 	"path"
 	"path/filepath"
 	"strconv"
@@ -13,17 +12,12 @@ import (
 
 //RootRouter serves requests to the root (/)
 func RootRouter(responseWriter http.ResponseWriter, request *http.Request) {
-	TemplateInput := getNewTemplateInput(request)
-	if TemplateInput.UserName == "" && config.Configuration.AccountRequiredToView {
-		http.Redirect(responseWriter, request, "/logon?prevMessage="+url.QueryEscape("Access to this server requires an account"), 302)
-		return
-	}
-	replyWithTemplate("indextemplate.html", TemplateInput, responseWriter)
+	TemplateInput := getNewTemplateInput(responseWriter, request)
+	replyWithTemplate("indextemplate.html", TemplateInput, responseWriter, request)
 }
 
 //BadConfigRouter is served when the config failed to load
 func BadConfigRouter(responseWriter http.ResponseWriter, request *http.Request) {
-	logging.WriteLog(logging.LogLevelVerbose, "rootrouter/BadConfigRouter", "", logging.ResultSuccess, []string{path.Join(config.Configuration.HTTPRoot, "resources"+string(filepath.Separator)+"updateconfig.html")})
 	//Do not cache this file
 	//Otherwise can cause headaches once issue is fixed and server is rebooted as client will just reshow config instead of working service
 	responseWriter.Header().Add("Cache-Control", "no-cache, private, max-age=0")

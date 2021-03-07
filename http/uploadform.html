@@ -8,7 +8,7 @@
 			<div id="ImageGridContainer">
 				<div class="narrowCenteredContainer">
 					{{$CanCreateCollection := .UserPermissions.HasPermission 2048}}
-					{{if eq .UserName ""}}
+					{{if eq .UserInformation.Name ""}}
 						<p>You must be logged in, in order to upload files.</p>
 					{{else}}
 					<form action="/image" enctype="multipart/form-data" method="post">

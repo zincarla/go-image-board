@@ -13,9 +13,9 @@
 				{{$CanSourceImage := .UserPermissions.HasPermission 1024}}
 				{{$CanCreateCollection := .UserPermissions.HasPermission 2048}}
 				{{$CanModifyCollectionMembers := .UserPermissions.HasPermission 16384}}
-				{{$IsOwn := eq .ImageContentInfo.UploaderID .UserID}}
+				{{$IsOwn := eq .ImageContentInfo.UploaderID .UserInformation.ID}}
 				{{$CanModifyOwn := and .UserControlsOwn $IsOwn}}
-				{{$UserNotNull := ne .UserName ""}}
+				{{$UserNotNull := ne .UserInformation.Name ""}}
 				{{$HasTagPermissions := or $CanModifyTags $CanModifyOwn}}
 				{{$HasDeletePermissions := or $CanDeleteImage $CanModifyOwn}}
 				{{$HasVotePermissions := or $CanVoteImage $CanModifyOwn}}
@@ -73,7 +73,11 @@
 					<input type="submit" value="Change Source">
 				</form>
 				{{if .ImageContentInfo.SourceIsURL}}
-				<a href="/redirect?RedirectLink={{.ImageContentInfo.Source}}">Source URL</a>
+				<form action="/redirect" method="POST">
+					<input type="hidden" name="RedirectLink" value="{{.ImageContentInfo.Source}}">
+					{{.CSRF}}
+					<input type="submit" value="Source URL" title="{{.ImageContentInfo.Source}}">
+				</form>
 				{{else}}
 				{{.ImageContentInfo.Source}}
 				{{end}}

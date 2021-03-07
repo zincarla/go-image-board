@@ -23,26 +23,22 @@ import (
 
 //ImageRouter serves requests to /image
 func ImageRouter(responseWriter http.ResponseWriter, request *http.Request) {
-	TemplateInput := getNewTemplateInput(request)
-	if TemplateInput.UserName == "" && config.Configuration.AccountRequiredToView {
-		http.Redirect(responseWriter, request, "/logon?prevMessage="+url.QueryEscape("Access to this server requires an account"), 302)
-		return
-	}
+	TemplateInput := getNewTemplateInput(responseWriter, request)
 	var requestedID uint64
 	var err error
 	var duplicateIDs map[string]uint64
 	//If we are just now uploading the file, then we need to get ID from upload function
 	switch request.FormValue("command") {
 	case "uploadFile":
-		if TemplateInput.UserName == "" {
+		if TemplateInput.UserInformation.Name == "" {
 			//Redirect to logon
-			http.Redirect(responseWriter, request, "/logon?prevMessage="+url.QueryEscape("You must be logged in to upload images"), 302)
+			redirectWithFlash(responseWriter, request, "/logon", "You must be logged in to upload an image", "LogonRequired")
 			return
 		}
-		logging.WriteLog(logging.LogLevelVerbose, "imagerouter/ImageRouter/uploadFile", TemplateInput.UserName, logging.ResultInfo, []string{"Attempting to upload file"})
-		requestedID, duplicateIDs, err = handleImageUpload(request, TemplateInput.UserName)
+		logging.WriteLog(logging.LogLevelVerbose, "imagerouter/ImageRouter/uploadFile", TemplateInput.UserInformation.Name, logging.ResultInfo, []string{"Attempting to upload file"})
+		requestedID, duplicateIDs, err = handleImageUpload(request, TemplateInput.UserInformation.Name)
 		if err != nil {
-			logging.WriteLog(logging.LogLevelError, "imagerouter/ImageRouter/uploadFile", TemplateInput.UserName, logging.ResultFailure, []string{err.Error()})
+			logging.WriteLog(logging.LogLevelError, "imagerouter/ImageRouter/uploadFile", TemplateInput.UserInformation.Name, logging.ResultFailure, []string{err.Error()})
 			TemplateInput.Message = "One or more warnings generated during upload. " + err.Error()
 		}
 		if duplicateIDs != nil && len(duplicateIDs) > 0 {
@@ -62,16 +58,16 @@ func ImageRouter(responseWriter http.ResponseWriter, request *http.Request) {
 		//return
 	case "ChangeVote":
 		sImageID := request.FormValue("ID")
-		if TemplateInput.UserName == "" || TemplateInput.UserID == 0 {
+		if TemplateInput.UserInformation.Name == "" || TemplateInput.UserInformation.ID == 0 {
 			//Redirect to logon
-			http.Redirect(responseWriter, request, "/logon?prevMessage="+url.QueryEscape("You must be logged in to vote on images"), 302)
+			redirectWithFlash(responseWriter, request, "/logon", "You must be logged in to vote on an image", "LogonRequired")
 			return
 		}
-		logging.WriteLog(logging.LogLevelVerbose, "imagerouter/ImageRouter/ChangeVote", TemplateInput.UserName, logging.ResultInfo, []string{"Attempting to vote on image"})
+		logging.WriteLog(logging.LogLevelVerbose, "imagerouter/ImageRouter/ChangeVote", TemplateInput.UserInformation.Name, logging.ResultInfo, []string{"Attempting to vote on image"})
 
 		requestedID, err = strconv.ParseUint(sImageID, 10, 64)
 		if err != nil {
-			logging.WriteLog(logging.LogLevelError, "imagerouter/ImageRouter", TemplateInput.UserName, logging.ResultFailure, []string{"Failed to parse imageid to vote on"})
+			logging.WriteLog(logging.LogLevelError, "imagerouter/ImageRouter", TemplateInput.UserInformation.Name, logging.ResultFailure, []string{"Failed to parse imageid to vote on"})
 			TemplateInput.Message += "Failed to parse image id to vote on. "
 			break
 		}
@@ -82,8 +78,8 @@ func ImageRouter(responseWriter http.ResponseWriter, request *http.Request) {
 			break
 		}
 
-		if !(TemplateInput.UserPermissions.HasPermission(interfaces.ScoreImage) || (imageInfo.UploaderID == TemplateInput.UserID && config.Configuration.UsersControlOwnObjects)) {
-			go WriteAuditLog(TemplateInput.UserID, "IMAGE-SCORE", TemplateInput.UserName+" failed to score image. No permissions.")
+		if !(TemplateInput.UserPermissions.HasPermission(interfaces.ScoreImage) || (imageInfo.UploaderID == TemplateInput.UserInformation.ID && config.Configuration.UsersControlOwnObjects)) {
+			go WriteAuditLog(TemplateInput.UserInformation.ID, "IMAGE-SCORE", TemplateInput.UserInformation.Name+" failed to score image. No permissions.")
 			TemplateInput.Message += "You do not have permissions to vote on this image. "
 			break
 		}
@@ -99,24 +95,24 @@ func ImageRouter(responseWriter http.ResponseWriter, request *http.Request) {
 			TemplateInput.Message += "Score must be between -10 and 10"
 			break
 		}
-		if err := database.DBInterface.UpdateUserVoteScore(TemplateInput.UserID, requestedID, Score); err != nil {
-			logging.WriteLog(logging.LogLevelError, "imagerouter/ImageRouter/ChangeVota", TemplateInput.UserName, logging.ResultFailure, []string{"Failed to set vote in database", err.Error()})
+		if err := database.DBInterface.UpdateUserVoteScore(TemplateInput.UserInformation.ID, requestedID, Score); err != nil {
+			logging.WriteLog(logging.LogLevelError, "imagerouter/ImageRouter/ChangeVota", TemplateInput.UserInformation.Name, logging.ResultFailure, []string{"Failed to set vote in database", err.Error()})
 			TemplateInput.Message += "Failed to set vote in database, internal error. "
 			break
 		}
 		TemplateInput.Message += "Successfully changed vote! "
 	case "ChangeSource":
 		sImageID := request.FormValue("ID")
-		if TemplateInput.UserName == "" || TemplateInput.UserID == 0 {
+		if TemplateInput.UserInformation.Name == "" || TemplateInput.UserInformation.ID == 0 {
 			//Redirect to logon
-			http.Redirect(responseWriter, request, "/logon?prevMessage="+url.QueryEscape("You must be logged in to vote on images"), 302)
+			redirectWithFlash(responseWriter, request, "/logon", "You must be logged in to modify an image", "LogonRequired")
 			return
 		}
-		logging.WriteLog(logging.LogLevelVerbose, "imagerouter/ImageRouter/ChangeSource", TemplateInput.UserName, logging.ResultInfo, []string{"Attempting to source an image"})
+		logging.WriteLog(logging.LogLevelVerbose, "imagerouter/ImageRouter/ChangeSource", TemplateInput.UserInformation.Name, logging.ResultInfo, []string{"Attempting to source an image"})
 
 		requestedID, err = strconv.ParseUint(sImageID, 10, 64)
 		if err != nil {
-			logging.WriteLog(logging.LogLevelError, "imagerouter/ImageRouter/ChangeSource", TemplateInput.UserName, logging.ResultFailure, []string{"Failed to parse imageid to vote on"})
+			logging.WriteLog(logging.LogLevelError, "imagerouter/ImageRouter/ChangeSource", TemplateInput.UserInformation.Name, logging.ResultFailure, []string{"Failed to parse imageid to vote on"})
 			TemplateInput.Message += "Failed to parse image id to vote on. "
 			break
 		}
@@ -127,8 +123,8 @@ func ImageRouter(responseWriter http.ResponseWriter, request *http.Request) {
 			break
 		}
 
-		if !(TemplateInput.UserPermissions.HasPermission(interfaces.SourceImage) || (imageInfo.UploaderID == TemplateInput.UserID && config.Configuration.UsersControlOwnObjects)) {
-			go WriteAuditLog(TemplateInput.UserID, "IMAGE-SOURCE", TemplateInput.UserName+" failed to source image. No permissions.")
+		if !(TemplateInput.UserPermissions.HasPermission(interfaces.SourceImage) || (imageInfo.UploaderID == TemplateInput.UserInformation.ID && config.Configuration.UsersControlOwnObjects)) {
+			go WriteAuditLog(TemplateInput.UserInformation.ID, "IMAGE-SOURCE", TemplateInput.UserInformation.Name+" failed to source image. No permissions.")
 			TemplateInput.Message += "You do not have permissions to change the source of this image. "
 			break
 		}
@@ -138,23 +134,23 @@ func ImageRouter(responseWriter http.ResponseWriter, request *http.Request) {
 		Source := request.FormValue("NewSource")
 
 		if err := database.DBInterface.SetImageSource(requestedID, Source); err != nil {
-			logging.WriteLog(logging.LogLevelError, "imagerouter/ImageRouter/ChangeSource", TemplateInput.UserName, logging.ResultFailure, []string{"Failed to set source in database", err.Error()})
+			logging.WriteLog(logging.LogLevelError, "imagerouter/ImageRouter/ChangeSource", TemplateInput.UserInformation.Name, logging.ResultFailure, []string{"Failed to set source in database", err.Error()})
 			TemplateInput.Message += "Failed to set source in database, internal error. "
 			break
 		}
 		TemplateInput.Message += "Successfully changed source! "
 	case "ChangeName":
 		sImageID := request.FormValue("ID")
-		if TemplateInput.UserName == "" || TemplateInput.UserID == 0 {
+		if TemplateInput.UserInformation.Name == "" || TemplateInput.UserInformation.ID == 0 {
 			//Redirect to logon
-			http.Redirect(responseWriter, request, "/logon?prevMessage="+url.QueryEscape("You must be logged in to vote on images"), 302)
+			redirectWithFlash(responseWriter, request, "/logon", "You must be logged in to modify an image", "LogonRequired")
 			return
 		}
-		logging.WriteLog(logging.LogLevelVerbose, "imagerouter/ImageRouter/ChangeName", TemplateInput.UserName, logging.ResultInfo, []string{"Attempting to name an image"})
+		logging.WriteLog(logging.LogLevelVerbose, "imagerouter/ImageRouter/ChangeName", TemplateInput.UserInformation.Name, logging.ResultInfo, []string{"Attempting to name an image"})
 
 		requestedID, err = strconv.ParseUint(sImageID, 10, 64)
 		if err != nil {
-			logging.WriteLog(logging.LogLevelError, "imagerouter/ImageRouter/ChangeName", TemplateInput.UserName, logging.ResultFailure, []string{"Failed to parse imageid to change name on"})
+			logging.WriteLog(logging.LogLevelError, "imagerouter/ImageRouter/ChangeName", TemplateInput.UserInformation.Name, logging.ResultFailure, []string{"Failed to parse imageid to change name on"})
 			TemplateInput.Message += "Failed to parse image id. "
 			break
 		}
@@ -165,8 +161,8 @@ func ImageRouter(responseWriter http.ResponseWriter, request *http.Request) {
 			break
 		}
 
-		if !(TemplateInput.UserPermissions.HasPermission(interfaces.SourceImage) || (imageInfo.UploaderID == TemplateInput.UserID && config.Configuration.UsersControlOwnObjects)) {
-			go WriteAuditLog(TemplateInput.UserID, "IMAGE-NAME", TemplateInput.UserName+" failed to name image. No permissions.")
+		if !(TemplateInput.UserPermissions.HasPermission(interfaces.SourceImage) || (imageInfo.UploaderID == TemplateInput.UserInformation.ID && config.Configuration.UsersControlOwnObjects)) {
+			go WriteAuditLog(TemplateInput.UserInformation.ID, "IMAGE-NAME", TemplateInput.UserInformation.Name+" failed to name image. No permissions.")
 			TemplateInput.Message += "You do not have permissions to change the name/description of this image. "
 			break
 		}
@@ -177,7 +173,7 @@ func ImageRouter(responseWriter http.ResponseWriter, request *http.Request) {
 		Description := request.FormValue("NewDescription")
 
 		if err := database.DBInterface.UpdateImage(requestedID, Name, Description, nil, nil, nil, nil); err != nil {
-			logging.WriteLog(logging.LogLevelError, "imagerouter/ImageRouter/ChangeName", TemplateInput.UserName, logging.ResultFailure, []string{"Failed to set name in database", err.Error()})
+			logging.WriteLog(logging.LogLevelError, "imagerouter/ImageRouter/ChangeName", TemplateInput.UserInformation.Name, logging.ResultFailure, []string{"Failed to set name in database", err.Error()})
 			TemplateInput.Message += "Failed to set name/description in database, internal error. "
 			break
 		}
@@ -185,7 +181,7 @@ func ImageRouter(responseWriter http.ResponseWriter, request *http.Request) {
 	case "RemoveTag":
 		ImageID := request.FormValue("ID")
 		TagID := request.FormValue("TagID")
-		if TemplateInput.UserName == "" {
+		if TemplateInput.UserInformation.Name == "" {
 			TemplateInput.Message += "You must be logged in to perform that action"
 			break
 		}
@@ -210,9 +206,9 @@ func ImageRouter(responseWriter http.ResponseWriter, request *http.Request) {
 		}
 
 		//Validate permission to upload
-		if TemplateInput.UserPermissions.HasPermission(interfaces.ModifyImageTags) != true && (config.Configuration.UsersControlOwnObjects != true || TemplateInput.UserID != imageInfo.UploaderID) {
+		if TemplateInput.UserPermissions.HasPermission(interfaces.ModifyImageTags) != true && (config.Configuration.UsersControlOwnObjects != true || TemplateInput.UserInformation.ID != imageInfo.UploaderID) {
 			TemplateInput.Message += "User does not have modify permission for tags on images. "
-			go WriteAuditLogByName(TemplateInput.UserName, "REMOVE-IMAGETAG", TemplateInput.UserName+" failed to remove tag from image "+ImageID+". Insufficient permissions. "+TagID)
+			go WriteAuditLogByName(TemplateInput.UserInformation.Name, "REMOVE-IMAGETAG", TemplateInput.UserInformation.Name+" failed to remove tag from image "+ImageID+". Insufficient permissions. "+TagID)
 			break
 		}
 		// /ValidatePermission
@@ -227,20 +223,20 @@ func ImageRouter(responseWriter http.ResponseWriter, request *http.Request) {
 			TemplateInput.Message += "Failed to remove tag. Was it attached in the first place?"
 		} else {
 			TemplateInput.Message += "Tag removed successfully"
-			go WriteAuditLogByName(TemplateInput.UserName, "REMOVE-IMAGETAG", TemplateInput.UserName+" removed tag from image "+ImageID+". tag "+TagID)
+			go WriteAuditLogByName(TemplateInput.UserInformation.Name, "REMOVE-IMAGETAG", TemplateInput.UserInformation.Name+" removed tag from image "+ImageID+". tag "+TagID)
 		}
 
 	case "AddTags":
 		ImageID := request.FormValue("ID")
 		userQuery := request.FormValue("NewTags")
-		if TemplateInput.UserName == "" {
+		if TemplateInput.UserInformation.Name == "" {
 			TemplateInput.Message += "You must be logged in to perform that action"
 			break
 		}
 		//Translate UserID
-		userID, err := database.DBInterface.GetUserID(TemplateInput.UserName)
+		userID, err := database.DBInterface.GetUserID(TemplateInput.UserInformation.Name)
 		if err != nil {
-			logging.WriteLog(logging.LogLevelError, "imagerouter/ImageRouter/AddTags", TemplateInput.UserName, logging.ResultFailure, []string{"Could not get valid user id", err.Error()})
+			logging.WriteLog(logging.LogLevelError, "imagerouter/ImageRouter/AddTags", TemplateInput.UserInformation.Name, logging.ResultFailure, []string{"Could not get valid user id", err.Error()})
 			TemplateInput.Message += "You muse be logged in to perform that action"
 			break
 		}
@@ -264,9 +260,9 @@ func ImageRouter(responseWriter http.ResponseWriter, request *http.Request) {
 			break
 		}
 		//Validate permission to modify tags
-		if TemplateInput.UserPermissions.HasPermission(interfaces.ModifyImageTags) != true && (config.Configuration.UsersControlOwnObjects != true || TemplateInput.UserID != imageInfo.UploaderID) {
+		if TemplateInput.UserPermissions.HasPermission(interfaces.ModifyImageTags) != true && (config.Configuration.UsersControlOwnObjects != true || TemplateInput.UserInformation.ID != imageInfo.UploaderID) {
 			TemplateInput.Message += "User does not have modify permission for tags on images. "
-			go WriteAuditLogByName(TemplateInput.UserName, "ADD-IMAGETAG", TemplateInput.UserName+" failed to add tag to image "+ImageID+". Insufficient permissions. "+userQuery)
+			go WriteAuditLogByName(TemplateInput.UserInformation.Name, "ADD-IMAGETAG", TemplateInput.UserInformation.Name+" failed to add tag to image "+ImageID+". Insufficient permissions. "+userQuery)
 			break
 		}
 		// /ValidatePermission
@@ -290,16 +286,16 @@ func ImageRouter(responseWriter http.ResponseWriter, request *http.Request) {
 				//Create Tag
 				//Validate permissions to create tags
 				if TemplateInput.UserPermissions.HasPermission(interfaces.AddTags) != true {
-					logging.WriteLog(logging.LogLevelError, "imagerouter/ImageRouter/AddTags", TemplateInput.UserName, logging.ResultFailure, []string{"Does not have create tag permission"})
+					logging.WriteLog(logging.LogLevelError, "imagerouter/ImageRouter/AddTags", TemplateInput.UserInformation.Name, logging.ResultFailure, []string{"Does not have create tag permission"})
 					TemplateInput.Message += "Unable to use tag " + tag.Name + " due to insufficient permissions of user to create tags. "
 					// /ValidatePermission
 				} else {
 					tagID, err := database.DBInterface.NewTag(tag.Name, tag.Description, userID)
 					if err != nil {
-						logging.WriteLog(logging.LogLevelError, "imagerouter/ImageRouter/AddTags", TemplateInput.UserName, logging.ResultFailure, []string{"error attempting to create tag", err.Error(), tag.Name})
+						logging.WriteLog(logging.LogLevelError, "imagerouter/ImageRouter/AddTags", TemplateInput.UserInformation.Name, logging.ResultFailure, []string{"error attempting to create tag", err.Error(), tag.Name})
 						TemplateInput.Message += "Unable to use tag " + tag.Name + " due to a database error. "
 					} else {
-						go WriteAuditLog(userID, "CREATE-TAG", TemplateInput.UserName+" created a new tag. "+tag.Name)
+						go WriteAuditLog(userID, "CREATE-TAG", TemplateInput.UserInformation.Name+" created a new tag. "+tag.Name)
 						validatedUserTags = append(validatedUserTags, tagID)
 						tagIDString = tagIDString + ", " + strconv.FormatUint(tagID, 10)
 					}
@@ -309,12 +305,12 @@ func ImageRouter(responseWriter http.ResponseWriter, request *http.Request) {
 		///////////////////
 		if err := database.DBInterface.AddTag(validatedUserTags, iImageID, userID); err != nil {
 			TemplateInput.Message += "Failed to add tag due to database error"
-			logging.WriteLog(logging.LogLevelError, "imagerouter/ImageRouter/AddTags", TemplateInput.UserName, logging.ResultFailure, []string{"error attempting to add tags to file", err.Error(), strconv.FormatUint(iImageID, 10), tagIDString})
+			logging.WriteLog(logging.LogLevelError, "imagerouter/ImageRouter/AddTags", TemplateInput.UserInformation.Name, logging.ResultFailure, []string{"error attempting to add tags to file", err.Error(), strconv.FormatUint(iImageID, 10), tagIDString})
 		}
 	case "ChangeRating":
 		ImageID := request.FormValue("ID")
 		newRating := strings.ToLower(request.FormValue("NewRating"))
-		if TemplateInput.UserName == "" {
+		if TemplateInput.UserInformation.Name == "" {
 			TemplateInput.Message += "You must be logged in to perform that action"
 			break
 		}
@@ -339,9 +335,9 @@ func ImageRouter(responseWriter http.ResponseWriter, request *http.Request) {
 			break
 		}
 		//Validate permission to modify tags
-		if TemplateInput.UserPermissions.HasPermission(interfaces.ModifyImageTags) != true && (config.Configuration.UsersControlOwnObjects != true || TemplateInput.UserID != imageInfo.UploaderID) {
+		if TemplateInput.UserPermissions.HasPermission(interfaces.ModifyImageTags) != true && (config.Configuration.UsersControlOwnObjects != true || TemplateInput.UserInformation.ID != imageInfo.UploaderID) {
 			TemplateInput.Message += "User does not have modify permission for tags on images. "
-			go WriteAuditLogByName(TemplateInput.UserName, "ADD-IMAGERATING", TemplateInput.UserName+" failed to edit rating for image "+ImageID+". Insufficient permissions. "+newRating)
+			go WriteAuditLogByName(TemplateInput.UserInformation.Name, "ADD-IMAGERATING", TemplateInput.UserInformation.Name+" failed to edit rating for image "+ImageID+". Insufficient permissions. "+newRating)
 			break
 		}
 		// /ValidatePermission
@@ -357,7 +353,7 @@ func ImageRouter(responseWriter http.ResponseWriter, request *http.Request) {
 		if err != nil {
 			//No ID? Respond with blank template.
 			TemplateInput.Message += "No image selected. "
-			replyWithTemplate("image.html", TemplateInput, responseWriter)
+			replyWithTemplate("image.html", TemplateInput, responseWriter, request)
 			return
 		}
 		requestedID = parsedValue
@@ -368,7 +364,7 @@ func ImageRouter(responseWriter http.ResponseWriter, request *http.Request) {
 	if err != nil {
 		TemplateInput.Message += "Failed to get image information. "
 		logging.WriteLog(logging.LogLevelError, "imagerouter/ImageRouter", "", logging.ResultFailure, []string{"Failed to get image info for", strconv.FormatUint(requestedID, 10), err.Error()})
-		replyWithTemplate("image.html", TemplateInput, responseWriter)
+		replyWithTemplate("image.html", TemplateInput, responseWriter, request)
 		return
 	}
 
@@ -385,10 +381,10 @@ func ImageRouter(responseWriter http.ResponseWriter, request *http.Request) {
 		userQTags, err := database.DBInterface.GetQueryTags(TemplateInput.OldQuery, false)
 		if err == nil {
 			//if signed in, add user's global filters to query
-			if TemplateInput.UserName != "" {
-				userFilterTags, err := database.DBInterface.GetUserFilterTags(TemplateInput.UserID, false)
+			if TemplateInput.UserInformation.Name != "" {
+				userFilterTags, err := database.DBInterface.GetUserFilterTags(TemplateInput.UserInformation.ID, false)
 				if err != nil {
-					logging.WriteLog(logging.LogLevelError, "imagerouter/ImageRouter", TemplateInput.UserName, logging.ResultFailure, []string{"Failed to load user's filter", err.Error()})
+					logging.WriteLog(logging.LogLevelError, "imagerouter/ImageRouter", TemplateInput.UserInformation.Name, logging.ResultFailure, []string{"Failed to load user's filter", err.Error()})
 					TemplateInput.Message += "Failed to add your global filter to this query. Internal error. "
 				} else {
 					userQTags = interfaces.RemoveDuplicateTags(append(userQTags, userFilterTags...))
@@ -407,7 +403,7 @@ func ImageRouter(responseWriter http.ResponseWriter, request *http.Request) {
 					}
 				}
 			} else {
-				logging.WriteLog(logging.LogLevelError, "imagerouter/ImageRouter", TemplateInput.UserName, logging.ResultFailure, []string{"Failed to get next/prev image", err.Error()})
+				logging.WriteLog(logging.LogLevelError, "imagerouter/ImageRouter", TemplateInput.UserInformation.Name, logging.ResultFailure, []string{"Failed to get next/prev image", err.Error()})
 			}
 		}
 	}
@@ -433,8 +429,8 @@ func ImageRouter(responseWriter http.ResponseWriter, request *http.Request) {
 
 	//Get vote information
 	//Validate permission to upload
-	if TemplateInput.UserName != "" {
-		TemplateInput.ImageContentInfo.UsersVotedScore, err = database.DBInterface.GetUserVoteScore(TemplateInput.UserID, requestedID)
+	if TemplateInput.UserInformation.Name != "" {
+		TemplateInput.ImageContentInfo.UsersVotedScore, err = database.DBInterface.GetUserVoteScore(TemplateInput.UserInformation.ID, requestedID)
 	}
 
 	//Get the image content information based on type (Img, vs video vs...)
@@ -447,11 +443,11 @@ func ImageRouter(responseWriter http.ResponseWriter, request *http.Request) {
 	}
 
 	if TemplateInput.ViewMode == "slideshow" {
-		replyWithTemplate("image-slideshow-js.html", TemplateInput, responseWriter)
+		replyWithTemplate("image-slideshow-js.html", TemplateInput, responseWriter, request)
 		return
 	}
 
-	replyWithTemplate("image.html", TemplateInput, responseWriter)
+	replyWithTemplate("image.html", TemplateInput, responseWriter, request)
 }
 
 type uploadData struct {
@@ -688,10 +684,6 @@ func GetNewImageName(originalName string, fileStream io.Reader) (string, error) 
 
 //UploadFormRouter shows the upload form upon request
 func UploadFormRouter(responseWriter http.ResponseWriter, request *http.Request) {
-	TemplateInput := getNewTemplateInput(request)
-	if TemplateInput.UserName == "" && config.Configuration.AccountRequiredToView {
-		http.Redirect(responseWriter, request, "/logon?prevMessage="+url.QueryEscape("Access to this server requires an account"), 302)
-		return
-	}
-	replyWithTemplate("uploadform.html", TemplateInput, responseWriter)
+	TemplateInput := getNewTemplateInput(responseWriter, request)
+	replyWithTemplate("uploadform.html", TemplateInput, responseWriter, request)
 }

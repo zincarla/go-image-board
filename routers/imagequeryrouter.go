@@ -18,11 +18,7 @@ import (
 
 //ImageQueryRouter serves requests to /images
 func ImageQueryRouter(responseWriter http.ResponseWriter, request *http.Request) {
-	TemplateInput := getNewTemplateInput(request)
-	if TemplateInput.UserName == "" && config.Configuration.AccountRequiredToView {
-		http.Redirect(responseWriter, request, "/logon?prevMessage="+url.QueryEscape("Access to this server requires an account"), 302)
-		return
-	}
+	TemplateInput := getNewTemplateInput(responseWriter, request)
 	userQuery := TemplateInput.OldQuery
 
 	//Change StremView if requested
@@ -51,9 +47,9 @@ func ImageQueryRouter(responseWriter http.ResponseWriter, request *http.Request)
 
 	switch cmd := request.FormValue("command"); cmd {
 	case "delete":
-		if TemplateInput.UserName == "" {
+		if TemplateInput.UserInformation.Name == "" {
 			//Redirect to logon
-			http.Redirect(responseWriter, request, "/logon?prevMessage="+url.QueryEscape("You must be logged in to delete images"), 302)
+			redirectWithFlash(responseWriter, request, "/logon", "You must be logged in to delete an image", "LogonRequired")
 			return
 		}
 		//Get Image ID
@@ -66,24 +62,24 @@ func ImageQueryRouter(responseWriter http.ResponseWriter, request *http.Request)
 		ImageInfo, err := database.DBInterface.GetImage(parsedImageID)
 		if err != nil {
 			TemplateInput.Message += "Failed to delete image. SQL Error. "
-			go WriteAuditLogByName(TemplateInput.UserName, "DELETE-IMAGE", TemplateInput.UserName+" failed to delete image. "+request.FormValue("ID")+", "+err.Error())
+			go WriteAuditLogByName(TemplateInput.UserInformation.Name, "DELETE-IMAGE", TemplateInput.UserInformation.Name+" failed to delete image. "+request.FormValue("ID")+", "+err.Error())
 			break //Cancel delete
 		}
 
 		//Validate Permission to delete
-		if TemplateInput.UserPermissions.HasPermission(interfaces.RemoveImage) != true && (config.Configuration.UsersControlOwnObjects != true || ImageInfo.UploaderID != TemplateInput.UserID) {
+		if TemplateInput.UserPermissions.HasPermission(interfaces.RemoveImage) != true && (config.Configuration.UsersControlOwnObjects != true || ImageInfo.UploaderID != TemplateInput.UserInformation.ID) {
 			TemplateInput.Message += "User does not have delete permission for image. "
-			go WriteAuditLogByName(TemplateInput.UserName, "DELETE-IMAGE", TemplateInput.UserName+" failed to delete image. Insufficient permissions. "+request.FormValue("ID"))
+			go WriteAuditLogByName(TemplateInput.UserInformation.Name, "DELETE-IMAGE", TemplateInput.UserInformation.Name+" failed to delete image. Insufficient permissions. "+request.FormValue("ID"))
 			break
 		}
 
 		//Permission validated, now delete (ImageTags and Images)
 		if err := database.DBInterface.DeleteImage(parsedImageID); err != nil {
 			TemplateInput.Message += "Failed to delete image. SQL Error. "
-			go WriteAuditLogByName(TemplateInput.UserName, "DELETE-IMAGE", TemplateInput.UserName+" failed to delete image. "+request.FormValue("ID")+", "+err.Error())
+			go WriteAuditLogByName(TemplateInput.UserInformation.Name, "DELETE-IMAGE", TemplateInput.UserInformation.Name+" failed to delete image. "+request.FormValue("ID")+", "+err.Error())
 			break //Cancel delete
 		}
-		go WriteAuditLogByName(TemplateInput.UserName, "DELETE-IMAGE", TemplateInput.UserName+" deleted image. "+request.FormValue("ID")+", "+ImageInfo.Name+", "+ImageInfo.Location)
+		go WriteAuditLogByName(TemplateInput.UserInformation.Name, "DELETE-IMAGE", TemplateInput.UserInformation.Name+" deleted image. "+request.FormValue("ID")+", "+ImageInfo.Name+", "+ImageInfo.Location)
 		//Third, delete Image from Disk
 		go os.Remove(path.Join(config.Configuration.ImageDirectory, ImageInfo.Location))
 		//Last delete thumbnail from disk
@@ -104,10 +100,10 @@ func ImageQueryRouter(responseWriter http.ResponseWriter, request *http.Request)
 	userQTags, err := database.DBInterface.GetQueryTags(userQuery, false)
 	if err == nil {
 		//if signed in, add user's global filters to query
-		if TemplateInput.UserName != "" {
-			userFilterTags, err := database.DBInterface.GetUserFilterTags(TemplateInput.UserID, false)
+		if TemplateInput.UserInformation.Name != "" {
+			userFilterTags, err := database.DBInterface.GetUserFilterTags(TemplateInput.UserInformation.ID, false)
 			if err != nil {
-				logging.WriteLog(logging.LogLevelError, "imagequeryrouter/ImageQueryRouter", TemplateInput.UserName, logging.ResultFailure, []string{"Failed to load user's filter", err.Error()})
+				logging.WriteLog(logging.LogLevelError, "imagequeryrouter/ImageQueryRouter", TemplateInput.UserInformation.Name, logging.ResultFailure, []string{"Failed to load user's filter", err.Error()})
 				TemplateInput.Message += "Failed to add your global filter to this query. Internal error. "
 			} else {
 				userQTags = interfaces.RemoveDuplicateTags(append(userQTags, userFilterTags...))
@@ -118,7 +114,7 @@ func ImageQueryRouter(responseWriter http.ResponseWriter, request *http.Request)
 			imageInfo, err := database.DBInterface.GetRandomImage(userQTags)
 			if err == nil {
 				//redirect user to randomly selected image
-				http.Redirect(responseWriter, request, "/image?ID="+strconv.FormatUint(imageInfo.ID, 10)+"&prevMessage="+url.QueryEscape(TemplateInput.Message)+"&SearchTerms="+url.QueryEscape(TemplateInput.OldQuery), 302)
+				http.Redirect(responseWriter, request, "/image?ID="+strconv.FormatUint(imageInfo.ID, 10)+"&SearchTerms="+url.QueryEscape(TemplateInput.OldQuery), 302)
 				return
 			}
 			logging.WriteLog(logging.LogLevelError, "imagequeryrouter/ImageQueryRouter", "", logging.ResultFailure, []string{"Failed to search random image", userQuery, err.Error()})
@@ -150,7 +146,7 @@ func ImageQueryRouter(responseWriter http.ResponseWriter, request *http.Request)
 
 	TemplateInput.PageMenu, err = generatePageMenu(int64(pageStart), int64(pageStride), int64(TemplateInput.TotalResults), "SearchTerms="+url.QueryEscape(userQuery), "/images")
 
-	replyWithTemplate("imageresults.html", TemplateInput, responseWriter)
+	replyWithTemplate("imageresults.html", TemplateInput, responseWriter, request)
 }
 
 //generatePageMenu generates a template.HTML menu given a few numbers. Returns a menu like "<< 1, 2, 3, [4], 5, 6, 7 >>"

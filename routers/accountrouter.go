@@ -15,12 +15,12 @@ import (
 
 //LogonRouter handles requests to /logon
 func LogonRouter(responseWriter http.ResponseWriter, request *http.Request) {
-	TemplateInput := getNewTemplateInput(request)
+	TemplateInput := getNewTemplateInput(responseWriter, request)
 
 	//If logged in
-	if TemplateInput.UserID != 0 {
+	if TemplateInput.UserInformation.ID != 0 {
 		//Get question for challenge
-		oldQOne, _, _, err := database.DBInterface.GetSecurityQuestions(TemplateInput.UserName)
+		oldQOne, _, _, err := database.DBInterface.GetSecurityQuestions(TemplateInput.UserInformation.Name)
 		if err == nil && oldQOne != "" {
 			TemplateInput.QuestionOne = oldQOne
 		}
@@ -42,7 +42,7 @@ func LogonRouter(responseWriter http.ResponseWriter, request *http.Request) {
 				if err != nil {
 					logging.WriteLog(logging.LogLevelError, "accountrouter/LogonRouter", username, logging.ResultFailure, []string{"Account Validation", err.Error()})
 					TemplateInput.Message = "Token Failure"
-					replyWithTemplate("logon.html", TemplateInput, responseWriter)
+					replyWithTemplate("logon.html", TemplateInput, responseWriter, request)
 					return
 				}
 				session.Values["TokenID"] = Token
@@ -51,31 +51,31 @@ func LogonRouter(responseWriter http.ResponseWriter, request *http.Request) {
 				session.Save(request, responseWriter)
 				go WriteAuditLogByName(username, "LOGON", username+" successfully logged on.")
 				logging.WriteLog(logging.LogLevelInfo, "accountrouter/LogonRouter", username, logging.ResultSuccess, []string{"Account Validation"})
-				http.Redirect(responseWriter, request, "/images", 302)
+				redirectWithFlash(responseWriter, request, "/images", "Logged on successfully", "LogonSuccess")
 				return
 			}
 			go WriteAuditLogByName(username, "LOGON", username+" failed to log in. "+err.Error())
 			TemplateInput.Message = "Wrong username or password"
-			replyWithTemplate("logon.html", TemplateInput, responseWriter)
+			replyWithTemplate("logon.html", TemplateInput, responseWriter, request)
 			return
 		}
 		logging.WriteLog(logging.LogLevelError, "accountrouter/LogonRouter", "", logging.ResultFailure, []string{"Account Validation", "Either username, password, or e-mail was left blank, or was not set correctly."})
 		TemplateInput.Message = "Either username, password, or e-mail was left blank, or was not set correctly."
-		replyWithTemplate("logon.html", TemplateInput, responseWriter)
+		replyWithTemplate("logon.html", TemplateInput, responseWriter, request)
 		return
 	case "create":
 		if config.Configuration.AllowAccountCreation == false {
 			logging.WriteLog(logging.LogLevelError, "accountrouter/LogonRouter", "", logging.ResultFailure, []string{"Account Creation", "Not allowed by configuration option."})
 
 			TemplateInput.Message = "Create failed, creations not allowed on this server. (Private?)"
-			replyWithTemplate("logon.html", TemplateInput, responseWriter)
+			replyWithTemplate("logon.html", TemplateInput, responseWriter, request)
 			return
 		}
 		if request.FormValue("password") == "" || request.FormValue("password") != request.FormValue("confirmpassword") {
 			//If password is blank or password does not match confirmed password
 			logging.WriteLog(logging.LogLevelError, "accountrouter/LogonRouter", "", logging.ResultFailure, []string{"Account Creation", "Password is not correct/confirmed"})
 			TemplateInput.Message = "Create failed, your password is either blank, or the passwords do not match"
-			replyWithTemplate("logon.html", TemplateInput, responseWriter)
+			replyWithTemplate("logon.html", TemplateInput, responseWriter, request)
 			return
 		}
 		username := strings.ToLower(request.FormValue("userName"))
@@ -83,22 +83,22 @@ func LogonRouter(responseWriter http.ResponseWriter, request *http.Request) {
 			//If username is blank
 			logging.WriteLog(logging.LogLevelError, "accountrouter/LogonRouter", username, logging.ResultFailure, []string{"Account Creation", "Username failed, either blank or invalid"})
 			TemplateInput.Message = "Create failed, your username is blank or invalid"
-			replyWithTemplate("logon.html", TemplateInput, responseWriter)
+			replyWithTemplate("logon.html", TemplateInput, responseWriter, request)
 			return
 		}
 		if request.FormValue("eMail") == "" || validateProposedEmail(strings.ToLower(request.FormValue("eMail"))) != nil {
 			//If username is blank
 			logging.WriteLog(logging.LogLevelError, "accountrouter/LogonRouter", username, logging.ResultFailure, []string{"Account Creation", "E-Mail is either blank, or not formatted correctly"})
 			TemplateInput.Message = "Create failed, your E-Mail is incorrectly formatted"
-			replyWithTemplate("logon.html", TemplateInput, responseWriter)
+			replyWithTemplate("logon.html", TemplateInput, responseWriter, request)
 			return
 		}
 		err := database.DBInterface.CreateUser(username, []byte(request.FormValue("password")), strings.ToLower(request.FormValue("eMail")), config.Configuration.DefaultPermissions)
 		if err == nil {
 			go WriteAuditLogByName(username, "ACCOUNT-CREATED", username+" successfully created an account.")
 			TemplateInput.Message += "Your account has been created. Please sign in. "
-			TemplateInput.UserID = 0
-			TemplateInput.UserName = ""
+			TemplateInput.UserInformation.ID = 0
+			TemplateInput.UserInformation.Name = ""
 			break //Break out of switch and reply with template
 		}
 		logging.WriteLog(logging.LogLevelError, "accountrouter/LogonRouter", username, logging.ResultFailure, []string{"Account Creation", err.Error()})
@@ -123,8 +123,8 @@ func LogonRouter(responseWriter http.ResponseWriter, request *http.Request) {
 
 		go WriteAuditLogByName(userName, "LOGOUT", userName+" manually logged out.")
 		TemplateInput.Message = "Successfully logged out."
-		TemplateInput.UserID = 0
-		TemplateInput.UserName = ""
+		TemplateInput.UserInformation.ID = 0
+		TemplateInput.UserInformation.Name = ""
 		TemplateInput.QuestionOne = ""
 	case "resetpassword":
 		//User requests to reset password
@@ -157,7 +157,7 @@ func LogonRouter(responseWriter http.ResponseWriter, request *http.Request) {
 			TemplateInput.QuestionOne = questionOne
 			TemplateInput.QuestionTwo = questionTwo
 			TemplateInput.QuestionThree = questionThree
-			TemplateInput.UserName = userName
+			TemplateInput.UserInformation.Name = userName
 			logging.WriteLog(logging.LogLevelVerbose, "accountrouter/LogonRouter", userName, logging.ResultInfo, []string{"Security Questions prompted"})
 			break
 		}
@@ -246,7 +246,7 @@ func LogonRouter(responseWriter http.ResponseWriter, request *http.Request) {
 			logging.WriteLog(logging.LogLevelError, "accountrouter/LogonRouter", userName, logging.ResultFailure, []string{"User not logged in"})
 			break
 		}
-		TemplateInput.UserName = userName
+		TemplateInput.UserInformation.Name = userName
 		//Verify password confirmation
 		err := database.DBInterface.ValidateUser(userName, []byte(request.FormValue("confirmpassword")))
 		if err != nil {
@@ -298,7 +298,7 @@ func LogonRouter(responseWriter http.ResponseWriter, request *http.Request) {
 			logging.WriteLog(logging.LogLevelError, "accountrouter/LogonRouter", userName, logging.ResultFailure, []string{"User not logged in"})
 			break
 		}
-		err := database.DBInterface.SetUserQueryTags(TemplateInput.UserID, request.FormValue("filter"))
+		err := database.DBInterface.SetUserQueryTags(TemplateInput.UserInformation.ID, request.FormValue("filter"))
 		if err != nil {
 			go WriteAuditLogByName(userName, "FILTER-SET", userName+" failed to set filter. "+err.Error())
 			TemplateInput.Message = "Failed to update filter."
@@ -312,9 +312,9 @@ func LogonRouter(responseWriter http.ResponseWriter, request *http.Request) {
 	//Populate user filter if signed in
 	userName, tokenID, _ := getSessionInformation(request)
 	if tokenID != "" && userName != "" {
-		TemplateInput.UserFilter, _ = database.DBInterface.GetUserFilter(TemplateInput.UserID)
+		TemplateInput.UserFilter, _ = database.DBInterface.GetUserFilter(TemplateInput.UserInformation.ID)
 	}
-	replyWithTemplate("logon.html", TemplateInput, responseWriter)
+	replyWithTemplate("logon.html", TemplateInput, responseWriter, request)
 }
 
 //getSessionInformation returns userName, tokenID, and the session itself if the user token is valid, if it is not, it returns the userName, "", and the session. If the session is not valid it returns "","",session.

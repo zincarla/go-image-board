@@ -29,23 +29,19 @@ func TagNameAPIRouter(responseWriter http.ResponseWriter, request *http.Request)
 		return //User not logged in and was already handled
 	}
 
-	//This is used for auto-complete functionality
-	if request.Method == http.MethodGet {
-		//Query for a tag's informaion, will return TagInformation
-		requestedName := strings.TrimSpace(request.FormValue("tagNameQuery"))
+	//Query for a tag's informaion, will return TagInformation
+	requestedName := strings.TrimSpace(request.FormValue("tagNameQuery"))
 
-		//Perform Query
-		tagInfo, count, err := database.DBInterface.SearchTags(requestedName, 0, 5, true, true)
-		if err != nil {
-			logging.WriteLog(logging.LogLevelError, "tagqueries/TagNameAPIRouter", "", logging.ResultFailure, []string{"Failed to query tags", err.Error()})
-			ReplyWithJSONError(responseWriter, request, "Internal Database Error Occured", UserName, http.StatusInternalServerError)
-			return
-		}
-
-		ReplyWithJSON(responseWriter, request, TagSearchResult{Tags: tagInfo, ResultCount: count, ServerStride: 5}, "")
-	} else {
-		ReplyWithJSONError(responseWriter, request, "unknown method used", UserName, http.StatusBadRequest)
+	//Perform Query
+	tagInfo, count, err := database.DBInterface.SearchTags(requestedName, 0, 5, true, true)
+	if err != nil {
+		logging.WriteLog(logging.LogLevelError, "tagqueries/TagNameAPIRouter", "", logging.ResultFailure, []string{"Failed to query tags", err.Error()})
+		ReplyWithJSONError(responseWriter, request, "Internal Database Error Occured", UserName, http.StatusInternalServerError)
+		return
 	}
+
+	ReplyWithJSON(responseWriter, request, TagSearchResult{Tags: tagInfo, ResultCount: count, ServerStride: 5}, "")
+
 }
 
 //TagAPIRouter serves requests to /api/Tag/{TagID}

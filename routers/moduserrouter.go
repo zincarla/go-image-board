@@ -1,22 +1,16 @@
 package routers
 
 import (
-	"go-image-board/config"
 	"go-image-board/database"
 	"go-image-board/interfaces"
 	"go-image-board/logging"
 	"net/http"
-	"net/url"
 	"strconv"
 )
 
 //ModUserRouter serves requests to /mod/user
 func ModUserRouter(responseWriter http.ResponseWriter, request *http.Request) {
-	TemplateInput := getNewTemplateInput(request)
-	if TemplateInput.UserName == "" && config.Configuration.AccountRequiredToView {
-		http.Redirect(responseWriter, request, "/logon?prevMessage="+url.QueryEscape("Access to this server requires an account"), 302)
-		return
-	}
+	TemplateInput := getNewTemplateInput(responseWriter, request)
 
 	if request.FormValue("userName") == "" {
 		TemplateInput.Message += "You must specify a user to edit. "
@@ -25,7 +19,7 @@ func ModUserRouter(responseWriter http.ResponseWriter, request *http.Request) {
 		switch cmd := request.FormValue("command"); cmd {
 		case "editUserPerms":
 			//Check if logged in
-			if TemplateInput.UserID == 0 {
+			if TemplateInput.UserInformation.ID == 0 {
 				TemplateInput.Message += "You must be logged in to perform that action. "
 				break
 			}
@@ -33,7 +27,7 @@ func ModUserRouter(responseWriter http.ResponseWriter, request *http.Request) {
 			if TemplateInput.UserPermissions.HasPermission(interfaces.EditUserPermissions) != true {
 				TemplateInput.Message += "User does not have modify permission for user permissions. "
 
-				go WriteAuditLog(TemplateInput.UserID, "EDIT-USERPERMISSIONS", TemplateInput.UserName+" failed to edit user permissions, insufficient permissions.")
+				go WriteAuditLog(TemplateInput.UserInformation.ID, "EDIT-USERPERMISSIONS", TemplateInput.UserInformation.Name+" failed to edit user permissions, insufficient permissions.")
 				break
 			}
 			//Do the thing
@@ -55,14 +49,14 @@ func ModUserRouter(responseWriter http.ResponseWriter, request *http.Request) {
 			}
 		case "disableUser":
 			//Check if logged in
-			if TemplateInput.UserID == 0 {
+			if TemplateInput.UserInformation.ID == 0 {
 				TemplateInput.Message += "You must be logged in to perform that action. "
 				break
 			}
 			//Check if has permissions
 			if TemplateInput.UserPermissions.HasPermission(interfaces.DisableUser) != true {
 				TemplateInput.Message += "User does not have disable permission for users. "
-				go WriteAuditLog(TemplateInput.UserID, "DISABLE-USER", TemplateInput.UserName+" failed to edit user permissions, insufficient permissions.")
+				go WriteAuditLog(TemplateInput.UserInformation.ID, "DISABLE-USER", TemplateInput.UserInformation.Name+" failed to edit user permissions, insufficient permissions.")
 				break
 			}
 			//Do the thing
@@ -87,12 +81,12 @@ func ModUserRouter(responseWriter http.ResponseWriter, request *http.Request) {
 		if modUserID, err := database.DBInterface.GetUserID(request.FormValue("userName")); err == nil {
 			if TemplateInput.ModUserData, err = database.DBInterface.GetUser(modUserID); err != nil {
 				TemplateInput.Message += "Could not get userdata. "
-				logging.WriteLog(logging.LogLevelError, "moduserrouter/ModUserRouter", TemplateInput.UserName, logging.ResultFailure, []string{"SQL error occured getting userdata ", err.Error()})
+				logging.WriteLog(logging.LogLevelError, "moduserrouter/ModUserRouter", TemplateInput.UserInformation.Name, logging.ResultFailure, []string{"SQL error occured getting userdata ", err.Error()})
 			}
 		} else {
 			TemplateInput.Message += "Could not get userdata, do they exist? "
 		}
 	}
 
-	replyWithTemplate("modUser.html", TemplateInput, responseWriter)
+	redirectWithFlash(responseWriter, request, "/mod", TemplateInput.Message, "ModUser")
 }

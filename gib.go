@@ -254,49 +254,54 @@ func main() {
 			return //We only wanted to rename
 		}
 		//Web routers
-		requestRouter.HandleFunc("/resources/{file}", routers.ResourceRouter)
-		requestRouter.HandleFunc("/", routers.RootRouter)
-		requestRouter.HandleFunc("/images", routers.ImageQueryRouter)
-		requestRouter.HandleFunc("/collectionorder", routers.CollectionImageOrderRouter)
-		requestRouter.HandleFunc("/collectionimages", routers.CollectionImageRouter)
-		requestRouter.HandleFunc("/collections", routers.CollectionsRouter)
-		requestRouter.HandleFunc("/images/{file}", routers.ResourceImageRouter)
-		requestRouter.HandleFunc("/thumbs/{file}", routers.ThumbnailRouter)
-		requestRouter.HandleFunc("/image", routers.ImageRouter)
-		requestRouter.HandleFunc("/uploadImage", routers.UploadFormRouter)
-		requestRouter.HandleFunc("/about/{file}", routers.AboutRouter)
-		requestRouter.HandleFunc("/tags", routers.TagsRouter)
-		requestRouter.HandleFunc("/tag", routers.TagRouter)
-		requestRouter.HandleFunc("/redirect", routers.RedirectRouter)
-		requestRouter.HandleFunc("/logon", routers.LogonRouter)
-		requestRouter.HandleFunc("/mod", routers.ModRouter)
-		requestRouter.HandleFunc("/mod/user", routers.ModUserRouter)
+		requestRouter.HandleFunc("/resources/{file}", routers.ResourceRouter).Methods("GET")
+		requestRouter.HandleFunc("/", routers.AccountRequiredMiddleWare(routers.RootRouter)).Methods("GET")
+		requestRouter.HandleFunc("/images", routers.AccountRequiredMiddleWare(routers.ImageQueryRouter))                    //TODO: Split Needed
+		requestRouter.HandleFunc("/collectionorder", routers.AccountRequiredMiddleWare(routers.CollectionImageOrderRouter)) //TODO: Split Needed
+		requestRouter.HandleFunc("/collectionimages", routers.AccountRequiredMiddleWare(routers.CollectionImageRouter))     //TODO: Split Needed
+		requestRouter.HandleFunc("/collections", routers.AccountRequiredMiddleWare(routers.CollectionsRouter))              //TODO: Split Needed
+		requestRouter.HandleFunc("/images/{file}", routers.AccountRequiredMiddleWare(routers.ResourceImageRouter)).Methods("GET")
+		requestRouter.HandleFunc("/thumbs/{file}", routers.AccountRequiredMiddleWare(routers.ThumbnailRouter)).Methods("GET")
+		requestRouter.HandleFunc("/image", routers.AccountRequiredMiddleWare(routers.ImageRouter)) //TODO: Split Needed
+		requestRouter.HandleFunc("/uploadImage", routers.AccountRequiredMiddleWare(routers.UploadFormRouter)).Methods("GET")
+		requestRouter.HandleFunc("/about/{file}", routers.AccountRequiredMiddleWare(routers.AboutRouter)).Methods("GET")
+		requestRouter.HandleFunc("/tags", routers.AccountRequiredMiddleWare(routers.TagsRouter)).Methods("GET")
+		requestRouter.HandleFunc("/tag", routers.AccountRequiredMiddleWare(routers.TagRouter)) //TODO: Split Needed
+		requestRouter.HandleFunc("/redirect", routers.AccountRequiredMiddleWare(routers.RedirectRouter)).Methods("POST")
+		requestRouter.HandleFunc("/logon", routers.LogonRouter) //TODO: Split Needed
+		requestRouter.HandleFunc("/mod", routers.AccountRequiredMiddleWare(routers.ModRouter)).Methods("GET")
+		requestRouter.HandleFunc("/mod/user", routers.AccountRequiredMiddleWare(routers.ModUserRouter)).Methods("POST") //TODO: Update the router to redirect at end!
 
 		//API routers
-		requestRouter.HandleFunc("/api/Collection/{CollectionID}", api.CollectionAPIRouter)
-		requestRouter.HandleFunc("/api/Collections", api.CollectionsAPIRouter)
+		requestRouter.HandleFunc("/api/Collection/{CollectionID}", api.CollectionAPIRouter) //TODO: Split
+		requestRouter.HandleFunc("/api/Collections", api.CollectionsAPIRouter)              //TODO: Split
 		//
-		requestRouter.HandleFunc("/api/Tag/{TagID}", api.TagAPIRouter)
-		requestRouter.HandleFunc("/api/Tags", api.TagsAPIRouter)
+		requestRouter.HandleFunc("/api/Tag/{TagID}", api.TagAPIRouter) //TODO: Split
+		requestRouter.HandleFunc("/api/Tags", api.TagsAPIRouter)       //TODO: Split
 		//
-		requestRouter.HandleFunc("/api/Image/{ImageID}", api.ImageAPIRouter)
-		requestRouter.HandleFunc("/api/Images", api.ImagesAPIRouter)
+		requestRouter.HandleFunc("/api/Image/{ImageID}", api.ImageAPIRouter) //TODO: Split
+		requestRouter.HandleFunc("/api/Images", api.ImagesAPIRouter)         //TODO: Split
 		//
-		requestRouter.HandleFunc("/api/Logon", api.LogonAPIRouter)
-		requestRouter.HandleFunc("/api/Logout", api.LogoutAPIRouter)
-		requestRouter.HandleFunc("/api/Users", api.UsersAPIRouter)
+		requestRouter.HandleFunc("/api/Logon", api.LogonAPIRouter).Methods("POST")
+		requestRouter.HandleFunc("/api/Logout", api.LogoutAPIRouter).Methods("POST")
+		requestRouter.HandleFunc("/api/Users", api.UsersAPIRouter).Methods("GET")
 		//Autocomplete helpers
-		requestRouter.HandleFunc("/api/TagName", api.TagNameAPIRouter)
-		requestRouter.HandleFunc("/api/CollectionName", api.CollectionNameAPIRouter)
+		requestRouter.HandleFunc("/api/TagName", api.TagNameAPIRouter).Methods("GET")
+		requestRouter.HandleFunc("/api/CollectionName", api.CollectionNameAPIRouter).Methods("GET")
 
 	} else {
-		requestRouter.HandleFunc("/", routers.BadConfigRouter)
-		requestRouter.HandleFunc("/resources/{file}", routers.ResourceRouter) /*Required for CSS*/
+		requestRouter.HandleFunc("/", routers.BadConfigRouter).Methods("GET")
+		requestRouter.HandleFunc("/resources/{file}", routers.ResourceRouter).Methods("GET") /*Required for CSS*/
 	}
+
+	requestRouter.Use(routers.LogMiddleware)
+
+	//Setup csrf protected routers
+	//csrfRequestRouter := csrf.Protect(config.Configuration.CSRFKey, csrf.RequestHeader("Authenticity-Token"))(requestRouter)
 
 	//Create server
 	server := &http.Server{
-		Handler:        requestRouter,
+		Handler:        requestRouter, //csrfRequestRouter,
 		Addr:           config.Configuration.Address,
 		ReadTimeout:    config.Configuration.ReadTimeout,
 		WriteTimeout:   config.Configuration.WriteTimeout,

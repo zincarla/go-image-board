@@ -6,7 +6,6 @@ import (
 	"go-image-board/database"
 	"go-image-board/logging"
 	"net/http"
-	"net/url"
 	"os"
 	"os/exec"
 	"path"
@@ -33,39 +32,25 @@ import (
 //ResourceRouter handles requests to /resources
 func ResourceRouter(responseWriter http.ResponseWriter, request *http.Request) {
 	urlVariables := mux.Vars(request)
-	logging.WriteLog(logging.LogLevelVerbose, "resourcesrouters/ResourceRouter", "", logging.ResultSuccess, []string{"resources" + string(filepath.Separator) + urlVariables["file"]})
 	http.ServeFile(responseWriter, request, path.Join(config.Configuration.HTTPRoot, "resources"+string(filepath.Separator)+urlVariables["file"]))
 }
 
 //RedirectRouter handles requests to /redirect
 func RedirectRouter(responseWriter http.ResponseWriter, request *http.Request) {
-	TemplateInput := getNewTemplateInput(request)
+	TemplateInput := getNewTemplateInput(responseWriter, request)
 	TemplateInput.RedirectLink = request.FormValue("RedirectLink")
 	logging.WriteLog(logging.LogLevelVerbose, "resourcesrouters/RedirectRouter", "", logging.ResultInfo, []string{request.FormValue("RedirectLink")})
-	replyWithTemplate("redirect.html", TemplateInput, responseWriter)
+	replyWithTemplate("redirect.html", TemplateInput, responseWriter, request)
 }
 
 //ResourceImageRouter handles requests to /images/{file}
 func ResourceImageRouter(responseWriter http.ResponseWriter, request *http.Request) {
-	if config.Configuration.AccountRequiredToView {
-		if _, userName, _ := ValidateUserLogon(request); userName == "" {
-			http.Redirect(responseWriter, request, "/logon?prevMessage="+url.QueryEscape("Access to this server requires an account"), 302)
-			return
-		}
-	}
 	urlVariables := mux.Vars(request)
-	logging.WriteLog(logging.LogLevelVerbose, "resourcesrouters/ResourceImageRouter", "", logging.ResultSuccess, []string{path.Join(config.Configuration.ImageDirectory, urlVariables["file"])})
 	http.ServeFile(responseWriter, request, path.Join(config.Configuration.ImageDirectory, urlVariables["file"]))
 }
 
 //ThumbnailRouter handls requests to /thumbs
 func ThumbnailRouter(responseWriter http.ResponseWriter, request *http.Request) {
-	if config.Configuration.AccountRequiredToView {
-		if _, userName, _ := ValidateUserLogon(request); userName == "" {
-			http.Redirect(responseWriter, request, "/logon?prevMessage="+url.QueryEscape("Access to this server requires an account"), 302)
-			return
-		}
-	}
 	urlVariables := mux.Vars(request)
 	thumbnailPath := path.Join(config.Configuration.ImageDirectory, "thumbs"+string(filepath.Separator)+urlVariables["file"]+".png")
 	//Check if file does not exist

@@ -5,7 +5,7 @@
 			{{$PermissionQ := .UserPermissions.HasPermission 4}}
 			{{$PermissionD := .UserPermissions.HasPermission 8}}
 			{{$PermissionBulkTag := .UserPermissions.HasPermission 256}}
-			{{$IsOwn := eq .TagContentInfo.UploaderID .UserID}}
+			{{$IsOwn := eq .TagContentInfo.UploaderID .UserInformation.ID}}
 			{{$CanModifyOwn := and .UserControlsOwn $IsOwn}}
 			<div id="SideMenu" class="cellDefaultHidden">
 				<form action="/tags" method="get">
