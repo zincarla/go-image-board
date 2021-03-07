@@ -93,7 +93,7 @@ func CollectionImageRouter(responseWriter http.ResponseWriter, request *http.Req
 				break //Cancel remove
 			}
 			go WriteAuditLogByName(TemplateInput.UserInformation.Name, "REMOVE-COLLECTIONMEMBER", TemplateInput.UserInformation.Name+" removed image from collection. "+request.FormValue("ImageID")+" from "+request.FormValue("ID")+", "+CollectionInfo.Name)
-			TemplateInput.Message += "Successfully remove image from collection. "
+			TemplateInput.Message += "Successfully removed image from collection. "
 		}
 	case "addcollectionmember":
 		//Get Image ID
