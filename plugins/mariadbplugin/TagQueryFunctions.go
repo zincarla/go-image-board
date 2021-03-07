@@ -17,12 +17,12 @@ func (DBConnection *MariaDBPlugin) GetUserFilterTags(UserID uint64, CollectionCo
 	var userFilter string
 	err := DBConnection.DBHandle.QueryRow("SELECT SearchFilter FROM Users WHERE ID = ?", UserID).Scan(&userFilter)
 	if err != nil {
-		logging.WriteLog(logging.LogLevelError,"MariaDBPlugin/GetUserQueryTags", "", logging.ResultFailure, []string{"Failed to get user filter", err.Error()})
+		logging.WriteLog(logging.LogLevelError, "MariaDBPlugin/GetUserQueryTags", strconv.FormatUint(UserID, 10), logging.ResultFailure, []string{"Failed to get user filter", err.Error()})
 		return nil, err
 	}
 	tags, err := DBConnection.GetQueryTags(userFilter, CollectionContext)
 	if err != nil {
-		logging.WriteLog(logging.LogLevelError,"MariaDBPlugin/GetUserQueryTags", "", logging.ResultFailure, []string{"Failed to get tags from user filter", err.Error()})
+		logging.WriteLog(logging.LogLevelError, "MariaDBPlugin/GetUserQueryTags", strconv.FormatUint(UserID, 10), logging.ResultFailure, []string{"Failed to get tags from user filter", err.Error()})
 		return nil, err
 	}
 	//Loop through the tags and ensure we have them set as FromUserFilter

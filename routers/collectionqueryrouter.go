@@ -152,7 +152,7 @@ func CollectionsRouter(responseWriter http.ResponseWriter, request *http.Request
 		if TemplateInput.UserInformation.Name != "" {
 			userFilterTags, err := database.DBInterface.GetUserFilterTags(TemplateInput.UserInformation.ID, true)
 			if err != nil {
-				logging.WriteLog(logging.LogLevelError, "collectionqueryrouter/CollectionsRouter", TemplateInput.UserInformation.Name, logging.ResultFailure, []string{"Failed to load user's filter", err.Error()})
+				logging.WriteLog(logging.LogLevelError, "collectionqueryrouter/CollectionsRouter", TemplateInput.UserInformation.GetCompositeID(), logging.ResultFailure, []string{"Failed to load user's filter", err.Error()})
 				TemplateInput.Message += "Failed to add your global filter to this query. Internal error. "
 			} else {
 				userQTags = interfaces.RemoveDuplicateTags(append(userQTags, userFilterTags...))
@@ -175,10 +175,10 @@ func CollectionsRouter(responseWriter http.ResponseWriter, request *http.Request
 				}
 				parsed += tag.Name + " "
 			}
-			logging.WriteLog(logging.LogLevelError, "CollectionQueryRouter/CollectionsRouter", "", logging.ResultFailure, []string{"Failed to search images", TemplateInput.OldQuery, parsed, err.Error()})
+			logging.WriteLog(logging.LogLevelError, "CollectionQueryRouter/CollectionsRouter", TemplateInput.UserInformation.GetCompositeID(), logging.ResultFailure, []string{"Failed to search images", TemplateInput.OldQuery, parsed, err.Error()})
 		}
 	} else {
-		logging.WriteLog(logging.LogLevelError, "CollectionQueryRouter/CollectionsRouter", "", logging.ResultFailure, []string{"Failed to validate tags", TemplateInput.OldQuery, err.Error()})
+		logging.WriteLog(logging.LogLevelError, "CollectionQueryRouter/CollectionsRouter", TemplateInput.UserInformation.GetCompositeID(), logging.ResultFailure, []string{"Failed to validate tags", TemplateInput.OldQuery, err.Error()})
 	}
 
 	TemplateInput.Tags = userQTags

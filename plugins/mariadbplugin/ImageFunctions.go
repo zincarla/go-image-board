@@ -16,10 +16,10 @@ import (
 func (DBConnection *MariaDBPlugin) NewImage(ImageName string, ImageFileName string, OwnerID uint64, Source string) (uint64, error) {
 	resultInfo, err := DBConnection.DBHandle.Exec("INSERT INTO Images (Name, Location, UploaderID, Source) VALUES (?, ?, ?, ?);", ImageName, ImageFileName, OwnerID, Source)
 	if err != nil {
-		logging.WriteLog(logging.LogLevelError, "MariaDBPlugin/NewImage", "", logging.ResultFailure, []string{"Failed to add image", err.Error()})
+		logging.WriteLog(logging.LogLevelError, "MariaDBPlugin/NewImage", strconv.FormatUint(OwnerID, 10), logging.ResultFailure, []string{"Failed to add image", err.Error()})
 		return 0, err
 	}
-	logging.WriteLog(logging.LogLevelError, "MariaDBPlugin/NewImage", "", logging.ResultSuccess, []string{"Image added"})
+	logging.WriteLog(logging.LogLevelError, "MariaDBPlugin/NewImage", strconv.FormatUint(OwnerID, 10), logging.ResultSuccess, []string{"Image added"})
 	id, _ := resultInfo.LastInsertId()
 	return uint64(id), err
 }
@@ -29,16 +29,16 @@ func (DBConnection *MariaDBPlugin) DeleteImage(ImageID uint64) error {
 	//First delete ImageTags
 	_, err := DBConnection.DBHandle.Exec("DELETE FROM ImageTags WHERE ImageID=?;", ImageID)
 	if err != nil {
-		logging.WriteLog(logging.LogLevelError, "MariaDBPlugin/DeleteImage", "", logging.ResultFailure, []string{"Failed to delete image", err.Error(), strconv.FormatUint(ImageID, 10)})
+		logging.WriteLog(logging.LogLevelError, "MariaDBPlugin/DeleteImage", "0", logging.ResultFailure, []string{"Failed to delete image", err.Error(), strconv.FormatUint(ImageID, 10)})
 		return err
 	}
-	logging.WriteLog(logging.LogLevelError, "MariaDBPlugin/DeleteImage", "", logging.ResultSuccess, []string{"Image tags deleted", strconv.FormatUint(ImageID, 10)})
+	logging.WriteLog(logging.LogLevelError, "MariaDBPlugin/DeleteImage", "0", logging.ResultSuccess, []string{"Image tags deleted", strconv.FormatUint(ImageID, 10)})
 	//Second delete Image from table
 	_, err = DBConnection.DBHandle.Exec("DELETE FROM Images WHERE ID=?;", ImageID)
 	if err != nil {
-		logging.WriteLog(logging.LogLevelError, "MariaDBPlugin/DeleteImage", "", logging.ResultFailure, []string{"Failed to delete image", err.Error(), strconv.FormatUint(ImageID, 10)})
+		logging.WriteLog(logging.LogLevelError, "MariaDBPlugin/DeleteImage", "0", logging.ResultFailure, []string{"Failed to delete image", err.Error(), strconv.FormatUint(ImageID, 10)})
 	} else {
-		logging.WriteLog(logging.LogLevelError, "MariaDBPlugin/DeleteImage", "", logging.ResultSuccess, []string{"Image deleted", strconv.FormatUint(ImageID, 10)})
+		logging.WriteLog(logging.LogLevelError, "MariaDBPlugin/DeleteImage", "0", logging.ResultSuccess, []string{"Image deleted", strconv.FormatUint(ImageID, 10)})
 	}
 	return err
 }
@@ -115,7 +115,7 @@ func (DBConnection *MariaDBPlugin) GetImage(ID uint64) (interfaces.ImageInformat
 	var UploadTime mysql.NullTime
 	err := DBConnection.DBHandle.QueryRow("Select Images.Name, IFNULL(Images.Description,'') AS Description, Images.Location, Images.UploaderID, Images.UploadTime, Images.Rating, Users.Name, Images.ScoreAverage, Images.ScoreTotal, Images.ScoreVoters, Images.Source FROM Images LEFT OUTER JOIN Users ON Images.UploaderID = Users.ID WHERE Images.ID=?", ID).Scan(&ToReturn.Name, &ToReturn.Description, &ToReturn.Location, &ToReturn.UploaderID, &UploadTime, &ToReturn.Rating, &ToReturn.UploaderName, &ToReturn.ScoreAverage, &ToReturn.ScoreTotal, &ToReturn.ScoreVoters, &ToReturn.Source)
 	if err != nil {
-		logging.WriteLog(logging.LogLevelError, "MariaDBPlugin/ImageFunctions/GetImage", "", logging.ResultFailure, []string{"Failed to get image info from database", err.Error()})
+		logging.WriteLog(logging.LogLevelError, "MariaDBPlugin/ImageFunctions/GetImage", "0", logging.ResultFailure, []string{"Failed to get image info from database", err.Error()})
 		return ToReturn, err
 	}
 	if UploadTime.Valid {
@@ -130,7 +130,7 @@ func (DBConnection *MariaDBPlugin) GetImageByFileName(imageName string) (interfa
 	var UploadTime mysql.NullTime
 	err := DBConnection.DBHandle.QueryRow("Select Images.Name, IFNULL(Images.Description,'') AS Description, Images.ID, Images.UploaderID, Images.UploadTime, Images.Rating, Users.Name, Images.ScoreAverage, Images.ScoreTotal, Images.ScoreVoters, Images.Source FROM Images LEFT OUTER JOIN Users ON Images.UploaderID = Users.ID WHERE Images.Location=?", imageName).Scan(&ToReturn.Name, &ToReturn.Description, &ToReturn.ID, &ToReturn.UploaderID, &UploadTime, &ToReturn.Rating, &ToReturn.UploaderName, &ToReturn.ScoreAverage, &ToReturn.ScoreTotal, &ToReturn.ScoreVoters, &ToReturn.Source)
 	if err != nil {
-		logging.WriteLog(logging.LogLevelError, "MariaDBPlugin/ImageFunctions/GetImageByFileName", "", logging.ResultFailure, []string{"Failed to get image info from database", err.Error()})
+		logging.WriteLog(logging.LogLevelError, "MariaDBPlugin/ImageFunctions/GetImageByFileName", "0", logging.ResultFailure, []string{"Failed to get image info from database", err.Error()})
 		return ToReturn, err
 	}
 	if UploadTime.Valid {
@@ -143,7 +143,7 @@ func (DBConnection *MariaDBPlugin) GetImageByFileName(imageName string) (interfa
 func (DBConnection *MariaDBPlugin) SetImageRating(ID uint64, Rating string) error {
 	_, err := DBConnection.DBHandle.Exec("UPDATE Images SET Rating = ? WHERE ID = ?;", Rating, ID)
 	if err != nil {
-		logging.WriteLog(logging.LogLevelError, "MariaDBPlugin/ImageFunctions/SetImageRating", "", logging.ResultFailure, []string{"Failed to set image rating", err.Error()})
+		logging.WriteLog(logging.LogLevelError, "MariaDBPlugin/ImageFunctions/SetImageRating", "0", logging.ResultFailure, []string{"Failed to set image rating", err.Error()})
 		return err
 	}
 	return nil
@@ -153,7 +153,7 @@ func (DBConnection *MariaDBPlugin) SetImageRating(ID uint64, Rating string) erro
 func (DBConnection *MariaDBPlugin) SetImageSource(ID uint64, Source string) error {
 	_, err := DBConnection.DBHandle.Exec("UPDATE Images SET Source = ? WHERE ID = ?;", Source, ID)
 	if err != nil {
-		logging.WriteLog(logging.LogLevelError, "MariaDBPlugin/ImageFunctions/SetImageSource", "", logging.ResultFailure, []string{"Failed to set image source", err.Error()})
+		logging.WriteLog(logging.LogLevelError, "MariaDBPlugin/ImageFunctions/SetImageSource", "0", logging.ResultFailure, []string{"Failed to set image source", err.Error()})
 		return err
 	}
 	return nil
@@ -163,7 +163,7 @@ func (DBConnection *MariaDBPlugin) SetImageSource(ID uint64, Source string) erro
 func (DBConnection *MariaDBPlugin) SetImagedHash(ID uint64, hHash uint64, vHash uint64) error {
 	_, err := DBConnection.DBHandle.Exec("INSERT INTO ImagedHashes (ImageID, hHash, vHash) VALUES (?,?,?) ON DUPLICATE KEY UPDATE hHash = VALUES(hHash), vHash = VALUES(vHash);", ID, hHash, vHash)
 	if err != nil {
-		logging.WriteLog(logging.LogLevelError, "MariaDBPlugin/ImageFunctions/SetImagedHash", "", logging.ResultFailure, []string{"Failed to set image dHashes", err.Error()})
+		logging.WriteLog(logging.LogLevelError, "MariaDBPlugin/ImageFunctions/SetImagedHash", "0", logging.ResultFailure, []string{"Failed to set image dHashes", err.Error()})
 		return err
 	}
 	return nil

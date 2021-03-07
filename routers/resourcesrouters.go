@@ -39,7 +39,7 @@ func ResourceRouter(responseWriter http.ResponseWriter, request *http.Request) {
 func RedirectRouter(responseWriter http.ResponseWriter, request *http.Request) {
 	TemplateInput := getNewTemplateInput(responseWriter, request)
 	TemplateInput.RedirectLink = request.FormValue("RedirectLink")
-	logging.WriteLog(logging.LogLevelVerbose, "resourcesrouters/RedirectRouter", "", logging.ResultInfo, []string{request.FormValue("RedirectLink")})
+	logging.WriteLog(logging.LogLevelVerbose, "resourcesrouters/RedirectRouter", TemplateInput.UserInformation.GetCompositeID(), logging.ResultInfo, []string{request.FormValue("RedirectLink")})
 	replyWithTemplate("redirect.html", TemplateInput, responseWriter, request)
 }
 
@@ -109,7 +109,7 @@ func GenerateThumbnail(Name string) error {
 		thumbnailImage := resize.Resize(uint(newWidth), uint(newHeight), originalImage, resize.Lanczos3)
 		return png.Encode(NewFile, thumbnailImage)
 	case ".mpg", ".mov", ".webm", ".avi", ".mp4":
-		logging.WriteLog(logging.LogLevelDebug, "resourcesrouters/GenerateThumbnail", "", logging.ResultInfo, []string{"Video detected", Name})
+		logging.WriteLog(logging.LogLevelDebug, "resourcesrouters/GenerateThumbnail", "0", logging.ResultInfo, []string{"Video detected", Name})
 
 		//Short circuit if can't support with FFMPEG
 		if !config.Configuration.UseFFMPEG {
@@ -122,10 +122,10 @@ func GenerateThumbnail(Name string) error {
 		ffmpegCMD := exec.Command(config.Configuration.FFMPEGPath, "-i", path.Join(config.Configuration.ImageDirectory, Name), "-vf", sizeParam, "-frames:v", "1", path.Join(config.Configuration.ImageDirectory, "thumbs"+string(filepath.Separator)+Name+".png"))
 		_, err := ffmpegCMD.Output()
 		if err != nil {
-			logging.WriteLog(logging.LogLevelError, "resourcesrouters/GenerateThumbnail", "", logging.ResultFailure, []string{"Failed to use FFMPEG", Name, err.Error()})
+			logging.WriteLog(logging.LogLevelError, "resourcesrouters/GenerateThumbnail", "0", logging.ResultFailure, []string{"Failed to use FFMPEG", Name, err.Error()})
 			return err
 		}
-		logging.WriteLog(logging.LogLevelInfo, "resourcesrouters/GenerateThumbnail", "", logging.ResultInfo, []string{"FFMPEG output success", Name})
+		logging.WriteLog(logging.LogLevelInfo, "resourcesrouters/GenerateThumbnail", "0", logging.ResultInfo, []string{"FFMPEG output success", Name})
 		return nil
 	default:
 		return errors.New("No thumbnail method for file type")

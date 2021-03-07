@@ -32,7 +32,7 @@ func (DBConnection *MariaDBPlugin) CreateUser(userName string, password []byte, 
 	}
 	_, err = DBConnection.DBHandle.Exec("INSERT INTO Users (Name, EMail, PasswordHash, Permissions) VALUES (?, ?, ?, ?);", userName, email, string(hash), permissions)
 	if err != nil {
-		logging.WriteLog(logging.LogLevelError, "MariaDBPlugin/CreateUser", "", logging.ResultFailure, []string{"Failed to create new user", err.Error()})
+		logging.WriteLog(logging.LogLevelError, "MariaDBPlugin/CreateUser", userName, logging.ResultFailure, []string{"Failed to create new user", err.Error()})
 	}
 	logging.WriteLog(logging.LogLevelError, "MariaDBPlugin/CreateUser", userName, logging.ResultSuccess, []string{"New user added to database", userName})
 	return err
@@ -173,7 +173,7 @@ func (DBConnection *MariaDBPlugin) GetUserFilter(UserID uint64) (string, error) 
 	var userFilter string
 	err := DBConnection.DBHandle.QueryRow("SELECT SearchFilter FROM Users WHERE ID = ?", UserID).Scan(&userFilter)
 	if err != nil {
-		logging.WriteLog(logging.LogLevelError, "MariaDBPlugin/GetUserQueryTags", "", logging.ResultFailure, []string{"Failed to get user filter", err.Error()})
+		logging.WriteLog(logging.LogLevelError, "MariaDBPlugin/GetUserQueryTags", "0", logging.ResultFailure, []string{"Failed to get user filter", err.Error()})
 	}
 	return userFilter, nil
 }
@@ -199,7 +199,7 @@ func (DBConnection *MariaDBPlugin) SearchUsers(searchString string, PageStart ui
 	var MaxResults uint64
 	err := DBConnection.DBHandle.QueryRow(sqlCountQuery, queryArray...).Scan(&MaxResults)
 	if err != nil {
-		logging.WriteLog(logging.LogLevelError, "MariaDBPlugin/SearchUsers", "", logging.ResultFailure, []string{"Error running search query", sqlCountQuery, err.Error()})
+		logging.WriteLog(logging.LogLevelError, "MariaDBPlugin/SearchUsers", "0", logging.ResultFailure, []string{"Error running search query", sqlCountQuery, err.Error()})
 		return nil, 0, err
 	}
 	//

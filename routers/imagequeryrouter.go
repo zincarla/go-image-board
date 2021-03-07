@@ -95,7 +95,7 @@ func ImageQueryRouter(responseWriter http.ResponseWriter, request *http.Request)
 		//default to 0 on err
 		pageStart = upageStart
 	}
-	//logging.WriteLog(logging.LogLevelError, "imagequeryrouter/ImageQueryRouter", "", logging.ResultInfo, []string{"User attempting a query", userQuery})
+
 	//Cleanup and format tags for use with SearchImages
 	userQTags, err := database.DBInterface.GetQueryTags(userQuery, false)
 	if err == nil {
@@ -103,7 +103,7 @@ func ImageQueryRouter(responseWriter http.ResponseWriter, request *http.Request)
 		if TemplateInput.UserInformation.Name != "" {
 			userFilterTags, err := database.DBInterface.GetUserFilterTags(TemplateInput.UserInformation.ID, false)
 			if err != nil {
-				logging.WriteLog(logging.LogLevelError, "imagequeryrouter/ImageQueryRouter", TemplateInput.UserInformation.Name, logging.ResultFailure, []string{"Failed to load user's filter", err.Error()})
+				logging.WriteLog(logging.LogLevelError, "imagequeryrouter/ImageQueryRouter", TemplateInput.UserInformation.GetCompositeID(), logging.ResultFailure, []string{"Failed to load user's filter", err.Error()})
 				TemplateInput.Message += "Failed to add your global filter to this query. Internal error. "
 			} else {
 				userQTags = interfaces.RemoveDuplicateTags(append(userQTags, userFilterTags...))
@@ -117,7 +117,7 @@ func ImageQueryRouter(responseWriter http.ResponseWriter, request *http.Request)
 				http.Redirect(responseWriter, request, "/image?ID="+strconv.FormatUint(imageInfo.ID, 10)+"&SearchTerms="+url.QueryEscape(TemplateInput.OldQuery), 302)
 				return
 			}
-			logging.WriteLog(logging.LogLevelError, "imagequeryrouter/ImageQueryRouter", "", logging.ResultFailure, []string{"Failed to search random image", userQuery, err.Error()})
+			logging.WriteLog(logging.LogLevelError, "imagequeryrouter/ImageQueryRouter", TemplateInput.UserInformation.GetCompositeID(), logging.ResultFailure, []string{"Failed to search random image", userQuery, err.Error()})
 			TemplateInput.Message += "Failed to search for a random image. " //Just fall through to the normal search
 		}
 		//Parse tag results for next query
@@ -136,10 +136,10 @@ func ImageQueryRouter(responseWriter http.ResponseWriter, request *http.Request)
 				}
 				parsed += tag.Name + " "
 			}
-			logging.WriteLog(logging.LogLevelError, "imagequeryrouter/ImageQueryRouter", "", logging.ResultFailure, []string{"Failed to search images", userQuery, parsed, err.Error()})
+			logging.WriteLog(logging.LogLevelError, "imagequeryrouter/ImageQueryRouter", TemplateInput.UserInformation.GetCompositeID(), logging.ResultFailure, []string{"Failed to search images", userQuery, parsed, err.Error()})
 		}
 	} else {
-		logging.WriteLog(logging.LogLevelError, "imagequeryrouter/ImageQueryRouter", "", logging.ResultFailure, []string{"Failed to validate tags", userQuery, err.Error()})
+		logging.WriteLog(logging.LogLevelError, "imagequeryrouter/ImageQueryRouter", TemplateInput.UserInformation.GetCompositeID(), logging.ResultFailure, []string{"Failed to validate tags", userQuery, err.Error()})
 	}
 
 	TemplateInput.Tags = userQTags

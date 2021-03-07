@@ -141,7 +141,7 @@ func (DBConnection *MariaDBPlugin) SearchCollections(Tags []interfaces.TagInform
 	//Run the count query (Count query does not use start/stride, so run this before we add those)
 	err := DBConnection.DBHandle.QueryRow(sqlCountQuery, queryArray...).Scan(&MaxResults)
 	if err != nil {
-		logging.WriteLog(logging.LogLevelError,"MariaDBPlugin/SearchCollections", "", logging.ResultFailure, []string{"Error running search query", sqlCountQuery, err.Error()})
+		logging.WriteLog(logging.LogLevelError, "MariaDBPlugin/SearchCollections", "0", logging.ResultFailure, []string{"Error running search query", sqlCountQuery, err.Error()})
 		return nil, 0, err
 	}
 

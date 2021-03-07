@@ -42,14 +42,14 @@ func (SLog *STDLog) Init(targetLogLevel int64, whiteList string, blackList strin
 	if strings.TrimSpace(whiteList) != "" {
 		whiteListRegex, err := regexp.Compile(whiteList)
 		if err != nil {
-			SLog.WriteLog(0, "STDLog/Init", "", "ERROR", []string{"Failed to compile regex whitelist", whiteList})
+			SLog.WriteLog(0, "STDLog/Init", "0", "ERROR", []string{"Failed to compile regex whitelist", whiteList})
 		}
 		SLog.whiteListRegex = whiteListRegex
 	}
 	if strings.TrimSpace(blackList) != "" {
 		blackListRegex, err := regexp.Compile(blackList)
 		if err != nil {
-			SLog.WriteLog(0, "STDLog/Init", "", "ERROR", []string{"Failed to compile regex blacklist", blackList})
+			SLog.WriteLog(0, "STDLog/Init", "0", "ERROR", []string{"Failed to compile regex blacklist", blackList})
 		}
 		SLog.blackListRegex = blackListRegex
 	}

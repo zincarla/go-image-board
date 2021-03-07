@@ -35,10 +35,10 @@ func ImageRouter(responseWriter http.ResponseWriter, request *http.Request) {
 			redirectWithFlash(responseWriter, request, "/logon", "You must be logged in to upload an image", "LogonRequired")
 			return
 		}
-		logging.WriteLog(logging.LogLevelVerbose, "imagerouter/ImageRouter/uploadFile", TemplateInput.UserInformation.Name, logging.ResultInfo, []string{"Attempting to upload file"})
+		logging.WriteLog(logging.LogLevelVerbose, "imagerouter/ImageRouter/uploadFile", TemplateInput.UserInformation.GetCompositeID(), logging.ResultInfo, []string{"Attempting to upload file"})
 		requestedID, duplicateIDs, err = handleImageUpload(request, TemplateInput.UserInformation.Name)
 		if err != nil {
-			logging.WriteLog(logging.LogLevelError, "imagerouter/ImageRouter/uploadFile", TemplateInput.UserInformation.Name, logging.ResultFailure, []string{err.Error()})
+			logging.WriteLog(logging.LogLevelError, "imagerouter/ImageRouter/uploadFile", TemplateInput.UserInformation.GetCompositeID(), logging.ResultFailure, []string{err.Error()})
 			TemplateInput.Message = "One or more warnings generated during upload. " + err.Error()
 		}
 		if duplicateIDs != nil && len(duplicateIDs) > 0 {
@@ -63,11 +63,11 @@ func ImageRouter(responseWriter http.ResponseWriter, request *http.Request) {
 			redirectWithFlash(responseWriter, request, "/logon", "You must be logged in to vote on an image", "LogonRequired")
 			return
 		}
-		logging.WriteLog(logging.LogLevelVerbose, "imagerouter/ImageRouter/ChangeVote", TemplateInput.UserInformation.Name, logging.ResultInfo, []string{"Attempting to vote on image"})
+		logging.WriteLog(logging.LogLevelVerbose, "imagerouter/ImageRouter/ChangeVote", TemplateInput.UserInformation.GetCompositeID(), logging.ResultInfo, []string{"Attempting to vote on image"})
 
 		requestedID, err = strconv.ParseUint(sImageID, 10, 64)
 		if err != nil {
-			logging.WriteLog(logging.LogLevelError, "imagerouter/ImageRouter", TemplateInput.UserInformation.Name, logging.ResultFailure, []string{"Failed to parse imageid to vote on"})
+			logging.WriteLog(logging.LogLevelError, "imagerouter/ImageRouter", TemplateInput.UserInformation.GetCompositeID(), logging.ResultFailure, []string{"Failed to parse imageid to vote on"})
 			TemplateInput.Message += "Failed to parse image id to vote on. "
 			break
 		}
@@ -96,7 +96,7 @@ func ImageRouter(responseWriter http.ResponseWriter, request *http.Request) {
 			break
 		}
 		if err := database.DBInterface.UpdateUserVoteScore(TemplateInput.UserInformation.ID, requestedID, Score); err != nil {
-			logging.WriteLog(logging.LogLevelError, "imagerouter/ImageRouter/ChangeVota", TemplateInput.UserInformation.Name, logging.ResultFailure, []string{"Failed to set vote in database", err.Error()})
+			logging.WriteLog(logging.LogLevelError, "imagerouter/ImageRouter/ChangeVota", TemplateInput.UserInformation.GetCompositeID(), logging.ResultFailure, []string{"Failed to set vote in database", err.Error()})
 			TemplateInput.Message += "Failed to set vote in database, internal error. "
 			break
 		}
@@ -108,11 +108,11 @@ func ImageRouter(responseWriter http.ResponseWriter, request *http.Request) {
 			redirectWithFlash(responseWriter, request, "/logon", "You must be logged in to modify an image", "LogonRequired")
 			return
 		}
-		logging.WriteLog(logging.LogLevelVerbose, "imagerouter/ImageRouter/ChangeSource", TemplateInput.UserInformation.Name, logging.ResultInfo, []string{"Attempting to source an image"})
+		logging.WriteLog(logging.LogLevelVerbose, "imagerouter/ImageRouter/ChangeSource", TemplateInput.UserInformation.GetCompositeID(), logging.ResultInfo, []string{"Attempting to source an image"})
 
 		requestedID, err = strconv.ParseUint(sImageID, 10, 64)
 		if err != nil {
-			logging.WriteLog(logging.LogLevelError, "imagerouter/ImageRouter/ChangeSource", TemplateInput.UserInformation.Name, logging.ResultFailure, []string{"Failed to parse imageid to vote on"})
+			logging.WriteLog(logging.LogLevelError, "imagerouter/ImageRouter/ChangeSource", TemplateInput.UserInformation.GetCompositeID(), logging.ResultFailure, []string{"Failed to parse imageid to vote on"})
 			TemplateInput.Message += "Failed to parse image id to vote on. "
 			break
 		}
@@ -134,7 +134,7 @@ func ImageRouter(responseWriter http.ResponseWriter, request *http.Request) {
 		Source := request.FormValue("NewSource")
 
 		if err := database.DBInterface.SetImageSource(requestedID, Source); err != nil {
-			logging.WriteLog(logging.LogLevelError, "imagerouter/ImageRouter/ChangeSource", TemplateInput.UserInformation.Name, logging.ResultFailure, []string{"Failed to set source in database", err.Error()})
+			logging.WriteLog(logging.LogLevelError, "imagerouter/ImageRouter/ChangeSource", TemplateInput.UserInformation.GetCompositeID(), logging.ResultFailure, []string{"Failed to set source in database", err.Error()})
 			TemplateInput.Message += "Failed to set source in database, internal error. "
 			break
 		}
@@ -146,11 +146,11 @@ func ImageRouter(responseWriter http.ResponseWriter, request *http.Request) {
 			redirectWithFlash(responseWriter, request, "/logon", "You must be logged in to modify an image", "LogonRequired")
 			return
 		}
-		logging.WriteLog(logging.LogLevelVerbose, "imagerouter/ImageRouter/ChangeName", TemplateInput.UserInformation.Name, logging.ResultInfo, []string{"Attempting to name an image"})
+		logging.WriteLog(logging.LogLevelVerbose, "imagerouter/ImageRouter/ChangeName", TemplateInput.UserInformation.GetCompositeID(), logging.ResultInfo, []string{"Attempting to name an image"})
 
 		requestedID, err = strconv.ParseUint(sImageID, 10, 64)
 		if err != nil {
-			logging.WriteLog(logging.LogLevelError, "imagerouter/ImageRouter/ChangeName", TemplateInput.UserInformation.Name, logging.ResultFailure, []string{"Failed to parse imageid to change name on"})
+			logging.WriteLog(logging.LogLevelError, "imagerouter/ImageRouter/ChangeName", TemplateInput.UserInformation.GetCompositeID(), logging.ResultFailure, []string{"Failed to parse imageid to change name on"})
 			TemplateInput.Message += "Failed to parse image id. "
 			break
 		}
@@ -173,7 +173,7 @@ func ImageRouter(responseWriter http.ResponseWriter, request *http.Request) {
 		Description := request.FormValue("NewDescription")
 
 		if err := database.DBInterface.UpdateImage(requestedID, Name, Description, nil, nil, nil, nil); err != nil {
-			logging.WriteLog(logging.LogLevelError, "imagerouter/ImageRouter/ChangeName", TemplateInput.UserInformation.Name, logging.ResultFailure, []string{"Failed to set name in database", err.Error()})
+			logging.WriteLog(logging.LogLevelError, "imagerouter/ImageRouter/ChangeName", TemplateInput.UserInformation.GetCompositeID(), logging.ResultFailure, []string{"Failed to set name in database", err.Error()})
 			TemplateInput.Message += "Failed to set name/description in database, internal error. "
 			break
 		}
@@ -193,7 +193,7 @@ func ImageRouter(responseWriter http.ResponseWriter, request *http.Request) {
 		iImageID, err := strconv.ParseUint(ImageID, 10, 32)
 		if err != nil {
 			TemplateInput.Message += "Error parsing tag id or image id"
-			logging.WriteLog(logging.LogLevelError, "imagerouter/ImageRouter/RemoveTag", "", logging.ResultFailure, []string{"Failed to parse tag or image id ", err.Error()})
+			logging.WriteLog(logging.LogLevelError, "imagerouter/ImageRouter/RemoveTag", TemplateInput.UserInformation.GetCompositeID(), logging.ResultFailure, []string{"Failed to parse tag or image id ", err.Error()})
 			break
 		}
 		requestedID = iImageID
@@ -201,7 +201,7 @@ func ImageRouter(responseWriter http.ResponseWriter, request *http.Request) {
 		imageInfo, err := database.DBInterface.GetImage(iImageID)
 		if err != nil {
 			TemplateInput.Message += "Error parsing image id"
-			logging.WriteLog(logging.LogLevelError, "imagerouter/ImageRouter/RemoveTag", "", logging.ResultFailure, []string{"Failed to parse image id ", err.Error()})
+			logging.WriteLog(logging.LogLevelError, "imagerouter/ImageRouter/RemoveTag", TemplateInput.UserInformation.GetCompositeID(), logging.ResultFailure, []string{"Failed to parse image id ", err.Error()})
 			break
 		}
 
@@ -215,7 +215,7 @@ func ImageRouter(responseWriter http.ResponseWriter, request *http.Request) {
 		iID, err := strconv.ParseUint(TagID, 10, 32)
 		if err != nil {
 			TemplateInput.Message += "Error parsing tag id or image id"
-			logging.WriteLog(logging.LogLevelError, "imagerouter/ImageRouter/RemoveTag", "", logging.ResultFailure, []string{"Failed to parse tag or image id ", err.Error()})
+			logging.WriteLog(logging.LogLevelError, "imagerouter/ImageRouter/RemoveTag", TemplateInput.UserInformation.GetCompositeID(), logging.ResultFailure, []string{"Failed to parse tag or image id ", err.Error()})
 			break
 		}
 		//Remove tag
@@ -236,7 +236,7 @@ func ImageRouter(responseWriter http.ResponseWriter, request *http.Request) {
 		//Translate UserID
 		userID, err := database.DBInterface.GetUserID(TemplateInput.UserInformation.Name)
 		if err != nil {
-			logging.WriteLog(logging.LogLevelError, "imagerouter/ImageRouter/AddTags", TemplateInput.UserInformation.Name, logging.ResultFailure, []string{"Could not get valid user id", err.Error()})
+			logging.WriteLog(logging.LogLevelError, "imagerouter/ImageRouter/AddTags", TemplateInput.UserInformation.GetCompositeID(), logging.ResultFailure, []string{"Could not get valid user id", err.Error()})
 			TemplateInput.Message += "You muse be logged in to perform that action"
 			break
 		}
@@ -249,14 +249,14 @@ func ImageRouter(responseWriter http.ResponseWriter, request *http.Request) {
 		iImageID, err := strconv.ParseUint(ImageID, 10, 32)
 		if err != nil {
 			TemplateInput.Message += "Error parsing image id"
-			logging.WriteLog(logging.LogLevelError, "imagerouter/ImageRouter/AddTags", "", logging.ResultFailure, []string{"Failed to parse image id ", err.Error()})
+			logging.WriteLog(logging.LogLevelError, "imagerouter/ImageRouter/AddTags", TemplateInput.UserInformation.GetCompositeID(), logging.ResultFailure, []string{"Failed to parse image id ", err.Error()})
 			break
 		}
 		requestedID = iImageID
 		imageInfo, err := database.DBInterface.GetImage(iImageID)
 		if err != nil {
 			TemplateInput.Message += "Error parsing image id"
-			logging.WriteLog(logging.LogLevelError, "imagerouter/ImageRouter/AddTags", "", logging.ResultFailure, []string{"Failed to parse image id ", err.Error()})
+			logging.WriteLog(logging.LogLevelError, "imagerouter/ImageRouter/AddTags", TemplateInput.UserInformation.GetCompositeID(), logging.ResultFailure, []string{"Failed to parse image id ", err.Error()})
 			break
 		}
 		//Validate permission to modify tags
@@ -286,13 +286,13 @@ func ImageRouter(responseWriter http.ResponseWriter, request *http.Request) {
 				//Create Tag
 				//Validate permissions to create tags
 				if TemplateInput.UserPermissions.HasPermission(interfaces.AddTags) != true {
-					logging.WriteLog(logging.LogLevelError, "imagerouter/ImageRouter/AddTags", TemplateInput.UserInformation.Name, logging.ResultFailure, []string{"Does not have create tag permission"})
+					logging.WriteLog(logging.LogLevelError, "imagerouter/ImageRouter/AddTags", TemplateInput.UserInformation.GetCompositeID(), logging.ResultFailure, []string{"Does not have create tag permission"})
 					TemplateInput.Message += "Unable to use tag " + tag.Name + " due to insufficient permissions of user to create tags. "
 					// /ValidatePermission
 				} else {
 					tagID, err := database.DBInterface.NewTag(tag.Name, tag.Description, userID)
 					if err != nil {
-						logging.WriteLog(logging.LogLevelError, "imagerouter/ImageRouter/AddTags", TemplateInput.UserInformation.Name, logging.ResultFailure, []string{"error attempting to create tag", err.Error(), tag.Name})
+						logging.WriteLog(logging.LogLevelError, "imagerouter/ImageRouter/AddTags", TemplateInput.UserInformation.GetCompositeID(), logging.ResultFailure, []string{"error attempting to create tag", err.Error(), tag.Name})
 						TemplateInput.Message += "Unable to use tag " + tag.Name + " due to a database error. "
 					} else {
 						go WriteAuditLog(userID, "CREATE-TAG", TemplateInput.UserInformation.Name+" created a new tag. "+tag.Name)
@@ -305,7 +305,7 @@ func ImageRouter(responseWriter http.ResponseWriter, request *http.Request) {
 		///////////////////
 		if err := database.DBInterface.AddTag(validatedUserTags, iImageID, userID); err != nil {
 			TemplateInput.Message += "Failed to add tag due to database error"
-			logging.WriteLog(logging.LogLevelError, "imagerouter/ImageRouter/AddTags", TemplateInput.UserInformation.Name, logging.ResultFailure, []string{"error attempting to add tags to file", err.Error(), strconv.FormatUint(iImageID, 10), tagIDString})
+			logging.WriteLog(logging.LogLevelError, "imagerouter/ImageRouter/AddTags", TemplateInput.UserInformation.GetCompositeID(), logging.ResultFailure, []string{"error attempting to add tags to file", err.Error(), strconv.FormatUint(iImageID, 10), tagIDString})
 		}
 	case "ChangeRating":
 		ImageID := request.FormValue("ID")
@@ -324,14 +324,14 @@ func ImageRouter(responseWriter http.ResponseWriter, request *http.Request) {
 		iImageID, err := strconv.ParseUint(ImageID, 10, 32)
 		if err != nil {
 			TemplateInput.Message += "Error parsing image id"
-			logging.WriteLog(logging.LogLevelError, "imagerouter/ImageRouter/ChangeRating", "", logging.ResultFailure, []string{"Failed to parse image id ", err.Error()})
+			logging.WriteLog(logging.LogLevelError, "imagerouter/ImageRouter/ChangeRating", TemplateInput.UserInformation.GetCompositeID(), logging.ResultFailure, []string{"Failed to parse image id ", err.Error()})
 			break
 		}
 		requestedID = iImageID
 		imageInfo, err := database.DBInterface.GetImage(iImageID)
 		if err != nil {
 			TemplateInput.Message += "Error parsing image id"
-			logging.WriteLog(logging.LogLevelError, "imagerouter/ImageRouter/ChangeRating", "", logging.ResultFailure, []string{"Failed to parse image id ", err.Error()})
+			logging.WriteLog(logging.LogLevelError, "imagerouter/ImageRouter/ChangeRating", TemplateInput.UserInformation.GetCompositeID(), logging.ResultFailure, []string{"Failed to parse image id ", err.Error()})
 			break
 		}
 		//Validate permission to modify tags
@@ -344,7 +344,7 @@ func ImageRouter(responseWriter http.ResponseWriter, request *http.Request) {
 		//Change Rating
 
 		if err = database.DBInterface.SetImageRating(iImageID, newRating); err != nil {
-			logging.WriteLog(logging.LogLevelError, "imagerouter/ImageRouter/ChangeRating", "", logging.ResultFailure, []string{"Failed to change image rating ", err.Error()})
+			logging.WriteLog(logging.LogLevelError, "imagerouter/ImageRouter/ChangeRating", TemplateInput.UserInformation.GetCompositeID(), logging.ResultFailure, []string{"Failed to change image rating ", err.Error()})
 			TemplateInput.Message += "Failed to change image rating, internal error ocurred. "
 		}
 	default:
@@ -363,7 +363,7 @@ func ImageRouter(responseWriter http.ResponseWriter, request *http.Request) {
 	imageInfo, err := database.DBInterface.GetImage(requestedID)
 	if err != nil {
 		TemplateInput.Message += "Failed to get image information. "
-		logging.WriteLog(logging.LogLevelError, "imagerouter/ImageRouter", "", logging.ResultFailure, []string{"Failed to get image info for", strconv.FormatUint(requestedID, 10), err.Error()})
+		logging.WriteLog(logging.LogLevelError, "imagerouter/ImageRouter", TemplateInput.UserInformation.GetCompositeID(), logging.ResultFailure, []string{"Failed to get image info for", strconv.FormatUint(requestedID, 10), err.Error()})
 		replyWithTemplate("image.html", TemplateInput, responseWriter, request)
 		return
 	}
@@ -372,7 +372,7 @@ func ImageRouter(responseWriter http.ResponseWriter, request *http.Request) {
 	imageInfo.MemberCollections, err = database.DBInterface.GetCollectionsWithImage(requestedID)
 	if err != nil {
 		//log err but no need to inform user
-		logging.WriteLog(logging.LogLevelError, "imagerouter/ImageRouter", "", logging.ResultFailure, []string{"Failed to get collection info for", strconv.FormatUint(requestedID, 10), err.Error()})
+		logging.WriteLog(logging.LogLevelError, "imagerouter/ImageRouter", TemplateInput.UserInformation.GetCompositeID(), logging.ResultFailure, []string{"Failed to get collection info for", strconv.FormatUint(requestedID, 10), err.Error()})
 	}
 
 	if TemplateInput.OldQuery != "" {
@@ -384,7 +384,7 @@ func ImageRouter(responseWriter http.ResponseWriter, request *http.Request) {
 			if TemplateInput.UserInformation.Name != "" {
 				userFilterTags, err := database.DBInterface.GetUserFilterTags(TemplateInput.UserInformation.ID, false)
 				if err != nil {
-					logging.WriteLog(logging.LogLevelError, "imagerouter/ImageRouter", TemplateInput.UserInformation.Name, logging.ResultFailure, []string{"Failed to load user's filter", err.Error()})
+					logging.WriteLog(logging.LogLevelError, "imagerouter/ImageRouter", TemplateInput.UserInformation.GetCompositeID(), logging.ResultFailure, []string{"Failed to load user's filter", err.Error()})
 					TemplateInput.Message += "Failed to add your global filter to this query. Internal error. "
 				} else {
 					userQTags = interfaces.RemoveDuplicateTags(append(userQTags, userFilterTags...))
@@ -403,7 +403,7 @@ func ImageRouter(responseWriter http.ResponseWriter, request *http.Request) {
 					}
 				}
 			} else {
-				logging.WriteLog(logging.LogLevelError, "imagerouter/ImageRouter", TemplateInput.UserInformation.Name, logging.ResultFailure, []string{"Failed to get next/prev image", err.Error()})
+				logging.WriteLog(logging.LogLevelError, "imagerouter/ImageRouter", TemplateInput.UserInformation.GetCompositeID(), logging.ResultFailure, []string{"Failed to get next/prev image", err.Error()})
 			}
 		}
 	}
@@ -439,7 +439,7 @@ func ImageRouter(responseWriter http.ResponseWriter, request *http.Request) {
 	TemplateInput.Tags, err = database.DBInterface.GetImageTags(imageInfo.ID)
 	if err != nil {
 		TemplateInput.Message += "Failed to load tags. "
-		logging.WriteLog(logging.LogLevelError, "imagerouter/ImageRouter", "", logging.ResultFailure, []string{"Failed to load tags", err.Error()})
+		logging.WriteLog(logging.LogLevelError, "imagerouter/ImageRouter", TemplateInput.UserInformation.GetCompositeID(), logging.ResultFailure, []string{"Failed to load tags", err.Error()})
 	}
 
 	if TemplateInput.ViewMode == "slideshow" {
@@ -675,7 +675,7 @@ func handleImageUpload(request *http.Request, userName string) (uint64, map[stri
 func GetNewImageName(originalName string, fileStream io.Reader) (string, error) {
 	hasher := sha256.New()
 	if _, err := io.Copy(hasher, fileStream); err != nil {
-		logging.WriteLog(logging.LogLevelError, "imagerouter/GetNewImageName", "", logging.ResultFailure, []string{"Error during hash", err.Error()})
+		logging.WriteLog(logging.LogLevelError, "imagerouter/GetNewImageName", "0", logging.ResultFailure, []string{"Error during hash", err.Error()})
 		return "", errors.New(originalName + " could not be hashed. Internal error.")
 	}
 

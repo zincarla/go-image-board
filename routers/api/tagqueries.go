@@ -35,7 +35,7 @@ func TagNameAPIRouter(responseWriter http.ResponseWriter, request *http.Request)
 	//Perform Query
 	tagInfo, count, err := database.DBInterface.SearchTags(requestedName, 0, 5, true, true)
 	if err != nil {
-		logging.WriteLog(logging.LogLevelError, "tagqueries/TagNameAPIRouter", "", logging.ResultFailure, []string{"Failed to query tags", err.Error()})
+		logging.WriteLog(logging.LogLevelError, "tagqueries/TagNameAPIRouter", UserName, logging.ResultFailure, []string{"Failed to query tags", err.Error()})
 		ReplyWithJSONError(responseWriter, request, "Internal Database Error Occured", UserName, http.StatusInternalServerError)
 		return
 	}
@@ -146,7 +146,7 @@ func TagsAPIRouter(responseWriter http.ResponseWriter, request *http.Request) {
 		//Perform Query
 		tagInfo, count, err := database.DBInterface.SearchTags(requestedName, pageStart, pageStride, false, false)
 		if err != nil {
-			logging.WriteLog(logging.LogLevelError, "tagqueries/TagsAPIRouter", "", logging.ResultFailure, []string{"Failed to query tags", err.Error()})
+			logging.WriteLog(logging.LogLevelError, "tagqueries/TagsAPIRouter", UserName, logging.ResultFailure, []string{"Failed to query tags", err.Error()})
 			ReplyWithJSONError(responseWriter, request, "Internal Database Error Occured", UserName, http.StatusInternalServerError)
 			return
 		}

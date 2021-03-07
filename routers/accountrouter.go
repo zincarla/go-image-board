@@ -59,13 +59,13 @@ func LogonRouter(responseWriter http.ResponseWriter, request *http.Request) {
 			replyWithTemplate("logon.html", TemplateInput, responseWriter, request)
 			return
 		}
-		logging.WriteLog(logging.LogLevelError, "accountrouter/LogonRouter", "", logging.ResultFailure, []string{"Account Validation", "Either username, password, or e-mail was left blank, or was not set correctly."})
+		logging.WriteLog(logging.LogLevelError, "accountrouter/LogonRouter", TemplateInput.UserInformation.GetCompositeID(), logging.ResultFailure, []string{"Account Validation", "Either username, password, or e-mail was left blank, or was not set correctly."})
 		TemplateInput.Message = "Either username, password, or e-mail was left blank, or was not set correctly."
 		replyWithTemplate("logon.html", TemplateInput, responseWriter, request)
 		return
 	case "create":
 		if config.Configuration.AllowAccountCreation == false {
-			logging.WriteLog(logging.LogLevelError, "accountrouter/LogonRouter", "", logging.ResultFailure, []string{"Account Creation", "Not allowed by configuration option."})
+			logging.WriteLog(logging.LogLevelError, "accountrouter/LogonRouter", TemplateInput.UserInformation.GetCompositeID(), logging.ResultFailure, []string{"Account Creation", "Not allowed by configuration option."})
 
 			TemplateInput.Message = "Create failed, creations not allowed on this server. (Private?)"
 			replyWithTemplate("logon.html", TemplateInput, responseWriter, request)
@@ -73,7 +73,7 @@ func LogonRouter(responseWriter http.ResponseWriter, request *http.Request) {
 		}
 		if request.FormValue("password") == "" || request.FormValue("password") != request.FormValue("confirmpassword") {
 			//If password is blank or password does not match confirmed password
-			logging.WriteLog(logging.LogLevelError, "accountrouter/LogonRouter", "", logging.ResultFailure, []string{"Account Creation", "Password is not correct/confirmed"})
+			logging.WriteLog(logging.LogLevelError, "accountrouter/LogonRouter", TemplateInput.UserInformation.GetCompositeID(), logging.ResultFailure, []string{"Account Creation", "Password is not correct/confirmed"})
 			TemplateInput.Message = "Create failed, your password is either blank, or the passwords do not match"
 			replyWithTemplate("logon.html", TemplateInput, responseWriter, request)
 			return
@@ -324,7 +324,7 @@ func getSessionInformation(request *http.Request) (string, string, *sessions.Ses
 	if err != nil {
 		//Note that this just gobbles the error. Functions that call this should redirect when tokenID is "" or userName is ""
 		//If the user is supposed to be logged in that is
-		logging.WriteLog(logging.LogLevelError, "accountrouter/getSessionInformation", "", logging.ResultFailure, []string{err.Error()})
+		logging.WriteLog(logging.LogLevelError, "accountrouter/getSessionInformation", "0", logging.ResultFailure, []string{err.Error()})
 		return "", "", session
 	}
 	// Get some session values.

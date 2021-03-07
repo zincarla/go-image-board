@@ -78,7 +78,7 @@ func replyWithTemplate(templateName string, templateInputInterface interface{}, 
 	}
 	err := templateToUse.ExecuteTemplate(responseWriter, templateName, templateInputInterface)
 	if err != nil {
-		logging.WriteLog(logging.LogLevelError, "routertemplate/replyWithTemplate", "", logging.ResultFailure, []string{"Parse Error", err.Error()})
+		logging.WriteLog(logging.LogLevelError, "routertemplate/replyWithTemplate", "0", logging.ResultFailure, []string{"Parse Error", err.Error()})
 		http.Error(responseWriter, "", http.StatusInternalServerError)
 		return
 	}
@@ -160,7 +160,7 @@ func getNewTemplateInput(responseWriter http.ResponseWriter, request *http.Reque
 		_, totalImages, err = database.DBInterface.SearchImages(make([]interfaces.TagInformation, 0), 0, 1)
 		//Don't really care if this has a transient issue
 		if err != nil {
-			logging.WriteLog(logging.LogLevelWarning, "routertemplate/getNewTemplateInput", "", logging.ResultFailure, []string{"failed to update count cache", err.Error()})
+			logging.WriteLog(logging.LogLevelWarning, "routertemplate/getNewTemplateInput", TemplateInput.UserInformation.GetCompositeID(), logging.ResultFailure, []string{"failed to update count cache", err.Error()})
 		}
 		totalCacheTime = time.Now()
 	}
