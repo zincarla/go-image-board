@@ -27,7 +27,7 @@ func CollectionImageOrderGetRouter(responseWriter http.ResponseWriter, request *
 	collectionID, err = strconv.ParseUint(request.FormValue("ID"), 10, 32)
 	if err != nil {
 		TemplateInput.Message += "Failed to get requested collection. "
-		redirectWithFlash(responseWriter, request, "/collections?&SearchTerms="+url.QueryEscape(TemplateInput.OldQuery), TemplateInput.Message, "OrderFail")
+		redirectWithFlash(responseWriter, request, "/collections?SearchTerms="+url.QueryEscape(TemplateInput.OldQuery), TemplateInput.Message, "OrderFail")
 		return
 	}
 
@@ -77,7 +77,7 @@ func CollectionImageOrderPostRouter(responseWriter http.ResponseWriter, request 
 	collectionID, err = strconv.ParseUint(request.FormValue("ID"), 10, 32)
 	if err != nil {
 		TemplateInput.Message += "Failed to get requested collection. "
-		redirectWithFlash(responseWriter, request, "/collections?&SearchTerms="+url.QueryEscape(TemplateInput.OldQuery), TemplateInput.Message, "OrderFail")
+		redirectWithFlash(responseWriter, request, "/collections?SearchTerms="+url.QueryEscape(TemplateInput.OldQuery), TemplateInput.Message, "OrderFail")
 		return
 	}
 
@@ -126,7 +126,9 @@ func CollectionImageOrderPostRouter(responseWriter http.ResponseWriter, request 
 		}
 
 		//redirect back to collection view with messages
-		redirectWithFlash(responseWriter, request, "/collectionimages?ID="+request.FormValue("ID")+"&SearchTerms="+url.QueryEscape(TemplateInput.OldQuery), TemplateInput.Message, "Success")
+		TemplateInput.Message += "Collection re-ordered successfully. "
+		redirectWithFlash(responseWriter, request, "/collectionimages?ID="+request.FormValue("ID")+"&SearchTerms="+url.QueryEscape(TemplateInput.OldQuery), TemplateInput.Message, "OrderSuccess")
+		return
 	}
 	TemplateInput.Message += "No command given in form. "
 	redirectWithFlash(responseWriter, request, "/collectionimages?ID="+strconv.FormatUint(collectionID, 10)+"&SearchTerms="+url.QueryEscape(TemplateInput.OldQuery), TemplateInput.Message, "OrderFail")
