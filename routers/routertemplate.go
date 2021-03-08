@@ -213,6 +213,10 @@ func createFlash(responseWriter http.ResponseWriter, request *http.Request, flas
 //creates a flash cookie, and sends a redirect to the client to the root with the flash cookie message
 func redirectWithFlash(responseWriter http.ResponseWriter, request *http.Request, redirectURL string, flashMessage string, flashName string) error {
 	err := createFlash(responseWriter, request, flashMessage, flashName)
-	http.Redirect(responseWriter, request, redirectURL+"?flash="+flashName, http.StatusFound)
+	toAppend := "?flash=" + flashName
+	if strings.ContainsRune(redirectURL, '?') {
+		toAppend = "&flash=" + flashName
+	}
+	http.Redirect(responseWriter, request, redirectURL+toAppend, http.StatusFound)
 	return err
 }
