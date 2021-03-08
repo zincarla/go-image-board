@@ -42,7 +42,7 @@ func CollectionImageOrderGetRouter(responseWriter http.ResponseWriter, request *
 	//Validate Permission to Modify
 	if TemplateInput.UserPermissions.HasPermission(interfaces.ModifyCollectionMembers) != true && (config.Configuration.UsersControlOwnObjects != true || CollectionInfo.UploaderID != TemplateInput.UserInformation.ID) {
 		TemplateInput.Message += "You do not have edit member permission for collection. "
-		redirectWithFlash(responseWriter, request, "/collectionimages?ID="+strconv.FormatUint(collectionID, 10)+"&SearchTerms="+url.QueryEscape(TemplateInput.OldQuery), TemplateInput.Message, "OrderFail")
+		redirectWithFlash(responseWriter, request, "/collection?ID="+strconv.FormatUint(collectionID, 10)+"&SearchTerms="+url.QueryEscape(TemplateInput.OldQuery), TemplateInput.Message, "OrderFail")
 		return
 	}
 
@@ -94,7 +94,7 @@ func CollectionImageOrderPostRouter(responseWriter http.ResponseWriter, request 
 	if TemplateInput.UserPermissions.HasPermission(interfaces.ModifyCollectionMembers) != true && (config.Configuration.UsersControlOwnObjects != true || CollectionInfo.UploaderID != TemplateInput.UserInformation.ID) {
 		TemplateInput.Message += "You do not have edit member permission for collection. "
 		go WriteAuditLogByName(TemplateInput.UserInformation.Name, "MODIFY-COLLECTIONMEMBER", TemplateInput.UserInformation.Name+" failed to modify collection order. Insufficient permissions. "+request.FormValue("ID"))
-		redirectWithFlash(responseWriter, request, "/collectionimages?ID="+strconv.FormatUint(collectionID, 10)+"&SearchTerms="+url.QueryEscape(TemplateInput.OldQuery), TemplateInput.Message, "OrderFail")
+		redirectWithFlash(responseWriter, request, "/collection?ID="+strconv.FormatUint(collectionID, 10)+"&SearchTerms="+url.QueryEscape(TemplateInput.OldQuery), TemplateInput.Message, "OrderFail")
 		return
 	}
 
@@ -127,10 +127,10 @@ func CollectionImageOrderPostRouter(responseWriter http.ResponseWriter, request 
 
 		//redirect back to collection view with messages
 		TemplateInput.Message += "Collection re-ordered successfully. "
-		redirectWithFlash(responseWriter, request, "/collectionimages?ID="+request.FormValue("ID")+"&SearchTerms="+url.QueryEscape(TemplateInput.OldQuery), TemplateInput.Message, "OrderSuccess")
+		redirectWithFlash(responseWriter, request, "/collection?ID="+request.FormValue("ID")+"&SearchTerms="+url.QueryEscape(TemplateInput.OldQuery), TemplateInput.Message, "OrderSuccess")
 		return
 	}
 	TemplateInput.Message += "No command given in form. "
-	redirectWithFlash(responseWriter, request, "/collectionimages?ID="+strconv.FormatUint(collectionID, 10)+"&SearchTerms="+url.QueryEscape(TemplateInput.OldQuery), TemplateInput.Message, "OrderFail")
+	redirectWithFlash(responseWriter, request, "/collection?ID="+strconv.FormatUint(collectionID, 10)+"&SearchTerms="+url.QueryEscape(TemplateInput.OldQuery), TemplateInput.Message, "OrderFail")
 	return
 }

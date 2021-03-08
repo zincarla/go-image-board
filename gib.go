@@ -258,8 +258,8 @@ func main() {
 		requestRouter.HandleFunc("/images", routers.AccountRequiredMiddleWare(routers.ImageQueryRouter)).Methods("GET")
 		requestRouter.HandleFunc("/collectionorder", routers.AccountRequiredMiddleWare(routers.CollectionImageOrderGetRouter)).Methods("GET")
 		requestRouter.HandleFunc("/collectionorder", routers.AccountRequiredMiddleWare(routers.CollectionImageOrderPostRouter)).Methods("POST")
-		requestRouter.HandleFunc("/collectionimages", routers.AccountRequiredMiddleWare(routers.CollectionImageGetRouter)).Methods("GET")
-		requestRouter.HandleFunc("/collectionimages", routers.AccountRequiredMiddleWare(routers.CollectionImagePostRouter)).Methods("POST")
+		requestRouter.HandleFunc("/collection", routers.AccountRequiredMiddleWare(routers.CollectionGetRouter)).Methods("GET")
+		requestRouter.HandleFunc("/collection", routers.AccountRequiredMiddleWare(routers.CollectionPostRouter)).Methods("POST")
 		requestRouter.HandleFunc("/collections", routers.AccountRequiredMiddleWare(routers.CollectionsRouter)) //TODO: Split Needed
 		requestRouter.HandleFunc("/images/{file}", routers.AccountRequiredMiddleWare(routers.ResourceImageRouter)).Methods("GET")
 		requestRouter.HandleFunc("/thumbs/{file}", routers.AccountRequiredMiddleWare(routers.ThumbnailRouter)).Methods("GET")

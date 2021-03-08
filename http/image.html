@@ -24,10 +24,10 @@
 				<h5>Collections{{if or $CanCreateCollection $CanModifyCollectionMembers}}{{if $UserNotNull}} (<a href="#" onclick="ToggleFormDisplay('addCollectionForm'); $('#addCollectionForm input[name=CollectionName]:first').select(); return false;">add</a>){{end}}{{end}}</h5>
 				<ul class="CollectionList">
 					{{range .ImageContentInfo.MemberCollections}}
-					<li>{{if ne .PreviousMemberID 0}}<a href="/image?ID={{.PreviousMemberID}}&SearchTerms={{$OldQuery}}"><div class="previousInCollection">&lt;</div></a>{{end}} <a href="/collectionimages?ID={{.ID}}">{{.Name}}</a><br>({{.OrderInCollection | inc}}/{{.Members}}) {{if ne .NextMemberID 0}}<a href="/image?ID={{.NextMemberID}}&SearchTerms={{$OldQuery}}"><div class="nextInCollection">&gt;</div></a>{{end}} </li>
+					<li>{{if ne .PreviousMemberID 0}}<a href="/image?ID={{.PreviousMemberID}}&SearchTerms={{$OldQuery}}"><div class="previousInCollection">&lt;</div></a>{{end}} <a href="/collection?ID={{.ID}}">{{.Name}}</a><br>({{.OrderInCollection | inc}}/{{.Members}}) {{if ne .NextMemberID 0}}<a href="/image?ID={{.NextMemberID}}&SearchTerms={{$OldQuery}}"><div class="nextInCollection">&gt;</div></a>{{end}} </li>
 					{{end}}
 				</ul>
-				<form action="/collectionimages" method="POST" id="addCollectionForm" class="displayHidden">
+				<form action="/collection" method="POST" id="addCollectionForm" class="displayHidden">
 					<h5 id="addCollectionFormTitle">Add to Collection</h5>
 					<input type="text" name="CollectionName" placeholder="Collection Name" value="" oninput="CheckCollectionName(this.parentNode,'addCollectionFormTitle')" >
 					<input type="hidden" name="ImageID" value="{{.ImageContentInfo.ID}}">

@@ -42,7 +42,7 @@
 				{{end}}
 				{{if and $UserNotNull $HasModifyPermissions}}
 				<br><a href="#" onclick="return ToggleFormDisplay('changeNameForm');">Modify Collection</a>
-				<form action="/collectionimages" method="POST" id="changeNameForm" class="displayHidden">
+				<form action="/collection" method="POST" id="changeNameForm" class="displayHidden">
 					<h5>Modify Collection</h5>
 					<input type="text" name="NewName" placeholder="New Name" value="{{.CollectionInfo.Name}}">
 					<input type="text" name="NewDescription" placeholder="New Description" value="{{.CollectionInfo.Description}}">
@@ -74,8 +74,8 @@
 							Go to this post
 						</a>
 						{{if and $UserNotNull $HasRemoveFromPermissions}}
-						<form action="/collectionimages" method="POST">
-							<input type="hidden" name="command" value="delete" />
+						<form action="/collection" method="POST">
+							<input type="hidden" name="command" value="deletemember" />
 							<input type="hidden" name="ID" value="{{$CollectionID}}" />
 							<input type="hidden" name="ImageID" value="{{.ID}}" />
 							<input type="hidden" name="SearchTerms" value="{{$OldQuery}}" />
@@ -90,8 +90,8 @@
 							<div class="imageResultOverlay overlay{{.Location | getimagetype}}"></div>
 						</a>
 						{{if and $UserNotNull $HasRemoveFromPermissions}}
-						<form action="/collectionimages" method="POST">
-							<input type="hidden" name="command" value="delete" />
+						<form action="/collection" method="POST">
+							<input type="hidden" name="command" value="deletemember" />
 							<input type="hidden" name="ID" value="{{$CollectionID}}" />
 							<input type="hidden" name="ImageID" value="{{.ID}}" />
 							<input type="hidden" name="SearchTerms" value="{{$OldQuery}}" />

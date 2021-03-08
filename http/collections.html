@@ -13,7 +13,7 @@
 				{{$OldQuery := .OldQuery}}
 				{{range .CollectionInfoList}}
 					<div class="ImageResultContainer CollectionResultContainer">
-						<a href="/collectionimages?ID={{.ID}}&SearchTerms={{$OldQuery}}">
+						<a href="/collection?ID={{.ID}}&SearchTerms={{$OldQuery}}">
 							{{if eq .Location ""}}
 							<img alt="Preview image for {{.Name}}" title="{{.Name}}" src="/resources/noicon.svg" />
 							{{else}}

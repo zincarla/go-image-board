@@ -12,8 +12,8 @@ import (
 	"strings"
 )
 
-//CollectionImageGetRouter serves get requests to /collectionimages
-func CollectionImageGetRouter(responseWriter http.ResponseWriter, request *http.Request) {
+//CollectionGetRouter serves get requests to /collection
+func CollectionGetRouter(responseWriter http.ResponseWriter, request *http.Request) {
 	TemplateInput := getTemplateInputFromRequest(responseWriter, request)
 	userQuery := TemplateInput.OldQuery
 	var collectionID uint64
@@ -65,7 +65,7 @@ func CollectionImageGetRouter(responseWriter http.ResponseWriter, request *http.
 	if err == nil {
 		TemplateInput.ImageInfo = imageInfo
 		TemplateInput.TotalResults = MaxCount
-		TemplateInput.PageMenu, err = generatePageMenu(int64(pageStart), int64(pageStride), int64(TemplateInput.TotalResults), "SearchTerms="+url.QueryEscape(userQuery)+"&ID="+strconv.FormatUint(collectionInfo.ID, 10), "/collectionimages")
+		TemplateInput.PageMenu, err = generatePageMenu(int64(pageStart), int64(pageStride), int64(TemplateInput.TotalResults), "SearchTerms="+url.QueryEscape(userQuery)+"&ID="+strconv.FormatUint(collectionInfo.ID, 10), "/collection")
 		TemplateInput.Tags, err = database.DBInterface.GetCollectionTags(collectionInfo.ID)
 		if err != nil {
 			TemplateInput.Message += "Failed to get collection tags."
@@ -79,14 +79,14 @@ func CollectionImageGetRouter(responseWriter http.ResponseWriter, request *http.
 	replyWithTemplate("collection.html", TemplateInput, responseWriter, request)
 }
 
-//CollectionImagePostRouter serves post requests to /collectionimages
-func CollectionImagePostRouter(responseWriter http.ResponseWriter, request *http.Request) {
+//CollectionPostRouter serves post requests to /collection
+func CollectionPostRouter(responseWriter http.ResponseWriter, request *http.Request) {
 	TemplateInput := getTemplateInputFromRequest(responseWriter, request)
 	userQuery := TemplateInput.OldQuery
 	var collectionID uint64
 
 	switch cmd := request.FormValue("command"); cmd {
-	case "delete": //Remove a single image from a collection, and if last image, the collection itself
+	case "deletemember": //Remove a single image from a collection, and if last image, the collection itself
 		if TemplateInput.UserInformation.Name == "" {
 			//Redirect to logon
 			redirectWithFlash(responseWriter, request, "/logon", "You must be logged in to remove collection members", "LogonRequired")
@@ -105,7 +105,7 @@ func CollectionImagePostRouter(responseWriter http.ResponseWriter, request *http
 		parsedImageID, err := strconv.ParseUint(request.FormValue("ImageID"), 10, 32)
 		if err != nil {
 			TemplateInput.Message += "Failed to get image with that ID. "
-			redirectWithFlash(responseWriter, request, "/collectionimages?ID="+strconv.FormatUint(collectionID, 10)+"&SearchTerms="+url.QueryEscape(userQuery), TemplateInput.Message, "CollectionFailed")
+			redirectWithFlash(responseWriter, request, "/collection?ID="+strconv.FormatUint(collectionID, 10)+"&SearchTerms="+url.QueryEscape(userQuery), TemplateInput.Message, "CollectionFailed")
 			return
 		}
 
@@ -122,7 +122,7 @@ func CollectionImagePostRouter(responseWriter http.ResponseWriter, request *http
 		if TemplateInput.UserPermissions.HasPermission(interfaces.ModifyCollectionMembers) != true && (config.Configuration.UsersControlOwnObjects != true || CollectionInfo.UploaderID != TemplateInput.UserInformation.ID) {
 			TemplateInput.Message += "You do not have edit member permission for collection. "
 			go WriteAuditLogByName(TemplateInput.UserInformation.Name, "REMOVE-COLLECTIONMEMBER", TemplateInput.UserInformation.Name+" failed to delete collection. Insufficient permissions. "+request.FormValue("ID"))
-			redirectWithFlash(responseWriter, request, "/collectionimages?ID="+strconv.FormatUint(collectionID, 10)+"&SearchTerms="+url.QueryEscape(userQuery), TemplateInput.Message, "CollectionFailed")
+			redirectWithFlash(responseWriter, request, "/collection?ID="+strconv.FormatUint(collectionID, 10)+"&SearchTerms="+url.QueryEscape(userQuery), TemplateInput.Message, "CollectionFailed")
 			return
 		}
 
@@ -131,7 +131,7 @@ func CollectionImagePostRouter(responseWriter http.ResponseWriter, request *http
 			if err := database.DBInterface.DeleteCollection(collectionID); err != nil {
 				TemplateInput.Message += "Failed to delete collection. SQL Error. "
 				go WriteAuditLogByName(TemplateInput.UserInformation.Name, "REMOVE-COLLECTIONMEMBER", TemplateInput.UserInformation.Name+" failed to remove member from collection. "+request.FormValue("ImageID")+" from "+request.FormValue("ID")+", "+err.Error())
-				redirectWithFlash(responseWriter, request, "/collectionimages?ID="+strconv.FormatUint(collectionID, 10)+"&SearchTerms="+url.QueryEscape(userQuery), TemplateInput.Message, "CollectionFailed")
+				redirectWithFlash(responseWriter, request, "/collection?ID="+strconv.FormatUint(collectionID, 10)+"&SearchTerms="+url.QueryEscape(userQuery), TemplateInput.Message, "CollectionFailed")
 				return
 			}
 			go WriteAuditLogByName(TemplateInput.UserInformation.Name, "REMOVE-COLLECTIONMEMBER", TemplateInput.UserInformation.Name+" removed image from collection. "+request.FormValue("ImageID")+" from "+request.FormValue("ID")+", "+CollectionInfo.Name)
@@ -143,12 +143,12 @@ func CollectionImagePostRouter(responseWriter http.ResponseWriter, request *http
 		if err := database.DBInterface.RemoveCollectionMember(collectionID, parsedImageID); err != nil {
 			TemplateInput.Message += "Failed to delete collection member. SQL Error. "
 			go WriteAuditLogByName(TemplateInput.UserInformation.Name, "REMOVE-COLLECTIONMEMBER", TemplateInput.UserInformation.Name+" failed to remove member from collection. "+request.FormValue("ImageID")+" from "+request.FormValue("ID")+", "+err.Error())
-			redirectWithFlash(responseWriter, request, "/collectionimages?ID="+strconv.FormatUint(collectionID, 10)+"&SearchTerms="+url.QueryEscape(userQuery), TemplateInput.Message, "CollectionFailed")
+			redirectWithFlash(responseWriter, request, "/collection?ID="+strconv.FormatUint(collectionID, 10)+"&SearchTerms="+url.QueryEscape(userQuery), TemplateInput.Message, "CollectionFailed")
 			return
 		}
 		go WriteAuditLogByName(TemplateInput.UserInformation.Name, "REMOVE-COLLECTIONMEMBER", TemplateInput.UserInformation.Name+" removed image from collection. "+request.FormValue("ImageID")+" from "+request.FormValue("ID")+", "+CollectionInfo.Name)
 		TemplateInput.Message += "Successfully removed image from collection. "
-		redirectWithFlash(responseWriter, request, "/collectionimages?ID="+strconv.FormatUint(collectionID, 10)+"&SearchTerms="+url.QueryEscape(userQuery), TemplateInput.Message, "CollectionSuccess")
+		redirectWithFlash(responseWriter, request, "/collection?ID="+strconv.FormatUint(collectionID, 10)+"&SearchTerms="+url.QueryEscape(userQuery), TemplateInput.Message, "CollectionSuccess")
 		return
 	case "addcollectionmember": //Add image to a collection, and if collection does not exist, create it
 		//Get Image ID
@@ -239,14 +239,14 @@ func CollectionImagePostRouter(responseWriter http.ResponseWriter, request *http
 		newName := strings.TrimSpace(request.FormValue("NewName"))
 		if len(newName) < 3 || len(newName) > 255 {
 			TemplateInput.Message += "New Name is an unsupported length. Please ensure it is longer than 3 characters but shorter than 255. "
-			redirectWithFlash(responseWriter, request, "/collectionimages?ID="+strconv.FormatUint(collectionID, 10)+"&SearchTerms="+url.QueryEscape(userQuery), TemplateInput.Message, "CollectionFailed")
+			redirectWithFlash(responseWriter, request, "/collection?ID="+strconv.FormatUint(collectionID, 10)+"&SearchTerms="+url.QueryEscape(userQuery), TemplateInput.Message, "CollectionFailed")
 			return
 		}
 		//Validate NewDescription
 		newDesc := strings.TrimSpace(request.FormValue("NewDescription"))
 		if len(newDesc) > 255 {
 			TemplateInput.Message += "Description cannot be longer than 255 characters. "
-			redirectWithFlash(responseWriter, request, "/collectionimages?ID="+strconv.FormatUint(collectionID, 10)+"&SearchTerms="+url.QueryEscape(userQuery), TemplateInput.Message, "CollectionFailed")
+			redirectWithFlash(responseWriter, request, "/collection?ID="+strconv.FormatUint(collectionID, 10)+"&SearchTerms="+url.QueryEscape(userQuery), TemplateInput.Message, "CollectionFailed")
 			return
 		}
 
@@ -263,7 +263,7 @@ func CollectionImagePostRouter(responseWriter http.ResponseWriter, request *http
 		newNameCollection, err := database.DBInterface.GetCollectionByName(newName)
 		if err == nil && newNameCollection.ID != CollectionInfo.ID {
 			TemplateInput.Message += newName + " is already in use, plese select a different name. "
-			redirectWithFlash(responseWriter, request, "/collectionimages?ID="+strconv.FormatUint(collectionID, 10)+"&SearchTerms="+url.QueryEscape(userQuery), TemplateInput.Message, "CollectionFailed")
+			redirectWithFlash(responseWriter, request, "/collection?ID="+strconv.FormatUint(collectionID, 10)+"&SearchTerms="+url.QueryEscape(userQuery), TemplateInput.Message, "CollectionFailed")
 			return
 		}
 
@@ -271,7 +271,7 @@ func CollectionImagePostRouter(responseWriter http.ResponseWriter, request *http
 		if TemplateInput.UserPermissions.HasPermission(interfaces.ModifyCollections) != true && (config.Configuration.UsersControlOwnObjects != true || CollectionInfo.UploaderID != TemplateInput.UserInformation.ID) {
 			TemplateInput.Message += "You do not have edit member permission for collection. "
 			go WriteAuditLogByName(TemplateInput.UserInformation.Name, "MODIFY-COLLECTION", TemplateInput.UserInformation.Name+" failed to modify collection. Insufficient permissions. "+request.FormValue("ID"))
-			redirectWithFlash(responseWriter, request, "/collectionimages?ID="+strconv.FormatUint(collectionID, 10)+"&SearchTerms="+url.QueryEscape(userQuery), TemplateInput.Message, "CollectionFailed")
+			redirectWithFlash(responseWriter, request, "/collection?ID="+strconv.FormatUint(collectionID, 10)+"&SearchTerms="+url.QueryEscape(userQuery), TemplateInput.Message, "CollectionFailed")
 			return
 		}
 
@@ -279,12 +279,12 @@ func CollectionImagePostRouter(responseWriter http.ResponseWriter, request *http
 		if err := database.DBInterface.UpdateCollection(collectionID, newName, newDesc); err != nil {
 			TemplateInput.Message += "Failed to modify collection. SQL Error. "
 			go WriteAuditLogByName(TemplateInput.UserInformation.Name, "MODIFY-COLLECTION", TemplateInput.UserInformation.Name+" failed to modify collection. "+request.FormValue("ID")+", "+err.Error())
-			redirectWithFlash(responseWriter, request, "/collectionimages?ID="+strconv.FormatUint(collectionID, 10)+"&SearchTerms="+url.QueryEscape(userQuery), TemplateInput.Message, "CollectionFailed")
+			redirectWithFlash(responseWriter, request, "/collection?ID="+strconv.FormatUint(collectionID, 10)+"&SearchTerms="+url.QueryEscape(userQuery), TemplateInput.Message, "CollectionFailed")
 			return
 		}
 		go WriteAuditLogByName(TemplateInput.UserInformation.Name, "MODIFY-COLLECTION", TemplateInput.UserInformation.Name+" modified collection ("+request.FormValue("ID")+")")
 		TemplateInput.Message += "Successfully modified collection."
-		redirectWithFlash(responseWriter, request, "/collectionimages?ID="+strconv.FormatUint(collectionID, 10)+"&SearchTerms="+url.QueryEscape(userQuery), TemplateInput.Message, "CollectionSuccess")
+		redirectWithFlash(responseWriter, request, "/collection?ID="+strconv.FormatUint(collectionID, 10)+"&SearchTerms="+url.QueryEscape(userQuery), TemplateInput.Message, "CollectionSuccess")
 		return
 	}
 
