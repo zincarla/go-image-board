@@ -16,7 +16,7 @@
 						<h2>Logon</h2><br>
 						UserName: <input type="text" name="userName"/><br>
 						Password: <input type="password" name="password"/><br>
-						<a href="#resetPasswordForm" onclick="ToggleDIVDisplay('logonForm'); ToggleDIVDisplay('resetPasswordForm');">Reset Password</a>
+						<a href="#resetPasswordGetForm" onclick="ToggleDIVDisplay('logonForm'); ToggleDIVDisplay('resetPasswordGetForm');">Reset Password</a>
 						<input type="hidden" name="command" value="validate" />
 						<input type="submit" value="Logon" />
 						{{if .AllowAccountCreation}}
@@ -24,6 +24,14 @@
 						{{end}}
 					</form>
 					
+					<form method="get" action="/logon" id="resetPasswordGetForm" class="displayHidden">
+						<h2>Reset Password</h2><br>
+						UserName: <input type="text" name="userName"/><br>
+						<input type="hidden" name="command" value="resetpassword" />
+						<input type="submit" value="Submit" />
+						{{if ne .AllowAccountCreation false}}<a href="#createForm" onclick="ToggleDIVDisplay('createForm'); ToggleDIVDisplay('resetPasswordGetForm');">Create an account</a><br>{{end}}
+						<a href="#resetPasswordGetForm" onclick="ToggleDIVDisplay('logonForm'); ToggleDIVDisplay('resetPasswordGetForm');">Login instead</a>
+					</form>
 					<form method="post" action="/logon" id="resetPasswordForm" class="display{{if ne .QuestionOne ""}}Block{{else}}Hidden{{end}}">
 						{{.CSRF}}
 						<h2>Reset Password</h2><br>

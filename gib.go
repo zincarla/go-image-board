@@ -271,9 +271,11 @@ func main() {
 		requestRouter.HandleFunc("/tag", routers.AccountRequiredMiddleWare(routers.TagGetRouter)).Methods("GET")
 		requestRouter.HandleFunc("/tag", routers.AccountRequiredMiddleWare(routers.TagPostRouter)).Methods("POST")
 		requestRouter.HandleFunc("/redirect", routers.AccountRequiredMiddleWare(routers.RedirectRouter)).Methods("POST")
-		requestRouter.HandleFunc("/logon", routers.LogonRouter) //TODO: Split Needed
+		requestRouter.HandleFunc("/logon", routers.LogonGetRouter).Methods("GET")
+		requestRouter.HandleFunc("/logon", routers.LogonPostRouter).Methods("POST")
 		requestRouter.HandleFunc("/mod", routers.AccountRequiredMiddleWare(routers.ModRouter)).Methods("GET")
-		requestRouter.HandleFunc("/mod/user", routers.AccountRequiredMiddleWare(routers.ModUserRouter)).Methods("POST") //TODO: Update the router to redirect at end!
+		requestRouter.HandleFunc("/mod/user", routers.AccountRequiredMiddleWare(routers.ModUserGetRouter)).Methods("GET")
+		requestRouter.HandleFunc("/mod/user", routers.AccountRequiredMiddleWare(routers.ModUserPostRouter)).Methods("POST")
 
 		//API routers
 		requestRouter.HandleFunc("/api/Collection/{CollectionID}", api.CollectionAPIRouter) //TODO: Split
