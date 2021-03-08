@@ -60,7 +60,7 @@ func ImageQueryRouter(responseWriter http.ResponseWriter, request *http.Request)
 			userFilterTags, err := database.DBInterface.GetUserFilterTags(TemplateInput.UserInformation.ID, false)
 			if err != nil {
 				logging.WriteLog(logging.LogLevelError, "imagequeryrouter/ImageQueryRouter", TemplateInput.UserInformation.GetCompositeID(), logging.ResultFailure, []string{"Failed to load user's filter", err.Error()})
-				TemplateInput.Message += "Failed to add your global filter to this query. Internal error. "
+				TemplateInput.HTMLMessage += template.HTML("Failed to add your global filter to this query. Internal error.<br>")
 			} else {
 				userQTags = interfaces.RemoveDuplicateTags(append(userQTags, userFilterTags...))
 			}
@@ -74,7 +74,7 @@ func ImageQueryRouter(responseWriter http.ResponseWriter, request *http.Request)
 				return
 			}
 			logging.WriteLog(logging.LogLevelError, "imagequeryrouter/ImageQueryRouter", TemplateInput.UserInformation.GetCompositeID(), logging.ResultFailure, []string{"Failed to search random image", userQuery, err.Error()})
-			TemplateInput.Message += "Failed to search for a random image. " //Just fall through to the normal search
+			TemplateInput.HTMLMessage += template.HTML("Failed to search for a random image.<br>") //Just fall through to the normal search
 		}
 		//Parse tag results for next query
 		imageInfo, MaxCount, err := database.DBInterface.SearchImages(userQTags, pageStart, pageStride)

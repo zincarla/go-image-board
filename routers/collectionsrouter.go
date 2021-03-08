@@ -5,6 +5,7 @@ import (
 	"go-image-board/database"
 	"go-image-board/interfaces"
 	"go-image-board/logging"
+	"html/template"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -32,7 +33,7 @@ func CollectionsRouter(responseWriter http.ResponseWriter, request *http.Request
 			userFilterTags, err := database.DBInterface.GetUserFilterTags(TemplateInput.UserInformation.ID, true)
 			if err != nil {
 				logging.WriteLog(logging.LogLevelError, "collectionqueryrouter/CollectionsRouter", TemplateInput.UserInformation.GetCompositeID(), logging.ResultFailure, []string{"Failed to load user's filter", err.Error()})
-				TemplateInput.Message += "Failed to add your global filter to this query. Internal error. "
+				TemplateInput.HTMLMessage += template.HTML("Failed to add your global filter to this query. Internal error.<br>")
 			} else {
 				userQTags = interfaces.RemoveDuplicateTags(append(userQTags, userFilterTags...))
 			}

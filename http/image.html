@@ -53,7 +53,13 @@
 				</form>
 				<ul>
 					{{range .Tags}}
-					<li>{{.Name}} {{if $CanModifyTags}}<a href="/image?ID={{$ImageID}}&command=RemoveTag&TagID={{.ID}}&SearchTerms={{$OldQuery}}" onclick="return confirm('Are you sure you want to remove this tag from this image?');">-</a> {{end}}{{if ne .ID 0}}<a href="/tag?ID={{.ID}}&SearchTerms={{$OldQuery}}">?</a>{{else}}<a href="/about/tags.html?SearchTerms={{$OldQuery}}">?</a>{{end}}</li>
+					<li>{{.Name}} {{if $CanModifyTags}}<form action="/image" method="POST" class="anchorform">
+															<input type="hidden" name="ID" value="{{$ImageID}}">
+															<input type="hidden" name="command" value="RemoveTag">
+															<input type="hidden" name="TagID" value="{{.ID}}">
+															<input type="hidden" name="SearchTerms" value="{{$OldQuery}}">
+															<button type="submit" class="buttonasanchor" onclick="return confirm('Are you sure you want to remove this tag from this image?');">-</button>
+														</form>{{end}}{{if ne .ID 0}}<a href="/tag?ID={{.ID}}&SearchTerms={{$OldQuery}}">?</a>{{else}}<a href="/about/tags.html?SearchTerms={{$OldQuery}}">?</a>{{end}}</li>
 					{{end}}
 				</ul>
 				<h5>Rating{{if and $UserNotNull $HasTagPermissions}} (<a href="#" onclick="ToggleFormDisplay('changeRatingForm'); $('#changeRatingForm input[name=NewRating]:first').select(); return false;">edit</a>){{end}}</h5>
@@ -68,7 +74,7 @@
 				</form>
 				{{.ImageContentInfo.Rating}} <a href="/about/tags.html?SearchTerms={{$OldQuery}}">?</a>
 				<h5>Source{{if and $UserNotNull $HasSourcePermissions}} (<a href="#" onclick="ToggleFormDisplay('changeSourceForm');$('#changeSourceForm input[name=NewSource]:first').select(); return false;">edit</a>){{end}}</h5>
-				<form action="/image" method="GET" id="changeSourceForm" class="displayHidden">
+				<form action="/image" method="POST" id="changeSourceForm" class="displayHidden">
 					<input type="text" name="NewSource" placeholder="Source" value="{{.ImageContentInfo.Source}}">
 					<input type="hidden" name="ID" value="{{.ImageContentInfo.ID}}">
 					<input type="hidden" name="command" value="ChangeSource" />
@@ -85,7 +91,7 @@
 				{{.ImageContentInfo.Source}}
 				{{end}}
 				<h5>Score{{if $HasVotePermissions}} (<a href="#" onclick="ToggleFormDisplay('changeVoteForm'); $('#changeVoteForm input[name=NewVote]:first').select(); return false;">vote</a>){{end}}</h5>
-				<form action="/image" method="GET" id="changeVoteForm" class="displayHidden">
+				<form action="/image" method="POST" id="changeVoteForm" class="displayHidden">
 					<input type="number" name="NewVote" placeholder="New Vote" value="{{.ImageContentInfo.UsersVotedScore}}" min="-10" max="10">
 					<input type="hidden" name="ID" value="{{.ImageContentInfo.ID}}">
 					<input type="hidden" name="command" value="ChangeVote" />
@@ -107,7 +113,13 @@
 				There are {{.SimilarCount}} <a href="/images?SearchTerms=similar:{{.ImageContentInfo.ID}}">similar images</a> to this.
 				{{end}}
 				{{if and $UserNotNull $HasDeletePermissions}}
-				<br><br><a href="/image?command=delete&ID={{$ImageID}}&SearchTerms={{.OldQuery}}" onclick="return confirm('Are you sure you want to delete this image?');">Delete Image</a>
+				<br><br>
+				<form action="/image" method="POST" class="anchorform">
+					<input type="hidden" name="ID" value="{{$ImageID}}">
+					<input type="hidden" name="command" value="delete">
+					<input type="hidden" name="SearchTerms" value="{{$OldQuery}}">
+					<button type="submit" class="buttonasanchor" onclick="return confirm('Are you sure you want to delete this image?');">Delete Image</button>
+				</form>
 				{{end}}
 			</div>
 			<div id="ImageGridContainer" style="text-align: center;">

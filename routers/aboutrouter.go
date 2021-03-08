@@ -20,7 +20,7 @@ func AboutRouter(responseWriter http.ResponseWriter, request *http.Request) {
 	data, err := ioutil.ReadFile(filePath)
 
 	if err != nil {
-		TemplateInput.Message = "Content not found"
+		TemplateInput.HTMLMessage += template.HTML("Content not found.<br>")
 		TemplateInput.ImageContent = "Content not found"
 	}
 	TemplateInput.ImageContent = template.HTML(string(data))

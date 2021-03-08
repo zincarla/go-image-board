@@ -5,6 +5,7 @@ import (
 	"go-image-board/database"
 	"go-image-board/interfaces"
 	"go-image-board/logging"
+	"html/template"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -26,23 +27,23 @@ func CollectionImageOrderGetRouter(responseWriter http.ResponseWriter, request *
 	//Parse Collection ID
 	collectionID, err = strconv.ParseUint(request.FormValue("ID"), 10, 32)
 	if err != nil {
-		TemplateInput.Message += "Failed to get requested collection. "
-		redirectWithFlash(responseWriter, request, "/collections?SearchTerms="+url.QueryEscape(TemplateInput.OldQuery), TemplateInput.Message, "OrderFail")
+		TemplateInput.HTMLMessage += template.HTML("Failed to get requested collection.<br>")
+		redirectWithFlash(responseWriter, request, "/collections?SearchTerms="+url.QueryEscape(TemplateInput.OldQuery), TemplateInput.HTMLMessage, "OrderFail")
 		return
 	}
 
 	//Get collection data
 	CollectionInfo, err := database.DBInterface.GetCollection(collectionID)
 	if err != nil {
-		TemplateInput.Message += "Failed to get collection. SQL Error. "
-		redirectWithFlash(responseWriter, request, "/collections?SearchTerms="+url.QueryEscape(TemplateInput.OldQuery), TemplateInput.Message, "OrderFail")
+		TemplateInput.HTMLMessage += template.HTML("Failed to get collection. SQL Error.<br>")
+		redirectWithFlash(responseWriter, request, "/collections?SearchTerms="+url.QueryEscape(TemplateInput.OldQuery), TemplateInput.HTMLMessage, "OrderFail")
 		return
 	}
 
 	//Validate Permission to Modify
 	if TemplateInput.UserPermissions.HasPermission(interfaces.ModifyCollectionMembers) != true && (config.Configuration.UsersControlOwnObjects != true || CollectionInfo.UploaderID != TemplateInput.UserInformation.ID) {
-		TemplateInput.Message += "You do not have edit member permission for collection. "
-		redirectWithFlash(responseWriter, request, "/collection?ID="+strconv.FormatUint(collectionID, 10)+"&SearchTerms="+url.QueryEscape(TemplateInput.OldQuery), TemplateInput.Message, "OrderFail")
+		TemplateInput.HTMLMessage += template.HTML("You do not have edit member permission for collection.<br>")
+		redirectWithFlash(responseWriter, request, "/collection?ID="+strconv.FormatUint(collectionID, 10)+"&SearchTerms="+url.QueryEscape(TemplateInput.OldQuery), TemplateInput.HTMLMessage, "OrderFail")
 		return
 	}
 
@@ -55,7 +56,7 @@ func CollectionImageOrderGetRouter(responseWriter http.ResponseWriter, request *
 		TemplateInput.TotalResults = MaxCount
 	} else {
 		logging.WriteLog(logging.LogLevelError, "collectionimagerouter/CollectionImageOrderRouter", TemplateInput.UserInformation.GetCompositeID(), logging.ResultFailure, []string{"Failed to get collection images", strconv.FormatUint(collectionID, 10), err.Error()})
-		TemplateInput.Message += "Failed to get collection members."
+		TemplateInput.HTMLMessage += template.HTML("Failed to get collection members.<br>")
 	}
 
 	replyWithTemplate("collectionreorder.html", TemplateInput, responseWriter, request)
@@ -76,25 +77,25 @@ func CollectionImageOrderPostRouter(responseWriter http.ResponseWriter, request 
 	//Parse Collection ID
 	collectionID, err = strconv.ParseUint(request.FormValue("ID"), 10, 32)
 	if err != nil {
-		TemplateInput.Message += "Failed to get requested collection. "
-		redirectWithFlash(responseWriter, request, "/collections?SearchTerms="+url.QueryEscape(TemplateInput.OldQuery), TemplateInput.Message, "OrderFail")
+		TemplateInput.HTMLMessage += template.HTML("Failed to get requested collection.<br>")
+		redirectWithFlash(responseWriter, request, "/collections?SearchTerms="+url.QueryEscape(TemplateInput.OldQuery), TemplateInput.HTMLMessage, "OrderFail")
 		return
 	}
 
 	//Get collection data
 	CollectionInfo, err := database.DBInterface.GetCollection(collectionID)
 	if err != nil {
-		TemplateInput.Message += "Failed to get collection. SQL Error. "
+		TemplateInput.HTMLMessage += template.HTML("Failed to get collection. SQL Error.<br>")
 		go WriteAuditLogByName(TemplateInput.UserInformation.Name, "MODIFY-COLLECTIONMEMBER", TemplateInput.UserInformation.Name+" failed to modify collection. "+request.FormValue("ID")+", "+err.Error())
-		redirectWithFlash(responseWriter, request, "/collections?SearchTerms="+url.QueryEscape(TemplateInput.OldQuery), TemplateInput.Message, "OrderFail")
+		redirectWithFlash(responseWriter, request, "/collections?SearchTerms="+url.QueryEscape(TemplateInput.OldQuery), TemplateInput.HTMLMessage, "OrderFail")
 		return
 	}
 
 	//Validate Permission to Modify
 	if TemplateInput.UserPermissions.HasPermission(interfaces.ModifyCollectionMembers) != true && (config.Configuration.UsersControlOwnObjects != true || CollectionInfo.UploaderID != TemplateInput.UserInformation.ID) {
-		TemplateInput.Message += "You do not have edit member permission for collection. "
+		TemplateInput.HTMLMessage += template.HTML("You do not have edit member permission for collection.<br>")
 		go WriteAuditLogByName(TemplateInput.UserInformation.Name, "MODIFY-COLLECTIONMEMBER", TemplateInput.UserInformation.Name+" failed to modify collection order. Insufficient permissions. "+request.FormValue("ID"))
-		redirectWithFlash(responseWriter, request, "/collection?ID="+strconv.FormatUint(collectionID, 10)+"&SearchTerms="+url.QueryEscape(TemplateInput.OldQuery), TemplateInput.Message, "OrderFail")
+		redirectWithFlash(responseWriter, request, "/collection?ID="+strconv.FormatUint(collectionID, 10)+"&SearchTerms="+url.QueryEscape(TemplateInput.OldQuery), TemplateInput.HTMLMessage, "OrderFail")
 		return
 	}
 
@@ -110,7 +111,7 @@ func CollectionImageOrderPostRouter(responseWriter http.ResponseWriter, request 
 				idList = append(idList, imageID)
 			} else {
 				//Just log for user
-				TemplateInput.Message += v + " skipped. "
+				TemplateInput.HTMLMessage += template.HTML(template.HTMLEscapeString(v) + " skipped.<br>")
 			}
 		}
 
@@ -118,19 +119,19 @@ func CollectionImageOrderPostRouter(responseWriter http.ResponseWriter, request 
 		if len(idList) > 0 {
 			for i, v := range idList {
 				if err := database.DBInterface.UpdateCollectionMember(collectionID, v, uint64(i)); err != nil {
-					TemplateInput.Message += "Failed to reorder imageID " + strconv.FormatUint(v, 10) + " to " + strconv.Itoa(i)
+					TemplateInput.HTMLMessage += template.HTML("Failed to reorder imageID " + strconv.FormatUint(v, 10) + " to " + strconv.Itoa(i) + ".<br>")
 				}
 			}
 		} else {
-			TemplateInput.Message += "Reorder cancelled as image list empty after parsing. "
+			TemplateInput.HTMLMessage += template.HTML("Reorder cancelled as image list empty after parsing.<br>")
 		}
 
 		//redirect back to collection view with messages
-		TemplateInput.Message += "Collection re-ordered successfully. "
-		redirectWithFlash(responseWriter, request, "/collection?ID="+request.FormValue("ID")+"&SearchTerms="+url.QueryEscape(TemplateInput.OldQuery), TemplateInput.Message, "OrderSuccess")
+		TemplateInput.HTMLMessage += template.HTML("Collection re-ordered successfully.<br>")
+		redirectWithFlash(responseWriter, request, "/collection?ID="+request.FormValue("ID")+"&SearchTerms="+url.QueryEscape(TemplateInput.OldQuery), TemplateInput.HTMLMessage, "OrderSuccess")
 		return
 	}
-	TemplateInput.Message += "No command given in form. "
-	redirectWithFlash(responseWriter, request, "/collection?ID="+strconv.FormatUint(collectionID, 10)+"&SearchTerms="+url.QueryEscape(TemplateInput.OldQuery), TemplateInput.Message, "OrderFail")
+	TemplateInput.HTMLMessage += template.HTML("No command given in form.<br>")
+	redirectWithFlash(responseWriter, request, "/collection?ID="+strconv.FormatUint(collectionID, 10)+"&SearchTerms="+url.QueryEscape(TemplateInput.OldQuery), TemplateInput.HTMLMessage, "OrderFail")
 	return
 }

@@ -5,6 +5,7 @@ import (
 	"go-image-board/config"
 	"go-image-board/database"
 	"go-image-board/logging"
+	"html/template"
 	"net"
 	"net/http"
 	"regexp"
@@ -41,7 +42,7 @@ func LogonRouter(responseWriter http.ResponseWriter, request *http.Request) {
 				Token, err := database.DBInterface.GenerateToken(username, ip)
 				if err != nil {
 					logging.WriteLog(logging.LogLevelError, "accountrouter/LogonRouter", username, logging.ResultFailure, []string{"Account Validation", err.Error()})
-					TemplateInput.Message = "Token Failure"
+					TemplateInput.HTMLMessage += template.HTML("Token Failure.<br>")
 					replyWithTemplate("logon.html", TemplateInput, responseWriter, request)
 					return
 				}
@@ -55,26 +56,26 @@ func LogonRouter(responseWriter http.ResponseWriter, request *http.Request) {
 				return
 			}
 			go WriteAuditLogByName(username, "LOGON", username+" failed to log in. "+err.Error())
-			TemplateInput.Message = "Wrong username or password"
+			TemplateInput.HTMLMessage += template.HTML("Wrong username or password.<br>")
 			replyWithTemplate("logon.html", TemplateInput, responseWriter, request)
 			return
 		}
 		logging.WriteLog(logging.LogLevelError, "accountrouter/LogonRouter", TemplateInput.UserInformation.GetCompositeID(), logging.ResultFailure, []string{"Account Validation", "Either username, password, or e-mail was left blank, or was not set correctly."})
-		TemplateInput.Message = "Either username, password, or e-mail was left blank, or was not set correctly."
+		TemplateInput.HTMLMessage += template.HTML("Either username, password, or e-mail was left blank, or was not set correctly.<br>")
 		replyWithTemplate("logon.html", TemplateInput, responseWriter, request)
 		return
 	case "create":
 		if config.Configuration.AllowAccountCreation == false {
 			logging.WriteLog(logging.LogLevelError, "accountrouter/LogonRouter", TemplateInput.UserInformation.GetCompositeID(), logging.ResultFailure, []string{"Account Creation", "Not allowed by configuration option."})
 
-			TemplateInput.Message = "Create failed, creations not allowed on this server. (Private?)"
+			TemplateInput.HTMLMessage = template.HTML("Create failed, creations not allowed on this server. (Private?)<br>")
 			replyWithTemplate("logon.html", TemplateInput, responseWriter, request)
 			return
 		}
 		if request.FormValue("password") == "" || request.FormValue("password") != request.FormValue("confirmpassword") {
 			//If password is blank or password does not match confirmed password
 			logging.WriteLog(logging.LogLevelError, "accountrouter/LogonRouter", TemplateInput.UserInformation.GetCompositeID(), logging.ResultFailure, []string{"Account Creation", "Password is not correct/confirmed"})
-			TemplateInput.Message = "Create failed, your password is either blank, or the passwords do not match"
+			TemplateInput.HTMLMessage += template.HTML("Create failed, your password is either blank, or the passwords do not match.<br>")
 			replyWithTemplate("logon.html", TemplateInput, responseWriter, request)
 			return
 		}
@@ -82,28 +83,28 @@ func LogonRouter(responseWriter http.ResponseWriter, request *http.Request) {
 		if username == "" || database.DBInterface.ValidateProposedUsername(username) != nil {
 			//If username is blank
 			logging.WriteLog(logging.LogLevelError, "accountrouter/LogonRouter", username, logging.ResultFailure, []string{"Account Creation", "Username failed, either blank or invalid"})
-			TemplateInput.Message = "Create failed, your username is blank or invalid"
+			TemplateInput.HTMLMessage += template.HTML("Create failed, your username is blank or invalid.<br>")
 			replyWithTemplate("logon.html", TemplateInput, responseWriter, request)
 			return
 		}
 		if request.FormValue("eMail") == "" || validateProposedEmail(strings.ToLower(request.FormValue("eMail"))) != nil {
 			//If username is blank
 			logging.WriteLog(logging.LogLevelError, "accountrouter/LogonRouter", username, logging.ResultFailure, []string{"Account Creation", "E-Mail is either blank, or not formatted correctly"})
-			TemplateInput.Message = "Create failed, your E-Mail is incorrectly formatted"
+			TemplateInput.HTMLMessage += template.HTML("Create failed, your E-Mail is incorrectly formatted.<br>")
 			replyWithTemplate("logon.html", TemplateInput, responseWriter, request)
 			return
 		}
 		err := database.DBInterface.CreateUser(username, []byte(request.FormValue("password")), strings.ToLower(request.FormValue("eMail")), config.Configuration.DefaultPermissions)
 		if err == nil {
 			go WriteAuditLogByName(username, "ACCOUNT-CREATED", username+" successfully created an account.")
-			TemplateInput.Message += "Your account has been created. Please sign in. "
+			TemplateInput.HTMLMessage += template.HTML("Your account has been created. Please sign in.<br>")
 			TemplateInput.UserInformation.ID = 0
 			TemplateInput.UserInformation.Name = ""
 			break //Break out of switch and reply with template
 		}
 		logging.WriteLog(logging.LogLevelError, "accountrouter/LogonRouter", username, logging.ResultFailure, []string{"Account Creation", err.Error()})
 
-		TemplateInput.Message = "Account creation failed " // + err.Error()
+		TemplateInput.HTMLMessage += template.HTML("Account creation failed.<br>")
 	case "logout":
 		//User requests logout manually, destroy session
 		userName, tokenID, session := getSessionInformation(request)
@@ -122,7 +123,7 @@ func LogonRouter(responseWriter http.ResponseWriter, request *http.Request) {
 		}
 
 		go WriteAuditLogByName(userName, "LOGOUT", userName+" manually logged out.")
-		TemplateInput.Message = "Successfully logged out."
+		TemplateInput.HTMLMessage += template.HTML("Successfully logged out.<br>")
 		TemplateInput.UserInformation.ID = 0
 		TemplateInput.UserInformation.Name = ""
 		TemplateInput.QuestionOne = ""
@@ -135,7 +136,7 @@ func LogonRouter(responseWriter http.ResponseWriter, request *http.Request) {
 			userName = strings.ToLower(request.FormValue("userName"))
 		}
 		if userName == "" {
-			TemplateInput.Message = "Username must be specified, please try again."
+			TemplateInput.HTMLMessage += template.HTML("Username must be specified, please try again.<br>")
 			logging.WriteLog(logging.LogLevelError, "accountrouter/LogonRouter", userName, logging.ResultFailure, []string{"Username was not set during password reset request"})
 			break
 		}
@@ -150,7 +151,7 @@ func LogonRouter(responseWriter http.ResponseWriter, request *http.Request) {
 		if answerOne == "" && answerTwo == "" && answerThree == "" {
 			questionOne, questionTwo, questionThree, err := database.DBInterface.GetSecurityQuestions(userName)
 			if err != nil {
-				TemplateInput.Message = "Could not load security questions. Please contact site owner."
+				TemplateInput.HTMLMessage += template.HTML("Could not load security questions. Please contact site owner.<br>")
 				logging.WriteLog(logging.LogLevelError, "accountrouter/LogonRouter", userName, logging.ResultFailure, []string{"Security Questions not found"})
 				break
 			}
@@ -164,7 +165,7 @@ func LogonRouter(responseWriter http.ResponseWriter, request *http.Request) {
 
 		//Verify all answers are not blank
 		if answerOne == "" || answerTwo == "" || answerThree == "" {
-			TemplateInput.Message = "All 3 questions and answers must be set."
+			TemplateInput.HTMLMessage += template.HTML("All 3 questions and answers must be set.<br>")
 			logging.WriteLog(logging.LogLevelError, "accountrouter/LogonRouter", userName, logging.ResultFailure, []string{"Security Answers not set as user did not fill out form"})
 			break
 		}
@@ -173,7 +174,7 @@ func LogonRouter(responseWriter http.ResponseWriter, request *http.Request) {
 		if request.FormValue("newpassword") == "" || request.FormValue("newpassword") != request.FormValue("confirmpassword") {
 			//If password is blank or password does not match confirmed password
 			logging.WriteLog(logging.LogLevelError, "accountrouter/LogonRouter", userName, logging.ResultFailure, []string{"Account resetpassword", "Password is not confirmed"})
-			TemplateInput.Message = "Reset password failed, your new password is either blank, or the confirmation password does not match"
+			TemplateInput.HTMLMessage += template.HTML("Reset password failed, your new password is either blank, or the confirmation password does not match.<br>")
 			break
 		}
 
@@ -182,7 +183,7 @@ func LogonRouter(responseWriter http.ResponseWriter, request *http.Request) {
 
 		err := database.DBInterface.ValidateSecurityQuestions(userName, []byte(answerOne), []byte(answerTwo), []byte(answerThree))
 		if err != nil {
-			TemplateInput.Message = "Failed to validate answers"
+			TemplateInput.HTMLMessage += template.HTML("Failed to validate answers.<br>")
 			go WriteAuditLogByName(userName, "PASSWORD-RESET", userName+" failed to reset password, security answers incorrect.")
 			break
 		}
@@ -191,12 +192,12 @@ func LogonRouter(responseWriter http.ResponseWriter, request *http.Request) {
 
 		err = database.DBInterface.SetUserPassword(userName, nil, []byte(request.FormValue("newpassword")), []byte(answerOne), []byte(answerTwo), []byte(answerThree))
 		if err != nil {
-			TemplateInput.Message = "Failed to change password"
+			TemplateInput.HTMLMessage += template.HTML("Failed to change password.<br>")
 			go WriteAuditLogByName(userName, "PASSWORD-RESET", userName+" failed to reset password. "+err.Error())
 			break
 		}
 		go WriteAuditLogByName(userName, "PASSWORD-RESET", userName+" reset password successfully by security question challenge.")
-		TemplateInput.Message = "Successfully set password."
+		TemplateInput.HTMLMessage += template.HTML("Successfully set password.<br>")
 	case "changepw":
 		//User requests to change password, first validate parameters
 		username := strings.ToLower(request.FormValue("userName"))
@@ -204,7 +205,7 @@ func LogonRouter(responseWriter http.ResponseWriter, request *http.Request) {
 		if request.FormValue("newpassword") == "" || request.FormValue("newpassword") != request.FormValue("confirmpassword") {
 			//If password is blank or password does not match confirmed password
 			logging.WriteLog(logging.LogLevelError, "accountrouter/LogonRouter", username, logging.ResultFailure, []string{"Account ChangePW", "Password is not correct or not confirmed"})
-			TemplateInput.Message = "Change password failed, your new password is either blank, or the passwords do not match"
+			TemplateInput.HTMLMessage += template.HTML("Change password failed, your new password is either blank, or the passwords do not match.<br>")
 			break
 		}
 		//Validate user is who they are by running validation like logging in
@@ -212,7 +213,7 @@ func LogonRouter(responseWriter http.ResponseWriter, request *http.Request) {
 			err := database.DBInterface.ValidateUser(username, []byte(request.FormValue("oldpassword")))
 			if err != nil {
 				go WriteAuditLogByName(username, "PASSWORD-SET", username+" failed to set password. "+err.Error())
-				TemplateInput.Message = "Either username or password incorrect."
+				TemplateInput.HTMLMessage += template.HTML("Either username or password incorrect.<br>")
 				break
 			}
 		}
@@ -220,7 +221,7 @@ func LogonRouter(responseWriter http.ResponseWriter, request *http.Request) {
 		err := database.DBInterface.SetUserPassword(username, []byte(request.FormValue("oldpassword")), []byte(request.FormValue("newpassword")), nil, nil, nil)
 		if err != nil {
 			go WriteAuditLogByName(username, "PASSWORD-SET", username+" failed to set password. "+err.Error())
-			TemplateInput.Message = "Failed to update password."
+			TemplateInput.HTMLMessage += template.HTML("Failed to update password.<br>")
 			break
 		}
 		//Success if we hit this point
@@ -235,13 +236,13 @@ func LogonRouter(responseWriter http.ResponseWriter, request *http.Request) {
 		session.Values["UserName"] = ""
 		session.Save(request, responseWriter)
 		go WriteAuditLogByName(username, "PASSWORD-SET", username+" successfully set password by old password challenge. ")
-		TemplateInput.Message = "Your password was changed successfully. Please log in."
+		TemplateInput.HTMLMessage += template.HTML("Your password was changed successfully. Please log in.<br>")
 	case "securityquestion":
 		//User requests to change security questions
 
 		userName, tokenID, _ := getSessionInformation(request)
 		if tokenID == "" || userName == "" {
-			TemplateInput.Message = "You must be logged in to perform this action."
+			TemplateInput.HTMLMessage += template.HTML("You must be logged in to perform this action.<br>")
 			go WriteAuditLogByName(userName, "QUESTION-SET", userName+" failed to set questions. Not logged in.")
 			logging.WriteLog(logging.LogLevelError, "accountrouter/LogonRouter", userName, logging.ResultFailure, []string{"User not logged in"})
 			break
@@ -250,7 +251,7 @@ func LogonRouter(responseWriter http.ResponseWriter, request *http.Request) {
 		//Verify password confirmation
 		err := database.DBInterface.ValidateUser(userName, []byte(request.FormValue("confirmpassword")))
 		if err != nil {
-			TemplateInput.Message = "Password confirmation failed, please try again."
+			TemplateInput.HTMLMessage += template.HTML("Password confirmation failed, please try again.<br>")
 			go WriteAuditLogByName(userName, "QUESTION-SET", userName+" failed to set questions. "+err.Error())
 			break
 		}
@@ -267,7 +268,7 @@ func LogonRouter(responseWriter http.ResponseWriter, request *http.Request) {
 
 		//Verify questions are set as well as passwords
 		if answerOne == "" || answerTwo == "" || answerThree == "" || questionOne == "" || questionTwo == "" || questionThree == "" {
-			TemplateInput.Message = "All 3 questions and answers must be set."
+			TemplateInput.HTMLMessage += template.HTML("All 3 questions and answers must be set.<br>")
 			logging.WriteLog(logging.LogLevelError, "accountrouter/LogonRouter", userName, logging.ResultFailure, []string{"Security Question not set as user did not fill out form"})
 			break
 		}
@@ -275,7 +276,7 @@ func LogonRouter(responseWriter http.ResponseWriter, request *http.Request) {
 		//Verify Challenge
 		oldQOne, _, _, err := database.DBInterface.GetSecurityQuestions(userName)
 		if err == nil && oldQOne != "" && answerChallenge == "" {
-			TemplateInput.Message = "You must answer the challenge question"
+			TemplateInput.HTMLMessage += template.HTML("You must answer the challenge question.<br>")
 			logging.WriteLog(logging.LogLevelError, "accountrouter/LogonRouter", userName, logging.ResultFailure, []string{"Security Question not set as user did not answer challenge"})
 			break
 		}
@@ -285,28 +286,28 @@ func LogonRouter(responseWriter http.ResponseWriter, request *http.Request) {
 		err = database.DBInterface.SetSecurityQuestions(userName, questionOne, questionTwo, questionThree, []byte(answerOne), []byte(answerTwo), []byte(answerThree), []byte(answerChallenge))
 		if err != nil {
 			go WriteAuditLogByName(userName, "QUESTION-SET", userName+" failed to set questions. "+err.Error())
-			TemplateInput.Message = "Failed to set questions."
+			TemplateInput.HTMLMessage += template.HTML("Failed to set questions.<br>")
 		} else {
 			go WriteAuditLogByName(userName, "QUESTION-SET", userName+" successfully set questions with password challenge. ")
-			TemplateInput.Message = "Successfully set questions."
+			TemplateInput.HTMLMessage += template.HTML("Successfully set questions.<br>")
 		}
 	case "setuserfilter":
 		//Ensure signed in
 		userName, tokenID, _ := getSessionInformation(request)
 		if tokenID == "" || userName == "" {
-			TemplateInput.Message = "You must be logged in to perform this action."
+			TemplateInput.HTMLMessage += template.HTML("You must be logged in to perform this action.<br>")
 			logging.WriteLog(logging.LogLevelError, "accountrouter/LogonRouter", userName, logging.ResultFailure, []string{"User not logged in"})
 			break
 		}
 		err := database.DBInterface.SetUserQueryTags(TemplateInput.UserInformation.ID, request.FormValue("filter"))
 		if err != nil {
 			go WriteAuditLogByName(userName, "FILTER-SET", userName+" failed to set filter. "+err.Error())
-			TemplateInput.Message = "Failed to update filter."
+			TemplateInput.HTMLMessage += template.HTML("Failed to update filter.<br>")
 			break
 		}
 		//Success
 		go WriteAuditLogByName(userName, "FILTER-SET", userName+" successfully set filter. ")
-		TemplateInput.Message = "Your filter was changed successfully."
+		TemplateInput.HTMLMessage += template.HTML("Your filter was changed successfully.<br>")
 	}
 
 	//Populate user filter if signed in

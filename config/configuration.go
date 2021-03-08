@@ -1,7 +1,9 @@
 package config
 
 import (
+	"encoding/gob"
 	"encoding/json"
+	"html/template"
 	"os"
 	"time"
 
@@ -133,5 +135,7 @@ func CreateSessionStore() {
 	if Configuration.CSRFKey == nil || len(Configuration.CSRFKey) != 32 {
 		Configuration.CSRFKey = securecookie.GenerateRandomKey(32)
 	}
+	//Register templates in gob for flash cookie usage
+	gob.Register(template.HTML(""))
 	SessionStore = sessions.NewCookieStore(Configuration.SessionStoreKey...)
 }

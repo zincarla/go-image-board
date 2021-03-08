@@ -1,5 +1,4 @@
-		<div id="messageContainer" class="display{{if or .Message .HTMLMessage}}Block{{else}}Hidden{{end}}">
-			{{if .Message}}{{.Message}}<br>{{end}}
+		<div id="messageContainer" class="display{{if or .HTMLMessage}}Block{{else}}Hidden{{end}}">
 			{{if .HTMLMessage}}{{.HTMLMessage}}<br>{{end}}
 			<a href="javascript:ToggleDIVDisplay('messageContainer');">Click here</a> to close this message.
 		</div>

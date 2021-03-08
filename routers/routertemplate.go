@@ -31,8 +31,8 @@ type templateInput struct {
 	AliasTagInfo       interfaces.TagInformation
 	//UserName              string
 	//UserID                uint64
-	UserInformation       interfaces.UserInformation
-	Message               string
+	UserInformation interfaces.UserInformation
+	//Message               string
 	HTMLMessage           template.HTML
 	AllowAccountCreation  bool
 	AccountRequiredToView bool
@@ -187,32 +187,33 @@ func applyFlash(responseWriter http.ResponseWriter, request *http.Request, Templ
 	session, err := config.SessionStore.Get(request, config.SessionVariableName)
 	if err == nil {
 		//Load flash if necessary
-		if request.FormValue("flash") != "" {
-			pendingFlashes := session.Flashes(request.FormValue("flash"))
-			if len(pendingFlashes) > 0 {
-				fullMessage := ""
-				for _, pendingFlash := range pendingFlashes {
-					if pf, ok := pendingFlash.(string); ok {
-						fullMessage += pf + "<br>"
-					}
+		pendingFlashes := session.Flashes(request.FormValue("flash"))
+		if len(pendingFlashes) > 0 {
+			for _, pendingFlash := range pendingFlashes {
+				if pf, ok := pendingFlash.(template.HTML); ok {
+					TemplateInput.HTMLMessage += pf
+				} else {
+					logging.WriteLog(logging.LogLevelDebug, "routertemplate/applyFlash", TemplateInput.UserInformation.GetCompositeID(), logging.ResultFailure, []string{"Flash not template.HTML"})
 				}
-				TemplateInput.HTMLMessage += template.HTML(fullMessage)
-				session.Save(request, responseWriter)
 			}
+			session.Save(request, responseWriter)
 		}
 	}
 }
 
 //createFlash creates a flash cookie and saves the session
-func createFlash(responseWriter http.ResponseWriter, request *http.Request, flashMessage string, flashName string) error {
+func createFlash(responseWriter http.ResponseWriter, request *http.Request, flashMessage template.HTML, flashName string) error {
 	session, _ := config.SessionStore.Get(request, config.SessionVariableName)
 	session.AddFlash(flashMessage, flashName)
 	return session.Save(request, responseWriter)
 }
 
 //creates a flash cookie, and sends a redirect to the client to the root with the flash cookie message
-func redirectWithFlash(responseWriter http.ResponseWriter, request *http.Request, redirectURL string, flashMessage string, flashName string) error {
+func redirectWithFlash(responseWriter http.ResponseWriter, request *http.Request, redirectURL string, flashMessage template.HTML, flashName string) error {
 	err := createFlash(responseWriter, request, flashMessage, flashName)
+	if err != nil {
+		logging.WriteLog(logging.LogLevelDebug, "routertemplate/redirectWithFlash", "0", logging.ResultFailure, []string{"Failed to create flash", flashName, err.Error()})
+	}
 	toAppend := "?flash=" + flashName
 	if strings.ContainsRune(redirectURL, '?') {
 		toAppend = "&flash=" + flashName
