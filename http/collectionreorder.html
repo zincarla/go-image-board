@@ -22,7 +22,7 @@
 
 				{{$OldQuery := .OldQuery}}
 				<h5>Commands</h5>
-				<form action="/collectionorder" onsubmit="return generateOrder(this);">
+				<form action="/collectionorder" method="POST" onsubmit="return generateOrder(this);">
 					<input type="hidden" name="ID" value="{{.CollectionInfo.ID}}">
 					<input type="hidden" name="NewOrder" value="" />
 					<input type="hidden" name="command" value="reorder">

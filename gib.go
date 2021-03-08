@@ -256,9 +256,10 @@ func main() {
 		requestRouter.HandleFunc("/resources/{file}", routers.ResourceRouter).Methods("GET")
 		requestRouter.HandleFunc("/", routers.AccountRequiredMiddleWare(routers.RootRouter)).Methods("GET")
 		requestRouter.HandleFunc("/images", routers.AccountRequiredMiddleWare(routers.ImageQueryRouter)).Methods("GET")
-		requestRouter.HandleFunc("/collectionorder", routers.AccountRequiredMiddleWare(routers.CollectionImageOrderRouter)) //TODO: Split Needed
-		requestRouter.HandleFunc("/collectionimages", routers.AccountRequiredMiddleWare(routers.CollectionImageRouter))     //TODO: Split Needed
-		requestRouter.HandleFunc("/collections", routers.AccountRequiredMiddleWare(routers.CollectionsRouter))              //TODO: Split Needed
+		requestRouter.HandleFunc("/collectionorder", routers.AccountRequiredMiddleWare(routers.CollectionImageOrderGetRouter)).Methods("GET")
+		requestRouter.HandleFunc("/collectionorder", routers.AccountRequiredMiddleWare(routers.CollectionImageOrderPostRouter)).Methods("POST")
+		requestRouter.HandleFunc("/collectionimages", routers.AccountRequiredMiddleWare(routers.CollectionImageRouter)) //TODO: Split Needed
+		requestRouter.HandleFunc("/collections", routers.AccountRequiredMiddleWare(routers.CollectionsRouter))          //TODO: Split Needed
 		requestRouter.HandleFunc("/images/{file}", routers.AccountRequiredMiddleWare(routers.ResourceImageRouter)).Methods("GET")
 		requestRouter.HandleFunc("/thumbs/{file}", routers.AccountRequiredMiddleWare(routers.ThumbnailRouter)).Methods("GET")
 		requestRouter.HandleFunc("/image", routers.AccountRequiredMiddleWare(routers.ImageRouter)) //TODO: Split Needed
