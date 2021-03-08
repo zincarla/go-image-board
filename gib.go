@@ -278,14 +278,17 @@ func main() {
 		requestRouter.HandleFunc("/mod/user", routers.AccountRequiredMiddleWare(routers.ModUserPostRouter)).Methods("POST")
 
 		//API routers
-		requestRouter.HandleFunc("/api/Collection/{CollectionID}", api.CollectionAPIRouter) //TODO: Split
-		requestRouter.HandleFunc("/api/Collections", api.CollectionsAPIRouter)              //TODO: Split
+		requestRouter.HandleFunc("/api/Collection/{CollectionID}", api.CollectionGetAPIRouter).Methods("GET")
+		requestRouter.HandleFunc("/api/Collection/{CollectionID}", api.CollectionDeleteAPIRouter).Methods("DELETE")
+		requestRouter.HandleFunc("/api/Collections", api.CollectionsGetAPIRouter).Methods("GET")
 		//
-		requestRouter.HandleFunc("/api/Tag/{TagID}", api.TagAPIRouter) //TODO: Split
-		requestRouter.HandleFunc("/api/Tags", api.TagsAPIRouter)       //TODO: Split
+		requestRouter.HandleFunc("/api/Tag/{TagID}", api.TagGetAPIRouter).Methods("GET")
+		requestRouter.HandleFunc("/api/Tag/{TagID}", api.TagDeleteAPIRouter).Methods("DELETE")
+		requestRouter.HandleFunc("/api/Tags", api.TagsGetAPIRouter).Methods("GET")
 		//
-		requestRouter.HandleFunc("/api/Image/{ImageID}", api.ImageAPIRouter) //TODO: Split
-		requestRouter.HandleFunc("/api/Images", api.ImagesAPIRouter)         //TODO: Split
+		requestRouter.HandleFunc("/api/Image/{ImageID}", api.ImageGetAPIRouter).Methods("GET")
+		requestRouter.HandleFunc("/api/Image/{ImageID}", api.ImageDeleteAPIRouter).Methods("DELETE")
+		requestRouter.HandleFunc("/api/Images", api.ImagesGetAPIRouter).Methods("GET")
 		//
 		requestRouter.HandleFunc("/api/Logon", api.LogonAPIRouter).Methods("POST")
 		requestRouter.HandleFunc("/api/Logout", api.LogoutAPIRouter).Methods("POST")
