@@ -50,7 +50,7 @@ func ReplyWithJSONStatus(responseWriter http.ResponseWriter, request *http.Reque
 
 //ReplyWithJSONError replies to a request with an error response
 func ReplyWithJSONError(responseWriter http.ResponseWriter, request *http.Request, errorText string, userName string, statusCode int) {
-	logging.WriteLog(logging.LogLevelError, "apiroot/ReplyWithJSONError", userName, logging.ResultFailure, []string{errorText})
+	logging.WriteLog(logging.LogLevelVerbose, "apiroot/ReplyWithJSONError", userName, logging.ResultFailure, []string{errorText})
 	ReplyWithJSONStatus(responseWriter, request, ErrorResponse{Error: errorText}, userName, statusCode)
 }
 
