@@ -10,15 +10,12 @@ import (
 	"math"
 	"net/http"
 	"net/url"
-	"os"
-	"path"
-	"path/filepath"
 	"strconv"
 )
 
 //ImageQueryRouter serves requests to /images
 func ImageQueryRouter(responseWriter http.ResponseWriter, request *http.Request) {
-	TemplateInput := getNewTemplateInput(responseWriter, request)
+	TemplateInput := getTemplateInputFromRequest(responseWriter, request)
 	userQuery := TemplateInput.OldQuery
 
 	//Change StremView if requested
@@ -43,47 +40,6 @@ func ImageQueryRouter(responseWriter http.ResponseWriter, request *http.Request)
 		_, _, session := getSessionInformation(request)
 		session.Values["ViewMode"] = "grid"
 		session.Save(request, responseWriter)
-	}
-
-	switch cmd := request.FormValue("command"); cmd {
-	case "delete":
-		if TemplateInput.UserInformation.Name == "" {
-			//Redirect to logon
-			redirectWithFlash(responseWriter, request, "/logon", "You must be logged in to delete an image", "LogonRequired")
-			return
-		}
-		//Get Image ID
-		parsedImageID, err := strconv.ParseUint(request.FormValue("ID"), 10, 32)
-		if err != nil {
-			TemplateInput.Message += "Failed to get image with that ID."
-			break
-		}
-		//Cache image data
-		ImageInfo, err := database.DBInterface.GetImage(parsedImageID)
-		if err != nil {
-			TemplateInput.Message += "Failed to delete image. SQL Error. "
-			go WriteAuditLogByName(TemplateInput.UserInformation.Name, "DELETE-IMAGE", TemplateInput.UserInformation.Name+" failed to delete image. "+request.FormValue("ID")+", "+err.Error())
-			break //Cancel delete
-		}
-
-		//Validate Permission to delete
-		if TemplateInput.UserPermissions.HasPermission(interfaces.RemoveImage) != true && (config.Configuration.UsersControlOwnObjects != true || ImageInfo.UploaderID != TemplateInput.UserInformation.ID) {
-			TemplateInput.Message += "User does not have delete permission for image. "
-			go WriteAuditLogByName(TemplateInput.UserInformation.Name, "DELETE-IMAGE", TemplateInput.UserInformation.Name+" failed to delete image. Insufficient permissions. "+request.FormValue("ID"))
-			break
-		}
-
-		//Permission validated, now delete (ImageTags and Images)
-		if err := database.DBInterface.DeleteImage(parsedImageID); err != nil {
-			TemplateInput.Message += "Failed to delete image. SQL Error. "
-			go WriteAuditLogByName(TemplateInput.UserInformation.Name, "DELETE-IMAGE", TemplateInput.UserInformation.Name+" failed to delete image. "+request.FormValue("ID")+", "+err.Error())
-			break //Cancel delete
-		}
-		go WriteAuditLogByName(TemplateInput.UserInformation.Name, "DELETE-IMAGE", TemplateInput.UserInformation.Name+" deleted image. "+request.FormValue("ID")+", "+ImageInfo.Name+", "+ImageInfo.Location)
-		//Third, delete Image from Disk
-		go os.Remove(path.Join(config.Configuration.ImageDirectory, ImageInfo.Location))
-		//Last delete thumbnail from disk
-		go os.Remove(path.Join(config.Configuration.ImageDirectory, "thumbs"+string(filepath.Separator)+ImageInfo.Location+".png"))
 	}
 
 	//Get the page offset

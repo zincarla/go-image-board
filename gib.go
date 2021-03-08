@@ -255,7 +255,7 @@ func main() {
 		//Web routers
 		requestRouter.HandleFunc("/resources/{file}", routers.ResourceRouter).Methods("GET")
 		requestRouter.HandleFunc("/", routers.AccountRequiredMiddleWare(routers.RootRouter)).Methods("GET")
-		requestRouter.HandleFunc("/images", routers.AccountRequiredMiddleWare(routers.ImageQueryRouter))                    //TODO: Split Needed
+		requestRouter.HandleFunc("/images", routers.AccountRequiredMiddleWare(routers.ImageQueryRouter)).Methods("GET")
 		requestRouter.HandleFunc("/collectionorder", routers.AccountRequiredMiddleWare(routers.CollectionImageOrderRouter)) //TODO: Split Needed
 		requestRouter.HandleFunc("/collectionimages", routers.AccountRequiredMiddleWare(routers.CollectionImageRouter))     //TODO: Split Needed
 		requestRouter.HandleFunc("/collections", routers.AccountRequiredMiddleWare(routers.CollectionsRouter))              //TODO: Split Needed

@@ -169,6 +169,16 @@ func getNewTemplateInput(responseWriter http.ResponseWriter, request *http.Reque
 	return TemplateInput
 }
 
+//getTemplateInputFromRequest helper function gets a TemplateInput that was already generated for request
+func getTemplateInputFromRequest(responseWriter http.ResponseWriter, request *http.Request) templateInput {
+	TemplateInput, ok := request.Context().Value(TemplateInputKeyID).(templateInput)
+	if ok {
+		return TemplateInput
+	}
+	logging.WriteLog(logging.LogLevelError, "routertemplate/getTemplateInputFromRequest", "0", logging.ResultFailure, []string{"Failed to get TemplateInput from request"})
+	return getNewTemplateInput(responseWriter, request)
+}
+
 //applyFlash checks for flash cookies, and applies them to template
 func applyFlash(responseWriter http.ResponseWriter, request *http.Request, TemplateInput *templateInput) {
 	if request.FormValue("flash") == "" {
