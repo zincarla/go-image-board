@@ -12,6 +12,7 @@
 				<div class="narrowCenteredContainer">
 					{{if eq .UserInformation.ID 0}}
 					<form method="post" action="/logon" id="logonForm" class="display{{if ne .QuestionOne ""}}Hidden{{else}}Block{{end}}">
+						{{.CSRF}}
 						<h2>Logon</h2><br>
 						UserName: <input type="text" name="userName"/><br>
 						Password: <input type="password" name="password"/><br>
@@ -24,6 +25,7 @@
 					</form>
 					
 					<form method="post" action="/logon" id="resetPasswordForm" class="display{{if ne .QuestionOne ""}}Block{{else}}Hidden{{end}}">
+						{{.CSRF}}
 						<h2>Reset Password</h2><br>
 						{{if eq .UserInformation.Name ""}}
 						UserName: <input type="text" name="userName"/><br>
@@ -46,6 +48,7 @@
 						<a href="#resetPasswordForm" onclick="ToggleDIVDisplay('logonForm'); ToggleDIVDisplay('resetPasswordForm');">Login instead</a>
 					</form>
 					<form method="post" action="/logon" id="createForm" class="displayHidden">
+						{{.CSRF}}
 						<h2>Create Account</h2><br>
 						{{if .AllowAccountCreation}}
 						UserName: <input type="text" name="userName"/><br>
@@ -61,6 +64,7 @@
 					</form>
 					{{else}}
 					<form method="post" action="/logon" id="changePWForm">
+						{{.CSRF}}
 						<h2>Change Password</h2><br>
 						UserName: <input type="text" name="userName" value="{{.UserInformation.Name}}"/><br>
 						Current Password: <input type="password" name="oldpassword"/><br>
@@ -70,6 +74,7 @@
 						<input type="submit" value="Change Password" />
 					</form>
 					<form method="post" action="/logon" id="securityQForm">
+						{{.CSRF}}
 						<h2>Set Security Questions</h2><br>
 						Confirm Password: <input type="password" name="confirmpassword"/><br>
 						<p>In case your account is compromised, this question will be used to change your security questions. This will help ensure that, even if your password is taken, the thief will have difficulty changing these questions, ensuring you can reset your password. As such, choose something absolutely no one could guess about you.</p>
@@ -89,6 +94,7 @@
 						<input type="submit" value="Submit" />
 					</form>
 					<form method="post" action="/logon">
+						{{.CSRF}}
 						<h2>Set Global Filter</h2><br>
 						The filter below will be silently appended to all your searches. This allows you to automatically remove items with an unwanted tag from your view.
 						Filter Query: <input type="text" name="filter" value="{{.UserFilter}}"/><br>

@@ -38,12 +38,14 @@
 					<input type="hidden" name="command" value="deletecollection">
 					<input type="hidden" name="ID" value="{{.CollectionInfo.ID}}">
 					<input type="hidden" name="SearchTerms" value="{{.OldQuery}}">
+					{{.CSRF}}
 					<button type="submit" class="buttonasanchor" onclick="return confirm('Are you sure you want to delete this collection?');">Delete Collection</button>
 				</form>
 				<form action="/collection" method="POST" style="display: inline;" class="anchorform">
 					<input type="hidden" name="command" value="deletecollectionandmembers">
 					<input type="hidden" name="ID" value="{{.CollectionInfo.ID}}">
 					<input type="hidden" name="SearchTerms" value="{{.OldQuery}}">
+					{{.CSRF}}
 					<button type="submit" class="buttonasanchor" onclick="return confirm('Are you sure you want to delete this collection?');">Delete Collection And Members</button>
 				</form>
 				{{end}}
@@ -58,6 +60,7 @@
 					<input type="text" name="NewDescription" placeholder="New Description" value="{{.CollectionInfo.Description}}">
 					<input type="hidden" name="ID" value="{{.CollectionInfo.ID}}">
 					<input type="hidden" name="command" value="modify" />
+					{{.CSRF}}
 					<input type="submit" value="Change">
 				</form>
 				{{end}}
@@ -89,6 +92,7 @@
 							<input type="hidden" name="ID" value="{{$CollectionID}}" />
 							<input type="hidden" name="ImageID" value="{{.ID}}" />
 							<input type="hidden" name="SearchTerms" value="{{$OldQuery}}" />
+							{{.CSRF}}
 							<button type="submit" class="removeCollectionButton" onclick="return confirm('Are you sure you want to remove this from the collection?');"><span></span></button>
 						</form>
 						{{end}}
@@ -105,6 +109,7 @@
 							<input type="hidden" name="ID" value="{{$CollectionID}}" />
 							<input type="hidden" name="ImageID" value="{{.ID}}" />
 							<input type="hidden" name="SearchTerms" value="{{$OldQuery}}" />
+							{{.CSRF}}
 							<button type="submit" class="removeCollectionButton" onclick="return confirm('Are you sure you want to remove this from the collection?');"><span></span></button>
 						</form>
 						{{end}}

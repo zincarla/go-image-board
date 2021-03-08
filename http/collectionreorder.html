@@ -26,6 +26,7 @@
 					<input type="hidden" name="ID" value="{{.CollectionInfo.ID}}">
 					<input type="hidden" name="NewOrder" value="" />
 					<input type="hidden" name="command" value="reorder">
+					{{.CSRF}}
 					<input type="submit" value="Save">
 				</form>
 			</div>

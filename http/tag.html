@@ -29,6 +29,7 @@
 			<div id="ImageGridContainer">
 				<div class="narrowCenteredContainer">
 					<form method="post" action="/tag" id="changeTagForm" class="displayHidden">
+						{{.CSRF}}
 						<h4>Update {{.TagContentInfo.Name}} <img src="/resources/{{if .TagContentInfo.IsAlias}}alias.svg" alt="alias"{{else}}tag.svg" alt="tag"{{end}}class="icon" /></h4>
 						<label>Tag Name</label>
 						<input type="text" name="tagName" value="{{.TagContentInfo.Name}}" placeholder="Name"/><br>
@@ -41,6 +42,7 @@
 						<input type="submit" value="Update" />
 					</form>
 					<form method="post" action="/tag" id="replaceTagForm" class="displayHidden">
+						{{.CSRF}}
 						<h4>Replace a Tag</h4>
 						<label>Tag to Replace</label>
 						<input type="text" name="tagName" value="" placeholder="Tag to Replace"/><br>
@@ -50,6 +52,7 @@
 						<input type="submit" value="Replace" />
 					</form>
 					<form method="post" action="/tag" id="bulkAddTagForm" class="displayHidden">
+						{{.CSRF}}
 						<h4>Add Tag to Images with a Tag</h4>
 						<label>Add this Tag</label>
 						<input type="text" name="newTagName" value="" placeholder="Tag to Add"/><br>

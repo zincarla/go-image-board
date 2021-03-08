@@ -12,6 +12,7 @@
 						<p>You must be logged in, in order to upload files.</p>
 					{{else}}
 					<form action="/image" enctype="multipart/form-data" method="post">
+						{{.CSRF}}
 						<label>File(s)</label><input type="file" name="fileToUpload" multiple="multiple"/><br>
 						<label>Tags</label>
 						<input type="text" name="SearchTags" id="UploadSearchTags" placeholder="Tags for the new image(s)" value="">

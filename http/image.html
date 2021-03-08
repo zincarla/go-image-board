@@ -33,6 +33,7 @@
 					<input type="hidden" name="ImageID" value="{{.ImageContentInfo.ID}}">
 					<input type="hidden" name="command" value="addcollectionmember" />
 					<input type="hidden" name="SearchTerms" value="{{$OldQuery}}">
+					{{.CSRF}}
 					<input type="submit" value="Add/Create">
 				</form>
 
@@ -44,6 +45,7 @@
 					<input type="hidden" name="ID" value="{{.ImageContentInfo.ID}}">
 					<input type="hidden" name="command" value="AddTags" />
 					<input type="hidden" name="SearchTerms" value="{{$OldQuery}}">
+					{{.CSRF}}
 					<input type="submit" value="Add">
 					<script>
 						var AddNewTagsAC = new AutoCompleteBox(document.getElementById("AddNewTags"), document.getElementById("acAddNewTags"));
@@ -61,6 +63,7 @@
 					<input type="hidden" name="ID" value="{{.ImageContentInfo.ID}}">
 					<input type="hidden" name="command" value="ChangeRating" />
 					<input type="hidden" name="SearchTerms" value="{{$OldQuery}}">
+					{{.CSRF}}
 					<input type="submit" value="Change">
 				</form>
 				{{.ImageContentInfo.Rating}} <a href="/about/tags.html?SearchTerms={{$OldQuery}}">?</a>
@@ -119,6 +122,7 @@
 						<input type="hidden" name="ID" value="{{.ImageContentInfo.ID}}">
 						<input type="hidden" name="command" value="ChangeName" />
 						<input type="hidden" name="SearchTerms" value="{{$OldQuery}}">
+						{{.CSRF}}
 						<input type="submit" value="Submit">
 					</form>
 				</div>
