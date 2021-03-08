@@ -260,7 +260,7 @@ func main() {
 		requestRouter.HandleFunc("/collectionorder", routers.AccountRequiredMiddleWare(routers.CollectionImageOrderPostRouter)).Methods("POST")
 		requestRouter.HandleFunc("/collection", routers.AccountRequiredMiddleWare(routers.CollectionGetRouter)).Methods("GET")
 		requestRouter.HandleFunc("/collection", routers.AccountRequiredMiddleWare(routers.CollectionPostRouter)).Methods("POST")
-		requestRouter.HandleFunc("/collections", routers.AccountRequiredMiddleWare(routers.CollectionsRouter)) //TODO: Split Needed
+		requestRouter.HandleFunc("/collections", routers.AccountRequiredMiddleWare(routers.CollectionsRouter)).Methods("GET")
 		requestRouter.HandleFunc("/images/{file}", routers.AccountRequiredMiddleWare(routers.ResourceImageRouter)).Methods("GET")
 		requestRouter.HandleFunc("/thumbs/{file}", routers.AccountRequiredMiddleWare(routers.ThumbnailRouter)).Methods("GET")
 		requestRouter.HandleFunc("/image", routers.AccountRequiredMiddleWare(routers.ImageRouter)) //TODO: Split Needed

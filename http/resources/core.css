@@ -125,6 +125,7 @@ body {
 	margin: 0px;
 	border: 0px;
 	font-size: 20px;
+	font-family: serif;
 }
 #collectionTitle {
 	text-align: center;
@@ -310,6 +311,22 @@ video, audio {
 }
 .removeCollectionButton:hover span:after {
 	content: "Remove";
+}
+a, .buttonasanchor {
+	border: none;
+	background: none;
+	cursor: pointer;
+	display: inline;
+	padding: unset;
+	margin: unset;
+	color: rgb(0,0,238);
+	text-decoration: underline;
+	text-align: start;
+	font-family: serif;
+	font-size: 1em;
+}
+.anchorform {
+	display: inline;
 }
 .card {
 	width: 66%;
