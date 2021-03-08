@@ -37,7 +37,7 @@ func ResourceRouter(responseWriter http.ResponseWriter, request *http.Request) {
 
 //RedirectRouter handles requests to /redirect
 func RedirectRouter(responseWriter http.ResponseWriter, request *http.Request) {
-	TemplateInput := getNewTemplateInput(responseWriter, request)
+	TemplateInput := getTemplateInputFromRequest(responseWriter, request)
 	TemplateInput.RedirectLink = request.FormValue("RedirectLink")
 	logging.WriteLog(logging.LogLevelVerbose, "resourcesrouters/RedirectRouter", TemplateInput.UserInformation.GetCompositeID(), logging.ResultInfo, []string{request.FormValue("RedirectLink")})
 	replyWithTemplate("redirect.html", TemplateInput, responseWriter, request)

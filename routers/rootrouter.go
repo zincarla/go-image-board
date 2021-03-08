@@ -12,7 +12,7 @@ import (
 
 //RootRouter serves requests to the root (/)
 func RootRouter(responseWriter http.ResponseWriter, request *http.Request) {
-	TemplateInput := getNewTemplateInput(responseWriter, request)
+	TemplateInput := getTemplateInputFromRequest(responseWriter, request)
 	replyWithTemplate("indextemplate.html", TemplateInput, responseWriter, request)
 }
 

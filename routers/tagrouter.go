@@ -13,7 +13,7 @@ import (
 
 //TagsRouter serves requests to /tags (Big tag list)
 func TagsRouter(responseWriter http.ResponseWriter, request *http.Request) {
-	TemplateInput := getNewTemplateInput(responseWriter, request)
+	TemplateInput := getTemplateInputFromRequest(responseWriter, request)
 	TemplateInput.TotalResults = 0
 
 	TagSearch := strings.TrimSpace(request.FormValue("SearchTags"))
@@ -40,7 +40,7 @@ func TagsRouter(responseWriter http.ResponseWriter, request *http.Request) {
 
 //TagRouter serves requests to /tag (single tag information)
 func TagRouter(responseWriter http.ResponseWriter, request *http.Request) {
-	TemplateInput := getNewTemplateInput(responseWriter, request)
+	TemplateInput := getTemplateInputFromRequest(responseWriter, request)
 	ID := request.FormValue("ID")
 
 	switch cmd := request.FormValue("command"); cmd {

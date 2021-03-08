@@ -14,7 +14,7 @@ import (
 
 //CollectionImageRouter serves requests to /collectionimages
 func CollectionImageRouter(responseWriter http.ResponseWriter, request *http.Request) {
-	TemplateInput := getNewTemplateInput(responseWriter, request)
+	TemplateInput := getTemplateInputFromRequest(responseWriter, request)
 	userQuery := TemplateInput.OldQuery
 	var collectionID uint64
 	var err error
@@ -261,7 +261,7 @@ func CollectionImageRouter(responseWriter http.ResponseWriter, request *http.Req
 
 //CollectionImageOrderRouter serves requests to /collectionorder
 func CollectionImageOrderRouter(responseWriter http.ResponseWriter, request *http.Request) {
-	TemplateInput := getNewTemplateInput(responseWriter, request)
+	TemplateInput := getTemplateInputFromRequest(responseWriter, request)
 	var collectionID uint64
 	var err error
 

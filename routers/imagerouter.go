@@ -23,7 +23,7 @@ import (
 
 //ImageRouter serves requests to /image
 func ImageRouter(responseWriter http.ResponseWriter, request *http.Request) {
-	TemplateInput := getNewTemplateInput(responseWriter, request)
+	TemplateInput := getTemplateInputFromRequest(responseWriter, request)
 	var requestedID uint64
 	var err error
 	var duplicateIDs map[string]uint64

@@ -12,7 +12,7 @@ import (
 
 //AboutRouter serves requests to /about, all files in /about should be html, and they will be treated as templates
 func AboutRouter(responseWriter http.ResponseWriter, request *http.Request) {
-	TemplateInput := getNewTemplateInput(responseWriter, request)
+	TemplateInput := getTemplateInputFromRequest(responseWriter, request)
 	urlVariables := mux.Vars(request)
 
 	filePath := config.Configuration.HTTPRoot + string(filepath.Separator) + "about" + string(filepath.Separator) + urlVariables["file"]

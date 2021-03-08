@@ -6,6 +6,6 @@ import (
 
 //ModRouter serves requests to /mod
 func ModRouter(responseWriter http.ResponseWriter, request *http.Request) {
-	TemplateInput := getNewTemplateInput(responseWriter, request)
+	TemplateInput := getTemplateInputFromRequest(responseWriter, request)
 	replyWithTemplate("mod.html", TemplateInput, responseWriter, request)
 }

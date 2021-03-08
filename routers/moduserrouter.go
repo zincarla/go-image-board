@@ -10,7 +10,7 @@ import (
 
 //ModUserRouter serves requests to /mod/user
 func ModUserRouter(responseWriter http.ResponseWriter, request *http.Request) {
-	TemplateInput := getNewTemplateInput(responseWriter, request)
+	TemplateInput := getTemplateInputFromRequest(responseWriter, request)
 
 	if request.FormValue("userName") == "" {
 		TemplateInput.Message += "You must specify a user to edit. "

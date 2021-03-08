@@ -15,7 +15,7 @@ import (
 
 //LogonRouter handles requests to /logon
 func LogonRouter(responseWriter http.ResponseWriter, request *http.Request) {
-	TemplateInput := getNewTemplateInput(responseWriter, request)
+	TemplateInput := getTemplateInputFromRequest(responseWriter, request)
 
 	//If logged in
 	if TemplateInput.UserInformation.ID != 0 {
