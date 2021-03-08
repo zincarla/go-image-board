@@ -9,69 +9,76 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
-	"strings"
 )
 
-//TagsRouter serves requests to /tags (Big tag list)
-func TagsRouter(responseWriter http.ResponseWriter, request *http.Request) {
+//TagGetRouter serves get requests to /tag (single tag information)
+func TagGetRouter(responseWriter http.ResponseWriter, request *http.Request) {
 	TemplateInput := getTemplateInputFromRequest(responseWriter, request)
-	TemplateInput.TotalResults = 0
 
-	TagSearch := strings.TrimSpace(request.FormValue("SearchTags"))
-
-	//Get the page offset
-	pageStartS := request.FormValue("PageStart")
-	pageStart, _ := strconv.ParseUint(pageStartS, 10, 32) // Defaults to 0 on error, which is fine
-	pageStride := config.Configuration.PageStride
-
-	//Populate Tags
-	tag, totalResults, err := database.DBInterface.SearchTags(TagSearch, pageStart, pageStride, false, false)
+	requestedID, err := strconv.ParseUint(request.FormValue("ID"), 10, 32)
 	if err != nil {
-		TemplateInput.HTMLMessage += template.HTML("Error pulling tags.<br>")
-		logging.WriteLog(logging.LogLevelError, "tagrouter/TagsRouter", TemplateInput.UserInformation.GetCompositeID(), logging.ResultFailure, []string{"Failed to pull tags ", err.Error()})
-	} else {
-		TemplateInput.Tags = tag
-		TemplateInput.TotalResults = totalResults
+		TemplateInput.HTMLMessage += template.HTML("Error parsing tag id.<br>")
+		logging.WriteLog(logging.LogLevelError, "tagrouter/TagRouter", TemplateInput.UserInformation.GetCompositeID(), logging.ResultFailure, []string{"Failed to parse tag id ", err.Error()})
+		redirectWithFlash(responseWriter, request, "/tags?SearchTerms="+url.QueryEscape(TemplateInput.OldQuery), TemplateInput.HTMLMessage, "TagFail")
+		return
 	}
 
-	TemplateInput.PageMenu, err = generatePageMenu(int64(pageStart), int64(pageStride), int64(TemplateInput.TotalResults), "SearchTags="+url.QueryEscape(TagSearch), "/tags")
+	//Populate Tag
+	tag, err := database.DBInterface.GetTag(requestedID, true)
+	if err != nil {
+		TemplateInput.HTMLMessage += template.HTML("Error pulling tag.<br>")
+		logging.WriteLog(logging.LogLevelError, "tagrouter/TagRouter", TemplateInput.UserInformation.GetCompositeID(), logging.ResultFailure, []string{"Failed to pull tags ", err.Error()})
+		redirectWithFlash(responseWriter, request, "/tags?SearchTerms="+url.QueryEscape(TemplateInput.OldQuery), TemplateInput.HTMLMessage, "TagFail")
+		return
+	}
 
-	replyWithTemplate("tags.html", TemplateInput, responseWriter, request)
+	if tag.IsAlias {
+		aliasInfo, err := database.DBInterface.GetTag(tag.AliasedID, true)
+		TemplateInput.AliasTagInfo = aliasInfo
+		if err != nil {
+			TemplateInput.HTMLMessage += template.HTML("Tag is an alias, error pulling parent tag's information.<br>")
+			logging.WriteLog(logging.LogLevelError, "tagrouter/TagRouter", TemplateInput.UserInformation.GetCompositeID(), logging.ResultFailure, []string{"Failed to pull tags alias ", err.Error()})
+		}
+		TemplateInput.AliasTagInfo = aliasInfo
+	}
+	TemplateInput.TagContentInfo = tag
+
+	replyWithTemplate("tag.html", TemplateInput, responseWriter, request)
 }
 
-//TagRouter serves requests to /tag (single tag information)
-func TagRouter(responseWriter http.ResponseWriter, request *http.Request) {
+//TagPostRouter serves post requests to /tag (single tag information)
+func TagPostRouter(responseWriter http.ResponseWriter, request *http.Request) {
 	TemplateInput := getTemplateInputFromRequest(responseWriter, request)
-	ID := request.FormValue("ID")
 
 	switch cmd := request.FormValue("command"); cmd {
 	case "updateTag":
-		if TemplateInput.UserInformation.Name == "" {
+		if !TemplateInput.IsLoggedOn() {
 			TemplateInput.HTMLMessage += template.HTML("You must be logged in to perform that action.<br>")
-			break
+			redirectWithFlash(responseWriter, request, "/logon", TemplateInput.HTMLMessage, "LogonRequired")
+			return
 		}
-		if ID == "" {
-			TemplateInput.HTMLMessage += template.HTML("No ID provided to update.<br>")
-			break
-		}
-		iID, err := strconv.ParseUint(ID, 10, 32)
+
+		requestedID, err := strconv.ParseUint(request.FormValue("ID"), 10, 32)
 		if err != nil {
 			TemplateInput.HTMLMessage += template.HTML("Error parsing tag id.<br>")
 			logging.WriteLog(logging.LogLevelError, "tagrouter/TagRouter", TemplateInput.UserInformation.GetCompositeID(), logging.ResultFailure, []string{"Failed to parse tag id ", err.Error()})
-			break
+			redirectWithFlash(responseWriter, request, "/tags?SearchTerms="+url.QueryEscape(TemplateInput.OldQuery), TemplateInput.HTMLMessage, "TagFail")
+			return
 		}
-		tagInfo, err := database.DBInterface.GetTag(iID, false)
+		tagInfo, err := database.DBInterface.GetTag(requestedID, false)
 		if err != nil {
 			TemplateInput.HTMLMessage += template.HTML("Error getting tag info.<br>")
 			logging.WriteLog(logging.LogLevelError, "tagrouter/TagRouter", TemplateInput.UserInformation.GetCompositeID(), logging.ResultFailure, []string{"Failed to get tag info ", err.Error()})
-			break
+			redirectWithFlash(responseWriter, request, "/tags?SearchTerms="+url.QueryEscape(TemplateInput.OldQuery), TemplateInput.HTMLMessage, "TagFail")
+			return
 		}
 
 		//Validate permission to upload
 		if TemplateInput.UserPermissions.HasPermission(interfaces.ModifyTags) != true && (config.Configuration.UsersControlOwnObjects != true || TemplateInput.UserInformation.ID != tagInfo.UploaderID) {
 			TemplateInput.HTMLMessage += template.HTML("User does not have modify permission for tags.<br>")
-			go WriteAuditLogByName(TemplateInput.UserInformation.Name, "MODIFY-TAG", TemplateInput.UserInformation.Name+" failed to update tag. Insufficient permissions. "+ID)
-			break
+			go WriteAuditLogByName(TemplateInput.UserInformation.Name, "MODIFY-TAG", TemplateInput.UserInformation.Name+" failed to update tag. Insufficient permissions. "+strconv.FormatUint(requestedID, 10))
+			redirectWithFlash(responseWriter, request, "/tag?ID="+strconv.FormatUint(requestedID, 10)+"&SearchTerms="+url.QueryEscape(TemplateInput.OldQuery), TemplateInput.HTMLMessage, "TagFail")
+			return
 		}
 		// /ValidatePermission
 
@@ -88,170 +95,144 @@ func TagRouter(responseWriter http.ResponseWriter, request *http.Request) {
 			aliasID = aliasedTags[0].ID
 		}
 		//Update tag
-		if err := database.DBInterface.UpdateTag(iID, request.FormValue("tagName"), request.FormValue("tagDescription"), aliasID, len(aliasedTags) == 1, TemplateInput.UserInformation.ID); err != nil {
+		if err := database.DBInterface.UpdateTag(requestedID, request.FormValue("tagName"), request.FormValue("tagDescription"), aliasID, len(aliasedTags) == 1, TemplateInput.UserInformation.ID); err != nil {
 			TemplateInput.HTMLMessage += template.HTML("Failed to update tag. Is your name too short? Did it exist in the first place?<br>")
-		} else {
-			TemplateInput.HTMLMessage += template.HTML("Tag updated successfully.<br>")
-			go WriteAuditLogByName(TemplateInput.UserInformation.Name, "MODIFY-TAG", TemplateInput.UserInformation.Name+" successfully updated tag. "+ID+" to alias "+request.FormValue("aliasedTagName")+" with name "+request.FormValue("tagName")+" and description "+request.FormValue("tagDescription"))
+			redirectWithFlash(responseWriter, request, "/tag?ID="+strconv.FormatUint(requestedID, 10)+"&SearchTerms="+url.QueryEscape(TemplateInput.OldQuery), TemplateInput.HTMLMessage, "TagFail")
+			return
 		}
+		TemplateInput.HTMLMessage += template.HTML("Tag updated successfully.<br>")
+		go WriteAuditLogByName(TemplateInput.UserInformation.Name, "MODIFY-TAG", TemplateInput.UserInformation.Name+" successfully updated tag. "+strconv.FormatUint(requestedID, 10)+" to alias "+request.FormValue("aliasedTagName")+" with name "+request.FormValue("tagName")+" and description "+request.FormValue("tagDescription"))
+		redirectWithFlash(responseWriter, request, "/tag?ID="+strconv.FormatUint(requestedID, 10)+"&SearchTerms="+url.QueryEscape(TemplateInput.OldQuery), TemplateInput.HTMLMessage, "TagSucceeded")
+		return
 	case "bulkAddTag":
 		oldTagQuery := request.FormValue("tagName")
 		newTagQuery := request.FormValue("newTagName")
-		if TemplateInput.UserInformation.Name == "" {
+		if !TemplateInput.IsLoggedOn() {
 			TemplateInput.HTMLMessage += template.HTML("You must be logged in to perform that action.<br>")
 			break
 		}
-		//Translate UserID
-		userID, err := database.DBInterface.GetUserID(TemplateInput.UserInformation.Name)
-		if err != nil {
-			logging.WriteLog(logging.LogLevelError, "tagrouter/TagRouter/bulkAddTag", TemplateInput.UserInformation.GetCompositeID(), logging.ResultFailure, []string{"Could not get valid user id", err.Error()})
-			TemplateInput.HTMLMessage += template.HTML("You muse be logged in to perform that action.<br>")
-			break
-		}
+
 		if oldTagQuery == "" || newTagQuery == "" {
-			//redirect to images
 			TemplateInput.HTMLMessage += template.HTML("You must complete the full form before this action can be performed.<br>")
-			break
+			redirectWithFlash(responseWriter, request, "/tags?SearchTerms="+url.QueryEscape(TemplateInput.OldQuery), TemplateInput.HTMLMessage, "TagFail")
+			return
 		}
 		//Validate permission to bulk modify tags
 		if TemplateInput.UserPermissions.HasPermission(interfaces.ModifyImageTags) != true || TemplateInput.UserPermissions.HasPermission(interfaces.BulkTagOperations) != true {
 			TemplateInput.HTMLMessage += template.HTML("User does not have modify permission for bulk tagging on images.<br>")
 			go WriteAuditLogByName(TemplateInput.UserInformation.Name, "ADD-BULKIMAGETAG", TemplateInput.UserInformation.Name+" failed to add tag to images. Insufficient permissions. "+oldTagQuery+"->"+newTagQuery)
-			break
+			redirectWithFlash(responseWriter, request, "/tags?SearchTerms="+url.QueryEscape(TemplateInput.OldQuery), TemplateInput.HTMLMessage, "TagFail")
+			return
 		}
 		//Parse out tag arguments
 		userOldQTags, err := database.DBInterface.GetQueryTags(oldTagQuery, false)
 		userNewQTags, err2 := database.DBInterface.GetQueryTags(newTagQuery, false)
 		if err != nil || err2 != nil || len(userOldQTags) != 1 || len(userNewQTags) != 1 || userOldQTags[0].Exists == false || userNewQTags[0].Exists == false || userOldQTags[0].ID == userNewQTags[0].ID {
 			TemplateInput.HTMLMessage += template.HTML("Failed to get tags from user input. Ensure the tags you entered exist and that you did not enter more than one per field. And that the new and old tags are not the same tag or alias to the same tag.<br>")
-			break
+			redirectWithFlash(responseWriter, request, "/tags?SearchTerms="+url.QueryEscape(TemplateInput.OldQuery), TemplateInput.HTMLMessage, "TagFail")
+			return
 		}
 
 		//Confirmed tags exist and are valid
-		err = database.DBInterface.BulkAddTag(userNewQTags[0].ID, userOldQTags[0].ID, userID)
+		err = database.DBInterface.BulkAddTag(userNewQTags[0].ID, userOldQTags[0].ID, TemplateInput.UserInformation.ID)
 		if err != nil {
 			TemplateInput.HTMLMessage += template.HTML("Error adding tags (SQL).<br>")
 			logging.WriteLog(logging.LogLevelError, "tagrouter/TagRouter/bulkAddTag", TemplateInput.UserInformation.GetCompositeID(), logging.ResultFailure, []string{"Failed to bulk add tags due to a SQL error", err.Error(), newTagQuery, oldTagQuery})
-		} else {
-			TemplateInput.HTMLMessage += template.HTML("Tags added successfully.<br>")
-			go WriteAuditLog(userID, "ADD-BULKIMAGETAG", TemplateInput.UserInformation.Name+" bulk added tags to images. "+oldTagQuery+"->"+newTagQuery)
+			redirectWithFlash(responseWriter, request, "/tag?ID="+strconv.FormatUint(userNewQTags[0].ID, 10)+"&SearchTerms="+url.QueryEscape(TemplateInput.OldQuery), TemplateInput.HTMLMessage, "TagFail")
+			return
 		}
-		ID = strconv.FormatUint(userNewQTags[0].ID, 10)
+		TemplateInput.HTMLMessage += template.HTML("Tags added successfully.<br>")
+		go WriteAuditLog(TemplateInput.UserInformation.ID, "ADD-BULKIMAGETAG", TemplateInput.UserInformation.Name+" bulk added tags to images. "+oldTagQuery+"->"+newTagQuery)
+		redirectWithFlash(responseWriter, request, "/tag?ID="+strconv.FormatUint(userNewQTags[0].ID, 10)+"&SearchTerms="+url.QueryEscape(TemplateInput.OldQuery), TemplateInput.HTMLMessage, "TagSucceeded")
+		return
 	case "replaceTag":
 		oldTagQuery := request.FormValue("tagName")
 		newTagQuery := request.FormValue("newTagName")
-		if TemplateInput.UserInformation.Name == "" {
+		if !TemplateInput.IsLoggedOn() {
 			TemplateInput.HTMLMessage += template.HTML("You must be logged in to perform that action.<br>")
-			break
+			redirectWithFlash(responseWriter, request, "/logon", TemplateInput.HTMLMessage, "LogonRequired")
+			return
 		}
-		//Translate UserID
-		userID, err := database.DBInterface.GetUserID(TemplateInput.UserInformation.Name)
-		if err != nil {
-			logging.WriteLog(logging.LogLevelError, "tagrouter/TagRouter/replaceTag", TemplateInput.UserInformation.GetCompositeID(), logging.ResultFailure, []string{"Could not get valid user id", err.Error()})
-			TemplateInput.HTMLMessage += template.HTML("You muse be logged in to perform that action.<br>")
-			break
-		}
+
 		if oldTagQuery == "" || newTagQuery == "" {
-			//redirect to images
 			TemplateInput.HTMLMessage += template.HTML("You must complete the full form before this action can be performed.<br>")
-			break
+			redirectWithFlash(responseWriter, request, "/tags?SearchTerms="+url.QueryEscape(TemplateInput.OldQuery), TemplateInput.HTMLMessage, "TagFail")
+			return
 		}
 		//Validate permission to bulk modify tags
 		if TemplateInput.UserPermissions.HasPermission(interfaces.ModifyImageTags) != true || TemplateInput.UserPermissions.HasPermission(interfaces.BulkTagOperations) != true {
 			TemplateInput.HTMLMessage += template.HTML("User does not have modify permission for bulk tagging on images.<br>")
 			go WriteAuditLogByName(TemplateInput.UserInformation.Name, "REPLACE-BULKIMAGETAG", TemplateInput.UserInformation.Name+" failed to add tag to images. Insufficient permissions. "+oldTagQuery+"->"+newTagQuery)
-			break
+			redirectWithFlash(responseWriter, request, "/tags?SearchTerms="+url.QueryEscape(TemplateInput.OldQuery), TemplateInput.HTMLMessage, "TagFail")
+			return
 		}
 		//Parse out tag arguments
 		userOldQTags, err := database.DBInterface.GetQueryTags(oldTagQuery, false)
 		userNewQTags, err2 := database.DBInterface.GetQueryTags(newTagQuery, false)
 		if err != nil || err2 != nil || len(userOldQTags) != 1 || len(userNewQTags) != 1 || userOldQTags[0].Exists == false || userNewQTags[0].Exists == false || userOldQTags[0].ID == userNewQTags[0].ID {
 			TemplateInput.HTMLMessage += template.HTML("Failed to get tags from user input. Ensure the tags you entered exist and that you did not enter more than one per field. And that the new and old tags are not the same tag or alias to the same tag.<br>")
-			break
+			redirectWithFlash(responseWriter, request, "/tags?SearchTerms="+url.QueryEscape(TemplateInput.OldQuery), TemplateInput.HTMLMessage, "TagFail")
+			return
 		}
 
-		//Confirmed tags exist and are valid
-		err = database.DBInterface.ReplaceImageTags(userOldQTags[0].ID, userNewQTags[0].ID, userID)
+		//Confirmed tags exist and are valid, now replace
+		err = database.DBInterface.ReplaceImageTags(userOldQTags[0].ID, userNewQTags[0].ID, TemplateInput.UserInformation.ID)
 		if err != nil {
 			TemplateInput.HTMLMessage += template.HTML("Error adding tags (SQL).<br>")
 			logging.WriteLog(logging.LogLevelError, "tagrouter/TagRouter/replaceTag", TemplateInput.UserInformation.GetCompositeID(), logging.ResultFailure, []string{"Failed to bulk replace tags due to a SQL error", err.Error(), newTagQuery, oldTagQuery})
-		} else {
-			TemplateInput.HTMLMessage += template.HTML("Tags replaced successfully.<br>")
-			go WriteAuditLog(userID, "REPLACE-BULKIMAGETAG", TemplateInput.UserInformation.Name+" bulk added tags to images. "+oldTagQuery+"->"+newTagQuery)
+			redirectWithFlash(responseWriter, request, "/tag?ID="+strconv.FormatUint(userOldQTags[0].ID, 10)+"&SearchTerms="+url.QueryEscape(TemplateInput.OldQuery), TemplateInput.HTMLMessage, "TagFail")
+			return
 		}
-		ID = strconv.FormatUint(userNewQTags[0].ID, 10)
+
+		TemplateInput.HTMLMessage += template.HTML("Tags replaced successfully.<br>")
+		go WriteAuditLog(TemplateInput.UserInformation.ID, "REPLACE-BULKIMAGETAG", TemplateInput.UserInformation.Name+" bulk added tags to images. "+oldTagQuery+"->"+newTagQuery)
+		redirectWithFlash(responseWriter, request, "/tag?ID="+strconv.FormatUint(userNewQTags[0].ID, 10)+"&SearchTerms="+url.QueryEscape(TemplateInput.OldQuery), TemplateInput.HTMLMessage, "TagSucceeded")
+		return
 	case "delete":
-		if TemplateInput.UserInformation.Name == "" {
+		if !TemplateInput.IsLoggedOn() {
 			TemplateInput.HTMLMessage += template.HTML("You must be logged in to perform that action.<br>")
-			break
+			redirectWithFlash(responseWriter, request, "/logon", TemplateInput.HTMLMessage, "LogonRequired")
+			return
 		}
-		if ID == "" {
-			TemplateInput.HTMLMessage += template.HTML("No ID provided to delete.<br>")
-			break
-		}
-		iID, err := strconv.ParseUint(ID, 10, 32)
+
+		requestedID, err := strconv.ParseUint(request.FormValue("ID"), 10, 32)
 		if err != nil {
 			TemplateInput.HTMLMessage += template.HTML("Error parsing tag id.<br>")
 			logging.WriteLog(logging.LogLevelError, "tagrouter/TagRouter/delete", TemplateInput.UserInformation.GetCompositeID(), logging.ResultFailure, []string{"Failed to parse tag id ", err.Error()})
-			break
+			redirectWithFlash(responseWriter, request, "/tags?SearchTerms="+url.QueryEscape(TemplateInput.OldQuery), TemplateInput.HTMLMessage, "TagFail")
+			return
 		}
-		tagInfo, err := database.DBInterface.GetTag(iID, false)
+		tagInfo, err := database.DBInterface.GetTag(requestedID, false)
 		if err != nil {
 			TemplateInput.HTMLMessage += template.HTML("Error getting tag info.<br>")
 			logging.WriteLog(logging.LogLevelError, "tagrouter/TagRouter/delete", TemplateInput.UserInformation.GetCompositeID(), logging.ResultFailure, []string{"Failed to get tag info ", err.Error()})
-			break
+			redirectWithFlash(responseWriter, request, "/tags?SearchTerms="+url.QueryEscape(TemplateInput.OldQuery), TemplateInput.HTMLMessage, "TagFail")
+			return
 		}
 
 		//Validate permission to delete
 		if TemplateInput.UserPermissions.HasPermission(interfaces.RemoveTags) != true && (config.Configuration.UsersControlOwnObjects != true || TemplateInput.UserInformation.ID != tagInfo.UploaderID) {
 			TemplateInput.HTMLMessage += template.HTML("User does not have modify permission for tags.<br>")
-			go WriteAuditLogByName(TemplateInput.UserInformation.Name, "DELETE-TAG", TemplateInput.UserInformation.Name+" failed to delete tag. Insufficient permissions. "+ID)
-			break
+			go WriteAuditLogByName(TemplateInput.UserInformation.Name, "DELETE-TAG", TemplateInput.UserInformation.Name+" failed to delete tag. Insufficient permissions. "+strconv.FormatUint(requestedID, 10))
+			redirectWithFlash(responseWriter, request, "/tag?ID="+strconv.FormatUint(requestedID, 10)+"&SearchTerms="+url.QueryEscape(TemplateInput.OldQuery), TemplateInput.HTMLMessage, "TagFail")
+			return
 		}
 		// /ValidatePermission
 
 		//Update tag
-		if err := database.DBInterface.DeleteTag(iID); err != nil {
+		if err := database.DBInterface.DeleteTag(requestedID); err != nil {
 			TemplateInput.HTMLMessage += template.HTML("Failed to delete tag. Ensure the tag is not currently in use.<br>")
-		} else {
-			TemplateInput.HTMLMessage += template.HTML("Tag deleted successfully.<br>")
-			go WriteAuditLogByName(TemplateInput.UserInformation.Name, "DELETE-TAG", TemplateInput.UserInformation.Name+" successfully deleted tag. "+ID)
-			//redirect user to tags since we just deleted this one
-			redirectWithFlash(responseWriter, request, "/tags"+"&SearchTerms="+url.QueryEscape(TemplateInput.OldQuery), TemplateInput.HTMLMessage, "DeleteSuccess")
+			redirectWithFlash(responseWriter, request, "/tags?SearchTerms="+url.QueryEscape(TemplateInput.OldQuery), TemplateInput.HTMLMessage, "TagFail")
 			return
 		}
 
+		TemplateInput.HTMLMessage += template.HTML("Tag deleted successfully.<br>")
+		go WriteAuditLogByName(TemplateInput.UserInformation.Name, "DELETE-TAG", TemplateInput.UserInformation.Name+" successfully deleted tag. "+strconv.FormatUint(requestedID, 10))
+		//redirect user to tags since we just deleted this one
+		redirectWithFlash(responseWriter, request, "/tags?SearchTerms="+url.QueryEscape(TemplateInput.OldQuery), TemplateInput.HTMLMessage, "DeleteSuccess")
+		return
 	}
 
-	if ID == "" {
-		TemplateInput.HTMLMessage += template.HTML("Error parsing tag id.<br>")
-	} else {
-		iID, err := strconv.ParseUint(ID, 10, 32)
-		if err != nil {
-			TemplateInput.HTMLMessage += template.HTML("Error parsing tag id.<br>")
-			logging.WriteLog(logging.LogLevelError, "tagrouter/TagRouter", TemplateInput.UserInformation.GetCompositeID(), logging.ResultFailure, []string{"Failed to parse tag id ", err.Error()})
-		} else {
-			//Populate Tag
-			tag, err := database.DBInterface.GetTag(iID, true)
-			if err != nil {
-				TemplateInput.HTMLMessage += template.HTML("Error pulling tag.<br>")
-				logging.WriteLog(logging.LogLevelError, "tagrouter/TagRouter", TemplateInput.UserInformation.GetCompositeID(), logging.ResultFailure, []string{"Failed to pull tags ", err.Error()})
-			} else {
-				if tag.IsAlias {
-					aliasInfo, err := database.DBInterface.GetTag(tag.AliasedID, true)
-					TemplateInput.AliasTagInfo = aliasInfo
-					if err != nil {
-						TemplateInput.HTMLMessage += template.HTML("Error pulling tag alias information.<br>")
-						logging.WriteLog(logging.LogLevelError, "tagrouter/TagRouter", TemplateInput.UserInformation.GetCompositeID(), logging.ResultFailure, []string{"Failed to pull tags alias ", err.Error()})
-					} else {
-						TemplateInput.TagContentInfo = tag
-						TemplateInput.AliasTagInfo = aliasInfo
-					}
-				} else {
-					TemplateInput.TagContentInfo = tag
-				}
-			}
-		}
-	}
-	replyWithTemplate("tag.html", TemplateInput, responseWriter, request)
+	TemplateInput.HTMLMessage += template.HTML("Unknown command given.<br>")
+	redirectWithFlash(responseWriter, request, "/tags?SearchTerms="+url.QueryEscape(TemplateInput.OldQuery), TemplateInput.HTMLMessage, "TagFail")
 }

@@ -2,6 +2,7 @@
 	<body>
 		{{template "headMenu.html" .}}
 		<div id="BodyContent">
+			{{$OldQuery := .OldQuery}}
 			{{$PermissionQ := .UserPermissions.HasPermission 4}}
 			{{$PermissionD := .UserPermissions.HasPermission 8}}
 			{{$PermissionBulkTag := .UserPermissions.HasPermission 256}}
@@ -19,7 +20,13 @@
 				<a href="#" onclick="return (ToggleFormDisplay('changeTagForm') & ToggleFormDisplay('tagData'));">Modify Tag</a><br>
 				{{end}}
 				{{if or $PermissionD $CanModifyOwn}}
-				<a href="/tag?command=delete&ID={{.TagContentInfo.ID}}&SearchTerms={{.OldQuery}}" onclick="return confirm('Are you sure you want to delete this tag?');">Delete Tag</a><br>
+				<form action="/tag" method="POST" class="anchorform">
+					{{.CSRF}}
+					<input type="hidden" name="ID" value="{{.TagContentInfo.ID}}">
+					<input type="hidden" name="command" value="delete">
+					<input type="hidden" name="SearchTerms" value="{{$OldQuery}}">
+					<button type="submit" class="buttonasanchor" onclick="return confirm('Are you sure you want to delete this tag?');">Delete Tag</button>
+				</form><br>
 				{{end}}
 				{{if and $PermissionQ $PermissionBulkTag}}
 				<a href="#" onclick="return ToggleFormDisplay('replaceTagForm');">Replace Tag</a><br>

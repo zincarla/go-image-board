@@ -17,7 +17,7 @@
 					Stream View
 				</a>
 				{{end}}				
-				
+				{{$CSRF:=.CSRF}}
 				{{$CanModifyCollection := .UserPermissions.HasPermission 4096}}
 				{{$CanDeleteCollection := .UserPermissions.HasPermission 8192}}
 				{{$CanRemoveFromCollection:= .UserPermissions.HasPermission 16384}}
@@ -92,7 +92,7 @@
 							<input type="hidden" name="ID" value="{{$CollectionID}}" />
 							<input type="hidden" name="ImageID" value="{{.ID}}" />
 							<input type="hidden" name="SearchTerms" value="{{$OldQuery}}" />
-							{{.CSRF}}
+							{{$CSRF}}
 							<button type="submit" class="removeCollectionButton" onclick="return confirm('Are you sure you want to remove this from the collection?');"><span></span></button>
 						</form>
 						{{end}}
@@ -109,7 +109,7 @@
 							<input type="hidden" name="ID" value="{{$CollectionID}}" />
 							<input type="hidden" name="ImageID" value="{{.ID}}" />
 							<input type="hidden" name="SearchTerms" value="{{$OldQuery}}" />
-							{{.CSRF}}
+							{{$CSRF}}
 							<button type="submit" class="removeCollectionButton" onclick="return confirm('Are you sure you want to remove this from the collection?');"><span></span></button>
 						</form>
 						{{end}}

@@ -268,7 +268,8 @@ func main() {
 		requestRouter.HandleFunc("/uploadImage", routers.AccountRequiredMiddleWare(routers.UploadFormRouter)).Methods("GET")
 		requestRouter.HandleFunc("/about/{file}", routers.AccountRequiredMiddleWare(routers.AboutRouter)).Methods("GET")
 		requestRouter.HandleFunc("/tags", routers.AccountRequiredMiddleWare(routers.TagsRouter)).Methods("GET")
-		requestRouter.HandleFunc("/tag", routers.AccountRequiredMiddleWare(routers.TagRouter)) //TODO: Split Needed
+		requestRouter.HandleFunc("/tag", routers.AccountRequiredMiddleWare(routers.TagGetRouter)).Methods("GET")
+		requestRouter.HandleFunc("/tag", routers.AccountRequiredMiddleWare(routers.TagPostRouter)).Methods("POST")
 		requestRouter.HandleFunc("/redirect", routers.AccountRequiredMiddleWare(routers.RedirectRouter)).Methods("POST")
 		requestRouter.HandleFunc("/logon", routers.LogonRouter) //TODO: Split Needed
 		requestRouter.HandleFunc("/mod", routers.AccountRequiredMiddleWare(routers.ModRouter)).Methods("GET")

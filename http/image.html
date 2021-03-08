@@ -4,7 +4,7 @@
 		<div id="BodyContent">
 			<div id="SideMenu" class="cellDefaultHidden">
 				{{template "mainSearchForm.html" .}}
-
+				{{$CSRF := .CSRF}}
 				{{$OldQuery := .OldQuery}}
 				{{$ImageID := .ImageContentInfo.ID}}
 				{{$CanModifyTags := .UserPermissions.HasPermission 1}}
@@ -54,6 +54,7 @@
 				<ul>
 					{{range .Tags}}
 					<li>{{.Name}} {{if $CanModifyTags}}<form action="/image" method="POST" class="anchorform">
+															{{$CSRF}}
 															<input type="hidden" name="ID" value="{{$ImageID}}">
 															<input type="hidden" name="command" value="RemoveTag">
 															<input type="hidden" name="TagID" value="{{.ID}}">
@@ -115,6 +116,7 @@
 				{{if and $UserNotNull $HasDeletePermissions}}
 				<br><br>
 				<form action="/image" method="POST" class="anchorform">
+					{{.CSRF}}
 					<input type="hidden" name="ID" value="{{$ImageID}}">
 					<input type="hidden" name="command" value="delete">
 					<input type="hidden" name="SearchTerms" value="{{$OldQuery}}">
