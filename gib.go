@@ -22,6 +22,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/gorilla/csrf"
 	"github.com/gorilla/mux"
 )
 
@@ -305,11 +306,11 @@ func main() {
 	requestRouter.Use(routers.LogMiddleware)
 
 	//Setup csrf protected routers
-	//csrfRequestRouter := csrf.Protect(config.Configuration.CSRFKey, csrf.RequestHeader("Authenticity-Token"))(requestRouter)
+	csrfRequestRouter := csrf.Protect(config.Configuration.CSRFKey, csrf.RequestHeader("Authenticity-Token"))(requestRouter)
 
 	//Create server
 	server := &http.Server{
-		Handler:        requestRouter, //csrfRequestRouter,
+		Handler:        csrfRequestRouter,
 		Addr:           config.Configuration.Address,
 		ReadTimeout:    config.Configuration.ReadTimeout,
 		WriteTimeout:   config.Configuration.WriteTimeout,

@@ -76,6 +76,7 @@
 				{{.ImageContentInfo.Rating}} <a href="/about/tags.html?SearchTerms={{$OldQuery}}">?</a>
 				<h5>Source{{if and $UserNotNull $HasSourcePermissions}} (<a href="#" onclick="ToggleFormDisplay('changeSourceForm');$('#changeSourceForm input[name=NewSource]:first').select(); return false;">edit</a>){{end}}</h5>
 				<form action="/image" method="POST" id="changeSourceForm" class="displayHidden">
+					{{.CSRF}}
 					<input type="text" name="NewSource" placeholder="Source" value="{{.ImageContentInfo.Source}}">
 					<input type="hidden" name="ID" value="{{.ImageContentInfo.ID}}">
 					<input type="hidden" name="command" value="ChangeSource" />
@@ -93,6 +94,7 @@
 				{{end}}
 				<h5>Score{{if $HasVotePermissions}} (<a href="#" onclick="ToggleFormDisplay('changeVoteForm'); $('#changeVoteForm input[name=NewVote]:first').select(); return false;">vote</a>){{end}}</h5>
 				<form action="/image" method="POST" id="changeVoteForm" class="displayHidden">
+					{{.CSRF}}
 					<input type="number" name="NewVote" placeholder="New Vote" value="{{.ImageContentInfo.UsersVotedScore}}" min="-10" max="10">
 					<input type="hidden" name="ID" value="{{.ImageContentInfo.ID}}">
 					<input type="hidden" name="command" value="ChangeVote" />
