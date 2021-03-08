@@ -74,7 +74,13 @@
 							Go to this post
 						</a>
 						{{if and $UserNotNull $HasRemoveFromPermissions}}
-						<a href="/collectionimages?command=delete&ID={{$CollectionID}}&ImageID={{.ID}}&SearchTerms={{$OldQuery}}" onclick="return confirm('Are you sure you want to remove this from the collection?');"><div class="removeCollectionButton"><span></span></div></a>
+						<form action="/collectionimages" method="POST">
+							<input type="hidden" name="command" value="delete" />
+							<input type="hidden" name="ID" value="{{$CollectionID}}" />
+							<input type="hidden" name="ImageID" value="{{.ID}}" />
+							<input type="hidden" name="SearchTerms" value="{{$OldQuery}}" />
+							<button type="submit" class="removeCollectionButton" onclick="return confirm('Are you sure you want to remove this from the collection?');"><span></span></button>
+						</form>
 						{{end}}
 					</div>
 					{{else}}
@@ -84,7 +90,13 @@
 							<div class="imageResultOverlay overlay{{.Location | getimagetype}}"></div>
 						</a>
 						{{if and $UserNotNull $HasRemoveFromPermissions}}
-						<a href="/collectionimages?command=delete&ID={{$CollectionID}}&ImageID={{.ID}}&SearchTerms={{$OldQuery}}" onclick="return confirm('Are you sure you want to remove this from the collection?');"><div class="removeCollectionButton"><span></span></div></a>
+						<form action="/collectionimages" method="POST">
+							<input type="hidden" name="command" value="delete" />
+							<input type="hidden" name="ID" value="{{$CollectionID}}" />
+							<input type="hidden" name="ImageID" value="{{.ID}}" />
+							<input type="hidden" name="SearchTerms" value="{{$OldQuery}}" />
+							<button type="submit" class="removeCollectionButton" onclick="return confirm('Are you sure you want to remove this from the collection?');"><span></span></button>
+						</form>
 						{{end}}
 					</div>
 					{{end}}
