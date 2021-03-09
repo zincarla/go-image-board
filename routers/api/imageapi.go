@@ -153,8 +153,11 @@ func ImagePostAPIRouter(responseWriter http.ResponseWriter, request *http.Reques
 
 	//Send request to HandleImageUploadRequest
 	lastID, duplicateIDs, errors := routers.HandleImageUploadRequest(request, interfaces.UserInformation{Name: UserName, ID: UserID}, uploadData.Collection, uploadData.Tags, uploadData.Files, uploadData.Source)
-
-	uploadReply := uploadFileReply{LastID: lastID, DuplicateIDs: duplicateIDs, Errors: errors.Error()}
+	var errorString string
+	if errors != nil {
+		errorString = errors.Error()
+	}
+	uploadReply := uploadFileReply{LastID: lastID, DuplicateIDs: duplicateIDs, Errors: errorString}
 
 	ReplyWithJSON(responseWriter, request, uploadReply, UserName)
 }
