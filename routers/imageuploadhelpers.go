@@ -1,6 +1,7 @@
 package routers
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"errors"
 	"fmt"
@@ -229,6 +230,218 @@ func handleImageUpload(request *http.Request, userName string) (uint64, map[stri
 			if err != nil {
 				errorCompilation += "Failed to add images to collection. "
 				logging.WriteLog(logging.LogLevelError, "imagerouter/handleImageUpload", userName, logging.ResultFailure, []string{"error adding image to collection", err.Error()})
+			}
+		}
+	}
+
+	if errorCompilation != "" {
+		return lastID, duplicateIDs, errors.New(errorCompilation)
+	}
+	return lastID, duplicateIDs, nil
+}
+
+//UploadingFile contains information on the Name and Data of a file to be uploaded
+type UploadingFile struct {
+	Name string
+	Data []byte
+}
+
+//HandleImageUploadRequest handles an image upload as requested by API
+func HandleImageUploadRequest(request *http.Request, userInformation interfaces.UserInformation, collectionName string, imageTags string, files []UploadingFile, source string) (uint64, map[string]uint64, error) {
+	var err error
+	//Validate permission to upload
+	//Get the user's permissions
+	userPermission, err := database.DBInterface.GetUserPermissionSet(userInformation.Name)
+	if err != nil {
+		go WriteAuditLog(userInformation.ID, "IMAGE-UPLOAD", userInformation.Name+" failed to upload image. "+err.Error())
+		return 0, nil, errors.New("Could not validate permission (SQL Error)")
+	}
+
+	//Verify user can upload an image
+	if interfaces.UserPermission(userPermission).HasPermission(interfaces.UploadImage) != true {
+		go WriteAuditLog(userInformation.ID, "IMAGE-UPLOAD", userInformation.Name+" failed to upload image. No permissions.")
+		return 0, nil, errors.New("User does not have upload permission for images")
+	}
+
+	//CacheCollectionInfo if needed and verify permissions to create or update the collection
+	var collectionInfo interfaces.CollectionInformation
+	if collectionName != "" {
+		collectionInfo, err = database.DBInterface.GetCollectionByName(collectionName)
+		if err != nil {
+			//Want to add to collection, but the collection does not exist, so validate permissions to create collections
+			if interfaces.UserPermission(userPermission).HasPermission(interfaces.AddCollections) != true {
+				go WriteAuditLog(userInformation.ID, "IMAGE-UPLOAD", userInformation.Name+" failed to upload image. No permissions to create collection.")
+				return 0, nil, errors.New("User does not have create permission for collections")
+			}
+		} else {
+			//Want to add to a pre-existing collection, validate permissions on the pre-existing collection
+			if interfaces.UserPermission(userPermission).HasPermission(interfaces.ModifyCollections) != true &&
+				(config.Configuration.UsersControlOwnObjects && collectionInfo.UploaderID != userInformation.ID) {
+				go WriteAuditLog(userInformation.ID, "IMAGE-UPLOAD", userInformation.Name+" failed to upload image. No permissions to add members to collection.")
+				return 0, nil, errors.New("User does not have permission to update requested collection")
+			}
+		}
+	}
+	// /ValidatePermission
+
+	errorCompilation := ""                  //To store non-critical errors such as file already uploaded
+	duplicateIDs := make(map[string]uint64) //Stores id's for files that already exist
+
+	//Cache tags first, improves speed to calculate this once than for each image
+	//Get tags
+	var validatedUserTags []uint64 //Will contain tags the user is allowed to use
+	tagIDString := ""
+	userQTags, err := database.DBInterface.GetQueryTags(imageTags, false)
+	if err != nil {
+		errorCompilation += "Failed to get tags from input. "
+	}
+	for _, tag := range userQTags {
+		if tag.Exists && tag.IsMeta == false {
+			//Assign pre-existing tag
+			//Validate permission to modify tags
+			if interfaces.UserPermission(userPermission).HasPermission(interfaces.ModifyImageTags) != true && (config.Configuration.UsersControlOwnObjects != true) {
+				logging.WriteLog(logging.LogLevelError, "imagerouter/handleImageUpload", userInformation.Name, logging.ResultFailure, []string{"Does not have modify tag permission"})
+				errorCompilation += "Unable to use tag " + tag.Name + " due to insufficient permissions of user to tag images. "
+				// /ValidatePermission
+			} else {
+				validatedUserTags = append(validatedUserTags, tag.ID)
+				tagIDString = tagIDString + ", " + strconv.FormatUint(tag.ID, 10)
+			}
+		} else if tag.IsMeta == false {
+			//Create Tag
+			//Validate permissions to create tags
+			if interfaces.UserPermission(userPermission).HasPermission(interfaces.AddTags) != true {
+				logging.WriteLog(logging.LogLevelError, "imagerouter/handleImageUpload", userInformation.Name, logging.ResultFailure, []string{"Does not have create tag permission"})
+				errorCompilation += "Unable to use tag " + tag.Name + " due to insufficient permissions of user to create tags. "
+				// /ValidatePermission
+			} else {
+				tagID, err := database.DBInterface.NewTag(tag.Name, tag.Description, userInformation.ID)
+				if err != nil {
+					logging.WriteLog(logging.LogLevelError, "imagerouter/handleImageUpload", userInformation.Name, logging.ResultFailure, []string{"error attempting to create tag", err.Error(), tag.Name})
+					errorCompilation += "Unable to use tag " + tag.Name + " due to a database error. "
+				} else {
+					go WriteAuditLog(userInformation.ID, "CREATE-TAG", userInformation.Name+" created a new tag. "+tag.Name)
+					validatedUserTags = append(validatedUserTags, tagID)
+					tagIDString = tagIDString + ", " + strconv.FormatUint(tagID, 10)
+				}
+			}
+		}
+	}
+
+	var lastID uint64
+	var uploadedIDs []uploadData
+	for _, toUpload := range files {
+		switch ext := strings.ToLower(filepath.Ext(toUpload.Name)); ext {
+		case ".jpg", ".jpeg", ".jfif", ".bmp", ".gif", ".png", ".svg", ".mpg", ".mov", ".webm", ".avi", ".mp4", ".mp3", ".ogg", ".wav", ".webp", ".tiff", ".tif":
+			//Passes filter
+		default:
+			logging.WriteLog(logging.LogLevelVerbose, "imagerouter/handleImageUpload", userInformation.Name, logging.ResultFailure, []string{"Attempted to upload a file which did not pass filter", ext})
+			errorCompilation += toUpload.Name + " is not a recognized file. "
+			continue
+		}
+		fileStream := bytes.NewReader(toUpload.Data)
+		if err != nil {
+			logging.WriteLog(logging.LogLevelError, "imagerouter/handleImageUpload", userInformation.Name, logging.ResultFailure, []string{"Upload image, could not open stream to save", err.Error()})
+			errorCompilation += toUpload.Name + " could not be opened. "
+		} else {
+			originalName := toUpload.Name
+			//Hash Image
+			hashName, err := GetNewImageName(originalName, fileStream)
+			if err != nil {
+				errorCompilation += err.Error()
+				continue
+			}
+
+			filePath := path.Join(config.Configuration.ImageDirectory, hashName)
+			//Check if file exists, if so, skip
+			if _, err := os.Stat(filePath); err == nil {
+				var duplicateID uint64
+				dupInfo, ierr := database.DBInterface.GetImageByFileName(hashName)
+				if ierr == nil {
+					duplicateID = dupInfo.ID
+				}
+				logging.WriteLog(logging.LogLevelInfo, "imagerouter/handleImageUpload", userInformation.Name, logging.ResultInfo, []string{"Skipping as file is already uploaded", toUpload.Name, filePath, strconv.FormatUint(duplicateID, 10)})
+				if ierr == nil {
+					//errorCompilation += fileHeader.Filename + " has already been uploaded as ID " + strconv.FormatUint(duplicateID, 10) + ". "
+					duplicateIDs[toUpload.Name] = duplicateID
+				} else {
+					errorCompilation += toUpload.Name + " has already been uploaded. "
+				}
+				continue
+			}
+
+			saveStream, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE, 0660)
+			if err != nil {
+				logging.WriteLog(logging.LogLevelError, "imagerouter/handleImageUpload", userInformation.Name, logging.ResultFailure, []string{"Upload image, failed to open new file", err.Error()})
+				errorCompilation += toUpload.Name + " could not be saved, internal error. "
+				saveStream.Close()
+				continue
+			}
+			//Save Image
+			_, err = fileStream.Seek(0, 0)
+			if err != nil {
+				logging.WriteLog(logging.LogLevelError, "imagerouter/handleImageUpload", userInformation.Name, logging.ResultFailure, []string{"Upload image, failed to seek stream", err.Error()})
+				errorCompilation += toUpload.Name + " could not be saved, internal error. "
+				saveStream.Close()
+				continue
+			}
+			io.Copy(saveStream, fileStream)
+			saveStream.Close()
+			//Add image to Database
+
+			lastID, err = database.DBInterface.NewImage(hashName, hashName, userInformation.ID, source)
+			if err != nil {
+				logging.WriteLog(logging.LogLevelError, "imagerouter/handleImageUpload", userInformation.Name, logging.ResultFailure, []string{"error attempting to add file to database", err.Error(), filePath})
+				errorCompilation += toUpload.Name + " could not be added to database, internal error. "
+				//Attempt to cleanup file
+				if err := os.Remove(filePath); err != nil {
+					logging.WriteLog(logging.LogLevelError, "imagerouter/handleImageUpload", userInformation.Name, logging.ResultFailure, []string{"error attempting to remove orphaned file", err.Error(), filePath})
+				}
+				continue
+			}
+
+			uploadedIDs = append(uploadedIDs, uploadData{Name: originalName, ID: lastID})
+
+			//Add tags
+			if err := database.DBInterface.AddTag(validatedUserTags, lastID, userInformation.ID); err != nil {
+				logging.WriteLog(logging.LogLevelError, "imagerouter/handleImageUpload", userInformation.Name, logging.ResultFailure, []string{"failed to add tags", err.Error(), strconv.FormatUint(lastID, 10)})
+				errorCompilation += "Failed to add tags to " + toUpload.Name + ". "
+			} else {
+
+				go WriteAuditLog(userInformation.ID, "IMAGE-UPLOAD", userInformation.Name+" tagged image "+strconv.FormatUint(lastID, 10)+" with "+tagIDString)
+			}
+
+			//Log success
+			go WriteAuditLog(userInformation.ID, "IMAGE-UPLOAD", userInformation.Name+" successfully uploaded an image. "+strconv.FormatUint(lastID, 10))
+			//Start go routine to generate thumbnail
+			go GenerateThumbnail(hashName)
+			go GeneratedHash(hashName, lastID)
+		}
+	}
+	//Now handle collection if requested
+
+	if collectionName != "" {
+		if collectionInfo.ID == 0 {
+			collectionInfo.ID, err = database.DBInterface.NewCollection(collectionName, "", userInformation.ID)
+			if err != nil {
+				errorCompilation += "Failed to create the collection requested, SQL error. "
+				logging.WriteLog(logging.LogLevelError, "imagerouter/handleImageUpload", userInformation.Name, logging.ResultFailure, []string{"error attempting to create collection", err.Error()})
+			}
+		}
+		//If we had an error creating collection, this would still be 0, otherwise would have value or if collection already existed, would still have value other than 0
+		if collectionInfo.ID != 0 {
+			//Sort uploads by name
+			sort.Slice(uploadedIDs, func(i, j int) bool {
+				return uploadedIDs[i].Name < uploadedIDs[j].Name
+			})
+			var ids []uint64
+			for _, v := range uploadedIDs {
+				ids = append(ids, v.ID)
+			}
+			err = database.DBInterface.AddCollectionMember(collectionInfo.ID, ids, userInformation.ID)
+			if err != nil {
+				errorCompilation += "Failed to add images to collection. "
+				logging.WriteLog(logging.LogLevelError, "imagerouter/handleImageUpload", userInformation.Name, logging.ResultFailure, []string{"error adding image to collection", err.Error()})
 			}
 		}
 	}

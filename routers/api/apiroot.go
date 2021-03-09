@@ -12,6 +12,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/gorilla/csrf"
 )
 
 //ErrorResponse used to marshal error text for JSON parsing
@@ -139,4 +141,10 @@ func ValidateAPIUserWriteAccess(responseWriter http.ResponseWriter, request *htt
 		return false, permissions
 	}
 	return true, permissions
+}
+
+//CSRFAPIRouter serves get requests to /api/CSRF
+func CSRFAPIRouter(responseWriter http.ResponseWriter, request *http.Request) {
+	responseWriter.Header().Set("X-CSRF-Token", csrf.Token(request))
+	ReplyWithJSON(responseWriter, request, GenericResponse{Result: csrf.Token(request)}, "")
 }

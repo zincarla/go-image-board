@@ -289,6 +289,7 @@ func main() {
 		//
 		requestRouter.HandleFunc("/api/Image/{ImageID}", api.ImageGetAPIRouter).Methods("GET")
 		requestRouter.HandleFunc("/api/Image/{ImageID}", api.ImageDeleteAPIRouter).Methods("DELETE")
+		requestRouter.HandleFunc("/api/Image", api.ImagePostAPIRouter).Methods("POST")
 		requestRouter.HandleFunc("/api/Images", api.ImagesGetAPIRouter).Methods("GET")
 		//
 		requestRouter.HandleFunc("/api/Logon", api.LogonAPIRouter).Methods("POST")
@@ -297,6 +298,7 @@ func main() {
 		//Autocomplete helpers
 		requestRouter.HandleFunc("/api/TagName", api.TagNameAPIRouter).Methods("GET")
 		requestRouter.HandleFunc("/api/CollectionName", api.CollectionNameAPIRouter).Methods("GET")
+		requestRouter.HandleFunc("/api", api.CSRFAPIRouter).Methods("GET")
 
 	} else {
 		requestRouter.HandleFunc("/", routers.BadConfigRouter).Methods("GET")
@@ -306,7 +308,8 @@ func main() {
 	requestRouter.Use(routers.LogMiddleware)
 
 	//Setup csrf protected routers
-	csrfRequestRouter := csrf.Protect(config.Configuration.CSRFKey, csrf.RequestHeader("Authenticity-Token"))(requestRouter)
+	csrfRequestRouter := csrf.Protect(config.Configuration.CSRFKey, csrf.Secure(!config.Configuration.InSecureCSRF),
+		csrf.ErrorHandler(http.HandlerFunc(routers.CSRFErrorRouter)))(requestRouter)
 
 	//Create server
 	server := &http.Server{

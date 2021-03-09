@@ -2,6 +2,7 @@ package api
 
 import (
 	"database/sql"
+	"encoding/json"
 	"go-image-board/config"
 	"go-image-board/database"
 	"go-image-board/interfaces"
@@ -108,4 +109,52 @@ func ImageDeleteAPIRouter(responseWriter http.ResponseWriter, request *http.Requ
 		return
 	}
 	ReplyWithJSONError(responseWriter, request, "Please specify ImageID", UserName, http.StatusBadRequest)
+}
+
+type uploadFileInput struct {
+	Tags       string
+	Source     string
+	Collection string
+	Files      []routers.UploadingFile
+}
+type uploadFileReply struct {
+	LastID       uint64
+	DuplicateIDs map[string]uint64
+	Errors       string
+}
+
+//ImagePostAPIRouter serves post requests to /api/Image
+func ImagePostAPIRouter(responseWriter http.ResponseWriter, request *http.Request) {
+	//Validate Logon
+	UserAPIValidated, UserID, UserName := ValidateAndThrottleAPIUser(responseWriter, request)
+	if !UserAPIValidated {
+		return //User not logged in and was already handled
+	}
+	//Validate Permission to use api
+	UserAPIWriteValidated, permissions := ValidateAPIUserWriteAccess(responseWriter, request, UserName)
+	if !UserAPIWriteValidated {
+		return //User does not have API access and was already told
+	}
+
+	//Verify user can upload an image
+	if interfaces.UserPermission(permissions).HasPermission(interfaces.UploadImage) != true {
+		go routers.WriteAuditLog(UserID, "IMAGE-UPLOAD", UserName+" failed to upload image. No permissions.")
+		ReplyWithJSONError(responseWriter, request, "Insufficient permissions to upload", UserName, http.StatusForbidden)
+		return
+	}
+
+	//Parse user upload JSON request
+	decoder := json.NewDecoder(request.Body)
+	var uploadData uploadFileInput
+	if err := decoder.Decode(&uploadData); err != nil {
+		ReplyWithJSONError(responseWriter, request, "Failed to parse request data", "", http.StatusBadRequest)
+		return
+	}
+
+	//Send request to HandleImageUploadRequest
+	lastID, duplicateIDs, errors := routers.HandleImageUploadRequest(request, interfaces.UserInformation{Name: UserName, ID: UserID}, uploadData.Collection, uploadData.Tags, uploadData.Files, uploadData.Source)
+
+	uploadReply := uploadFileReply{LastID: lastID, DuplicateIDs: duplicateIDs, Errors: errors.Error()}
+
+	ReplyWithJSON(responseWriter, request, uploadReply, UserName)
 }
