@@ -1,6 +1,7 @@
 {{template "header.html" .}}
 	<body>
 		<script>
+			OGQuery = "{{.OldQuery}}";
 			SSImageQuery = encodeURI("{{.OldQuery}}");
 			function OnLoadStartNextSlideTimer() {
 				var time = {{.SlideShowSpeed}};
@@ -11,7 +12,7 @@
 			}
 			function LoadNextSlide() {
 				//Call API to get random image
-				fetch("/api/Images?SearchTerms="+SSImageQuery+"&SearchType=random")
+				fetch("/api/Images?SearchQuery="+SSImageQuery+"&SearchType=random")
 					.then((resp) => resp.json()) //Convert response to json
 					.then(function(jsonData) {
 						EmbedData = GetEmbedForContent(jsonData.Images[0].Location);
