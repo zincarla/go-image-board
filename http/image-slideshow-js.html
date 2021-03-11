@@ -1,7 +1,6 @@
 {{template "header.html" .}}
 	<body>
 		<script>
-			OGQuery = "{{.OldQuery}}";
 			SSImageQuery = encodeURI("{{.OldQuery}}");
 			function OnLoadStartNextSlideTimer() {
 				var time = {{.SlideShowSpeed}};

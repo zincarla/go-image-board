@@ -29,3 +29,6 @@ input {
 .CollectionList li {
 	background-color: #2f2f91;
 }
+a, .buttonasanchor {
+	color: #ccccFF;
+}
