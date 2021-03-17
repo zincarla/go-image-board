@@ -67,7 +67,7 @@ func ImageQueryRouter(responseWriter http.ResponseWriter, request *http.Request)
 		}
 		//Return random image if requested
 		if request.FormValue("SearchType") == "Random" || TemplateInput.ViewMode == "slideshow" {
-			imageInfo, err := database.DBInterface.GetRandomImage(userQTags)
+			imageInfo, _, err := database.DBInterface.GetRandomImage(userQTags)
 			if err == nil {
 				//redirect user to randomly selected image
 				http.Redirect(responseWriter, request, "/image?ID="+strconv.FormatUint(imageInfo.ID, 10)+"&SearchTerms="+url.QueryEscape(TemplateInput.OldQuery), 302)

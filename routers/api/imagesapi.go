@@ -30,10 +30,10 @@ func ImagesGetAPIRouter(responseWriter http.ResponseWriter, request *http.Reques
 	pageStart, _ := strconv.ParseUint(request.FormValue("PageStart"), 10, 32) //Either parses fine, or is 0, both works
 	pageStride := config.Configuration.PageStride
 
-	userQTags, err := database.DBInterface.GetQueryTags(userQuery, true)
+	userQTags, err := database.DBInterface.GetQueryTags(userQuery, false)
 	if err == nil {
 		//add user's global filters to query
-		userFilterTags, err := database.DBInterface.GetUserFilterTags(UserID, true)
+		userFilterTags, err := database.DBInterface.GetUserFilterTags(UserID, false)
 		if err != nil {
 			logging.WriteLog(logging.LogLevelError, "imagequeries/ImagesAPIRouter", UserName, logging.ResultFailure, []string{"Failed to load user's filter", err.Error()})
 		} else {
@@ -42,9 +42,9 @@ func ImagesGetAPIRouter(responseWriter http.ResponseWriter, request *http.Reques
 
 		//Return random image if requested
 		if strings.ToLower(request.FormValue("SearchType")) == "random" {
-			imageInfo, err := database.DBInterface.GetRandomImage(userQTags)
+			imageInfo, resultCount, err := database.DBInterface.GetRandomImage(userQTags)
 			if err == nil {
-				ReplyWithJSON(responseWriter, request, ImageSearchResult{Images: []interfaces.ImageInformation{imageInfo}, ResultCount: 1, ServerStride: pageStride}, UserName)
+				ReplyWithJSON(responseWriter, request, ImageSearchResult{Images: []interfaces.ImageInformation{imageInfo}, ResultCount: resultCount, ServerStride: pageStride}, UserName)
 				return
 			}
 			logging.WriteLog(logging.LogLevelError, "imagequeries/ImagesAPIRouter", UserName, logging.ResultFailure, []string{"Failed to perform random query", err.Error()})

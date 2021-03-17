@@ -182,7 +182,7 @@ function GetEmbedForContent(imageLocation) {
     ToReturn = ""
     
     ext = "."+imageLocation.toLowerCase().split('.').pop();
-    console.log("Path for GetEmbedContent is "+imageLocation+" with extension of "+ext);
+    //console.log("Path for GetEmbedContent is "+imageLocation+" with extension of "+ext);
 
 	switch(ext) {
         case ".jpg":
@@ -213,7 +213,7 @@ function GetEmbedForContent(imageLocation) {
             ToReturn = "<p>File format not supported. Click download.</p>";
     }
 
-    console.log("Return for GetEmbedContent is "+ToReturn);
+    //console.log("Return for GetEmbedContent is "+ToReturn);
     
     wrapper = document.createElement('div');
     wrapper.innerHTML= ToReturn;

@@ -65,8 +65,8 @@ type DBInterface interface {
 	SearchImages(Tags []TagInformation, PageStart uint64, PageStride uint64) ([]ImageInformation, uint64, error)
 	//GetPrevNexImages performs a search for images (Returns a list of ImageInformations (Up to 2) and an error/nil)
 	GetPrevNexImages(Tags []TagInformation, TargetID uint64) ([]ImageInformation, error)
-	//GetRandomImage returns a random image (Returns a ImageInformation and an error/nil)
-	GetRandomImage(Tags []TagInformation) (ImageInformation, error)
+	//GetRandomImage returns a random image (Returns a ImageInformation, number of matches to the query, and an error/nil)
+	GetRandomImage(Tags []TagInformation) (ImageInformation, uint64, error)
 
 	//GetQueryTags returns a slice of tags based on a query
 	GetQueryTags(UserQuery string, CollectionContext bool) ([]TagInformation, error)

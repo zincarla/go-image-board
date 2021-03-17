@@ -424,24 +424,24 @@ func (DBConnection *MariaDBPlugin) getPrevNexImage(Tags []interfaces.TagInformat
 }
 
 //GetRandomImage returns a random image (Returns a ImageInformation and an error/nil)
-func (DBConnection *MariaDBPlugin) GetRandomImage(Tags []interfaces.TagInformation) (interfaces.ImageInformation, error) {
+func (DBConnection *MariaDBPlugin) GetRandomImage(Tags []interfaces.TagInformation) (interfaces.ImageInformation, uint64, error) {
 	imageInfo, resultCount, err := DBConnection.SearchImages(Tags, 0, 1)
 
 	if err == nil {
 		if resultCount <= 0 {
-			return interfaces.ImageInformation{}, errors.New("no images found with provided tags")
+			return interfaces.ImageInformation{}, 0, errors.New("no images found with provided tags")
 		}
 		if resultCount == 1 {
-			return imageInfo[0], nil //Shortcut for one result
+			return imageInfo[0], resultCount, nil //Shortcut for one result
 		}
 
 		rando := rand.Float64()
 		randoID := uint64(rando * float64(resultCount))
 		imageInfo, _, err = DBConnection.SearchImages(Tags, randoID, 1)
 		if err == nil {
-			return imageInfo[0], nil
+			return imageInfo[0], resultCount, nil
 		}
-		return interfaces.ImageInformation{}, err
+		return interfaces.ImageInformation{}, resultCount, err
 	}
-	return interfaces.ImageInformation{}, err
+	return interfaces.ImageInformation{}, resultCount, err
 }
