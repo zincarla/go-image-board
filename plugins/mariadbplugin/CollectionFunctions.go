@@ -80,10 +80,10 @@ func (DBConnection *MariaDBPlugin) GetCollections(PageStart uint64, PageStride u
 	) Counts ON Counts.CollectionID = CL.ID
 	-- This part gets a preview image location
 	LEFT JOIN (
-		SELECT Location, CollectionMembers.CollectionID as CollectionID, MIN(CollectionMembers.OrderWeight)
-		FROM Images
-		INNER JOIN CollectionMembers ON CollectionMembers.ImageID = Images.ID
-		GROUP BY CollectionMembers.CollectionID
+		SELECT CM.CollectionID as CollectionID, Images.Location as Location
+		FROM CollectionMembers as CM
+		INNER JOIN Images on Images.ID = CM.ImageID
+		WHERE OrderWeight = (SELECT MIN(OrderWeight) From CollectionMembers WHERE CollectionMembers.CollectionID = CM.CollectionID)
 	) Preview ON Preview.CollectionID = CL.ID
 	ORDER BY Name
 	LIMIT ? OFFSET ?;`

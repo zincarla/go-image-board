@@ -92,10 +92,10 @@ func (DBConnection *MariaDBPlugin) SearchCollections(Tags []interfaces.TagInform
 		GROUP BY CollectionID
 	) Counts ON Counts.CollectionID = ID
 	LEFT JOIN (
-		SELECT Location, CollectionMembers.CollectionID as CollectionID, MIN(CollectionMembers.OrderWeight)
-		FROM Images
-		INNER JOIN CollectionMembers ON CollectionMembers.ImageID = Images.ID
-		GROUP BY CollectionMembers.CollectionID
+		SELECT CM.CollectionID as CollectionID, Images.Location as Location
+		FROM CollectionMembers as CM
+		INNER JOIN Images on Images.ID = CM.ImageID
+		WHERE OrderWeight = (SELECT MIN(OrderWeight) From CollectionMembers WHERE CollectionMembers.CollectionID = CM.CollectionID)
 	) Preview ON Preview.CollectionID = ID `
 
 	if len(IncludeTags) > 0 {
