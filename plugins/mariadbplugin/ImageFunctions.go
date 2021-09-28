@@ -26,8 +26,20 @@ func (DBConnection *MariaDBPlugin) NewImage(ImageName string, ImageFileName stri
 
 //DeleteImage removes an image from the db
 func (DBConnection *MariaDBPlugin) DeleteImage(ImageID uint64) error {
+	//First, remove image from any associated collections
+	collectionInfo, err := DBConnection.GetCollectionsWithImage(ImageID)
+	if err != nil {
+		logging.WriteLog(logging.LogLevelError, "MariaDBPlugin/DeleteImage", "0", logging.ResultFailure, []string{"Failed to get collection data to delete image", err.Error(), strconv.FormatUint(ImageID, 10)})
+		return err
+	}
+
+	for I := 0; I < len(collectionInfo); I++ {
+		err = DBConnection.RemoveCollectionMember(collectionInfo[I].ID, ImageID)
+		logging.WriteLog(logging.LogLevelWarning, "MariaDBPlugin/DeleteImage", "0", logging.ResultFailure, []string{"Failed to remove image from collection", err.Error(), strconv.FormatUint(ImageID, 10)})
+	}
+
 	//First delete ImageTags
-	_, err := DBConnection.DBHandle.Exec("DELETE FROM ImageTags WHERE ImageID=?;", ImageID)
+	_, err = DBConnection.DBHandle.Exec("DELETE FROM ImageTags WHERE ImageID=?;", ImageID)
 	if err != nil {
 		logging.WriteLog(logging.LogLevelError, "MariaDBPlugin/DeleteImage", "0", logging.ResultFailure, []string{"Failed to delete image", err.Error(), strconv.FormatUint(ImageID, 10)})
 		return err
