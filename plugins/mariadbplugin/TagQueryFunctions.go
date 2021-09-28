@@ -74,7 +74,7 @@ func (DBConnection *MariaDBPlugin) GetQueryTags(UserQuery string, CollectionCont
 				TagConstruct = ""
 				InQuote = false
 			}
-		} else if (Tag[0:1] == "\"" && Tag[len(Tag)-1:len(Tag)] == "\"") || (Tag[0:1] == "'" && Tag[len(Tag)-1:len(Tag)] == "'") {
+		} else if (Tag[0:1] == "\"" && Tag[len(Tag)-1:] == "\"") || (Tag[0:1] == "'" && Tag[len(Tag)-1:] == "'") {
 			//Case when tag is already quoted, beggining and ending quotes stripped, then this follows the same as the basic tag. Cleanup, dedupe, add.
 			Tag = prepareTagName(Tag[1 : len(Tag)-1]) //Cleanup, remove beginning and ending quotes
 			if sliceContains(ParsedQueryTags, Tag) == false {
