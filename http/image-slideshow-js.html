@@ -2,6 +2,7 @@
 	<body>
 		<script>
 			SSImageQuery = encodeURI("{{.OldQuery}}");
+			CurrentID = {{.ImageContentInfo.ID}};
 			function OnLoadStartNextSlideTimer() {
 				var time = {{.SlideShowSpeed}};
 				setTimeout(LoadNextSlide, time*1000) //30seconds
@@ -18,6 +19,7 @@
 						$("#ImageGridContainer").empty();
 						$("#ImageGridContainer").append(EmbedData);
 						ImageType = GetImageType(jsonData.Images[0].Location);
+						CurrentID = jsonData.Images[0].ID;
 						if (ImageType=="image") {
 							$("#ImageContent").on('load', function() { CorrectImageOrient("IMGContent"); });
 						}
@@ -31,7 +33,7 @@
 				//Replace ImageGridContainer children, with new image
 			}
 			function QuitSlideShow() {
-				window.location.href = "/images?ViewMode=grid&SearchTerms="+SSImageQuery;
+				window.location.href = "/image?ID="+CurrentID+"&ViewMode=grid&SearchTerms="+SSImageQuery;
 			}
 			window.addEventListener('load', OnLoadStartNextSlideTimer());
 			Mousetrap.bind("enter", QuitSlideShow)
@@ -52,5 +54,5 @@
 				{{end}}
 			</div>
 		</div>
-		<div style="position: fixed;bottom: 0px;left: 0px;"><a href="/images?ViewMode=grid&SearchTerms={{.OldQuery}}">Click here</a> or press Enter to exit slide show</div>
+		<div style="position: fixed;bottom: 0px;left: 0px;"><a href="/images?ViewMode=grid&SearchTerms={{.OldQuery}}" onclick="QuitSlideShow(); return false;">Click here</a> or press Enter to exit slide show</div>
 {{template "footer.html" .}}

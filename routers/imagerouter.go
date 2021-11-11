@@ -23,6 +23,30 @@ func ImageGetRouter(responseWriter http.ResponseWriter, request *http.Request) {
 	var requestedID uint64
 	var err error
 
+	//Change StreamView if requested
+	if request.FormValue("ViewMode") == "stream" {
+		TemplateInput.ViewMode = "stream"
+		_, _, session := getSessionInformation(request)
+		session.Values["ViewMode"] = "stream"
+		session.Save(request, responseWriter)
+	} else if request.FormValue("ViewMode") == "slideshow" {
+		TemplateInput.ViewMode = "slideshow"
+		_, _, session := getSessionInformation(request)
+		session.Values["ViewMode"] = "slideshow"
+		if request.FormValue("slideshowspeed") != "" {
+			parsedSSS, err := strconv.ParseInt(request.FormValue("slideshowspeed"), 10, 64)
+			if err == nil && parsedSSS > 0 {
+				session.Values["slideshowspeed"] = parsedSSS
+			}
+		}
+		session.Save(request, responseWriter)
+	} else if request.FormValue("ViewMode") != "" { //default to grid on invalid modes
+		TemplateInput.ViewMode = "grid"
+		_, _, session := getSessionInformation(request)
+		session.Values["ViewMode"] = "grid"
+		session.Save(request, responseWriter)
+	}
+
 	//ID should come from request
 	requestedID, err = strconv.ParseUint(request.FormValue("ID"), 10, 32)
 	if err != nil {
