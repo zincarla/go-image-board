@@ -292,6 +292,10 @@ func main() {
 		requestRouter.HandleFunc("/api/Image", api.ImagePostAPIRouter).Methods("POST")
 		requestRouter.HandleFunc("/api/Images", api.ImagesGetAPIRouter).Methods("GET")
 		//
+		requestRouter.HandleFunc("/api/Image/{ImageID}/Tags", api.ImageTagsGetAPIRouter).Methods("GET")
+		requestRouter.HandleFunc("/api/Image/{ImageID}/Tags/{TagID}", api.ImageTagsDeleteAPIRouter).Methods("DELETE")
+		requestRouter.HandleFunc("/api/Image/{ImageID}/Tags", api.ImageTagsPostAPIRouter).Methods("POST")
+		//
 		requestRouter.HandleFunc("/api/Logon", api.LogonAPIRouter).Methods("POST")
 		requestRouter.HandleFunc("/api/Logout", api.LogoutAPIRouter).Methods("POST")
 		requestRouter.HandleFunc("/api/Users", api.UsersAPIRouter).Methods("GET")

@@ -72,36 +72,37 @@ func ImageGetRouter(responseWriter http.ResponseWriter, request *http.Request) {
 		logging.WriteLog(logging.LogLevelError, "imagerouter/ImageRouter", TemplateInput.UserInformation.GetCompositeID(), logging.ResultFailure, []string{"Failed to get collection info for", strconv.FormatUint(requestedID, 10), err.Error()})
 	}
 
+	//Get next and previous image based on query
+	userQTags := []interfaces.TagInformation{}
+	err = nil
 	if TemplateInput.OldQuery != "" {
-		//Get next and previous image based on query
-
-		userQTags, err := database.DBInterface.GetQueryTags(TemplateInput.OldQuery, false)
-		if err == nil {
-			//if signed in, add user's global filters to query
-			if TemplateInput.UserInformation.Name != "" {
-				userFilterTags, err := database.DBInterface.GetUserFilterTags(TemplateInput.UserInformation.ID, false)
-				if err != nil {
-					logging.WriteLog(logging.LogLevelError, "imagerouter/ImageRouter", TemplateInput.UserInformation.GetCompositeID(), logging.ResultFailure, []string{"Failed to load user's filter", err.Error()})
-					TemplateInput.HTMLMessage += template.HTML("Failed to add your global filter to this query. Internal error.<br>")
-				} else {
-					userQTags = interfaces.RemoveDuplicateTags(append(userQTags, userFilterTags...))
-				}
-			}
-			prevNextImage, err := database.DBInterface.GetPrevNexImages(userQTags, requestedID)
-			if err == nil {
-				if len(prevNextImage) == 2 {
-					TemplateInput.NextMemberID = prevNextImage[1].ID
-					TemplateInput.PreviousMemberID = prevNextImage[0].ID
-				} else if len(prevNextImage) == 1 {
-					if prevNextImage[0].ID > requestedID {
-						TemplateInput.PreviousMemberID = prevNextImage[0].ID
-					} else {
-						TemplateInput.NextMemberID = prevNextImage[0].ID
-					}
-				}
+		userQTags, err = database.DBInterface.GetQueryTags(TemplateInput.OldQuery, false)
+	}
+	if err == nil {
+		//if signed in, add user's global filters to query
+		if TemplateInput.UserInformation.Name != "" {
+			userFilterTags, err := database.DBInterface.GetUserFilterTags(TemplateInput.UserInformation.ID, false)
+			if err != nil {
+				logging.WriteLog(logging.LogLevelError, "imagerouter/ImageRouter", TemplateInput.UserInformation.GetCompositeID(), logging.ResultFailure, []string{"Failed to load user's filter", err.Error()})
+				TemplateInput.HTMLMessage += template.HTML("Failed to add your global filter to this query. Internal error.<br>")
 			} else {
-				logging.WriteLog(logging.LogLevelError, "imagerouter/ImageRouter", TemplateInput.UserInformation.GetCompositeID(), logging.ResultFailure, []string{"Failed to get next/prev image", err.Error()})
+				userQTags = interfaces.RemoveDuplicateTags(append(userQTags, userFilterTags...))
 			}
+		}
+		prevNextImage, err := database.DBInterface.GetPrevNexImages(userQTags, requestedID)
+		if err == nil {
+			if len(prevNextImage) == 2 {
+				TemplateInput.NextMemberID = prevNextImage[1].ID
+				TemplateInput.PreviousMemberID = prevNextImage[0].ID
+			} else if len(prevNextImage) == 1 {
+				if prevNextImage[0].ID > requestedID {
+					TemplateInput.PreviousMemberID = prevNextImage[0].ID
+				} else {
+					TemplateInput.NextMemberID = prevNextImage[0].ID
+				}
+			}
+		} else {
+			logging.WriteLog(logging.LogLevelError, "imagerouter/ImageRouter", TemplateInput.UserInformation.GetCompositeID(), logging.ResultFailure, []string{"Failed to get next/prev image", err.Error()})
 		}
 	}
 

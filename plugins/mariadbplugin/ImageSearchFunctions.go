@@ -208,16 +208,30 @@ func (DBConnection *MariaDBPlugin) GetPrevNexImages(Tags []interfaces.TagInforma
 
 	var ToReturn []interfaces.ImageInformation
 
-	if imageInfo, err := DBConnection.getPrevNexImage(Tags, TargetID, true); err == nil {
-		ToReturn = append(ToReturn, imageInfo)
-	} else if err != sql.ErrNoRows {
-		return ToReturn, err
-	}
+	if len(Tags) > 0 {
+		if imageInfo, err := DBConnection.getPrevNexImage(Tags, TargetID, true); err == nil {
+			ToReturn = append(ToReturn, imageInfo)
+		} else if err != sql.ErrNoRows {
+			return ToReturn, err
+		}
 
-	if imageInfo, err := DBConnection.getPrevNexImage(Tags, TargetID, false); err == nil {
-		ToReturn = append(ToReturn, imageInfo)
-	} else if err != sql.ErrNoRows {
-		return ToReturn, err
+		if imageInfo, err := DBConnection.getPrevNexImage(Tags, TargetID, false); err == nil {
+			ToReturn = append(ToReturn, imageInfo)
+		} else if err != sql.ErrNoRows {
+			return ToReturn, err
+		}
+	} else {
+		if imageInfo, err := DBConnection.getPrevNextImageWithoutTags(TargetID, true); err == nil {
+			ToReturn = append(ToReturn, imageInfo)
+		} else if err != sql.ErrNoRows {
+			return ToReturn, err
+		}
+
+		if imageInfo, err := DBConnection.getPrevNextImageWithoutTags(TargetID, false); err == nil {
+			ToReturn = append(ToReturn, imageInfo)
+		} else if err != sql.ErrNoRows {
+			return ToReturn, err
+		}
 	}
 
 	return ToReturn, nil
@@ -250,16 +264,11 @@ func (DBConnection *MariaDBPlugin) getPrevNexImage(Tags []interfaces.TagInformat
 
 	//This is the start of the query we want
 	sqlQuery := `SELECT ID, Name, Location `
-	sqlCountQuery := `SELECT COUNT(*) `
+
 	if len(IncludeTags) == 0 {
 		sqlQuery = sqlQuery + `FROM Images `
-		sqlCountQuery = sqlCountQuery + `FROM Images `
 	} else {
 		sqlQuery = sqlQuery + `FROM (
-			SELECT ImageID as ID, Name, Location, COUNT(*) as MatchingTags
-			FROM ImageTags 
-			INNER JOIN Images ON ImageTags.ImageID=Images.ID `
-		sqlCountQuery = sqlCountQuery + `FROM ( 
 			SELECT ImageID as ID, Name, Location, COUNT(*) as MatchingTags
 			FROM ImageTags 
 			INNER JOIN Images ON ImageTags.ImageID=Images.ID `
@@ -348,10 +357,8 @@ func (DBConnection *MariaDBPlugin) getPrevNexImage(Tags []interfaces.TagInformat
 
 	if len(IncludeTags) > 0 {
 		sqlQuery = sqlQuery + sqlWhereClause + `GROUP BY ImageID) InnerStatement WHERE MatchingTags = ? `
-		sqlCountQuery = sqlCountQuery + sqlWhereClause + `GROUP BY ImageID) InnerStatement WHERE MatchingTags = ? `
 	} else {
 		sqlQuery = sqlQuery + sqlWhereClause
-		sqlCountQuery = sqlCountQuery + sqlWhereClause
 	}
 
 	//Add Order
@@ -444,4 +451,48 @@ func (DBConnection *MariaDBPlugin) GetRandomImage(Tags []interfaces.TagInformati
 		return interfaces.ImageInformation{}, resultCount, err
 	}
 	return interfaces.ImageInformation{}, resultCount, err
+}
+
+//getPrevNextImageWithoutTags performs a search for images (Returns an ImageInformation and an error/nil)
+func (DBConnection *MariaDBPlugin) getPrevNextImageWithoutTags(TargetID uint64, Next bool) (interfaces.ImageInformation, error) {
+	//Initialize output
+	var ToReturn interfaces.ImageInformation
+	//var MaxResults uint64
+
+	//Construct SQL Query
+
+	//This is the start of the query we want
+	sqlQuery := `SELECT ID, Name, Location FROM Images `
+
+	//Add changes for next/prev
+	sqlWhereClause := "WHERE "
+
+	if Next == false {
+		sqlWhereClause += "Images.ID < ? "
+	} else {
+		sqlWhereClause += "Images.ID > ? "
+	}
+
+	sqlQuery = sqlQuery + sqlWhereClause
+
+	//Add Order
+	order := "DESC "
+	if Next {
+		order = ""
+	}
+	sqlQuery = sqlQuery + `ORDER BY ID ` + order + `LIMIT 1;`
+
+	//Placeholders for data returned by each row
+	var ImageID uint64
+	var Name string
+	var Location string
+
+	//Now we have query and args, run the query
+	err := DBConnection.DBHandle.QueryRow(sqlQuery, TargetID).Scan(&ImageID, &Name, &Location)
+	if err != nil {
+		return ToReturn, err
+	}
+	ToReturn = interfaces.ImageInformation{Name: Name, ID: ImageID, Location: Location}
+
+	return ToReturn, nil
 }
