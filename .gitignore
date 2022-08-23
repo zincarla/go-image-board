@@ -8,3 +8,5 @@ gib
 .vs
 go-image-board
 *.log
+testtools/*
+testtools\*

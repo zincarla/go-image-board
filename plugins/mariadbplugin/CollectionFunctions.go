@@ -460,3 +460,14 @@ func (DBConnection *MariaDBPlugin) GetCollectionTags(CollectionID uint64) ([]int
 	}
 	return ToReturn, nil
 }
+
+//GetCollectionTags returns a list of TagInformation for all tags that apply to the given collection
+func (DBConnection *MariaDBPlugin) FixCollectionTags(CollectionID uint64) (int64, error) {
+	results, err := DBConnection.DBHandle.Exec("CALL LinkCollTags(?)", CollectionID)
+
+	if err != nil {
+		return 0, err
+	}
+
+	return results.RowsAffected()
+}

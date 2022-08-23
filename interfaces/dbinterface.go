@@ -140,4 +140,6 @@ type DBInterface interface {
 	SearchCollections(Tags []TagInformation, PageStart uint64, PageStride uint64) ([]CollectionInformation, uint64, error)
 	//GetCollectionTags returns a list of TagInformation for all tags that apply to the given collection
 	GetCollectionTags(CollectionID uint64) ([]TagInformation, error)
+	//FixCollectionTags verifies and fixes collection tags, returns row count and error
+	FixCollectionTags(CollectionID uint64) (int64, error)
 }

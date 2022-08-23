@@ -33,6 +33,7 @@ func main() {
 	missingOnly := flag.Bool("missingonly", false, "When used with dhashonly or thumbsonly, prevents deleting pre-existing entries.")
 	renameFilesOnly := flag.Bool("renameonly", false, "Renames all posts and corrects the names in the database. Use if changing naming convention of files.")
 	removeOrphanFiles := flag.Bool("removeorphanfiles", false, "Removes images and thumbnails that do not have an associated database entry.")
+	fixCollectionTags := flag.Bool("fixcollectiontags", false, "Validates and fixes tags applied to all collections")
 	flag.Parse()
 
 	//Load succeeded
@@ -230,6 +231,37 @@ func main() {
 				logging.WriteLog(logging.LogLevelError, "main/main", "0", logging.ResultFailure, []string{"Failed to get image from database due to an unexpected db error, it will be skipped", file.Name(), err.Error()})
 			}
 		}
+
+		return //We do not want to start server if used in cli
+	}
+	if *fixCollectionTags {
+		//Loop through all collections
+		page := uint64(0)
+		processedCollections := uint64(0)
+		for true {
+			collections, maxCount, err := database.DBInterface.SearchCollections([]interfaces.TagInformation{}, page, config.Configuration.PageStride)
+			page += config.Configuration.PageStride
+			if err != nil {
+				logging.WriteLog(logging.LogLevelError, "main/main", "0", logging.ResultFailure, []string{"Error processing hashes.", err.Error()})
+				break
+			}
+			if len(collections) <= 0 {
+				logging.WriteLog(logging.LogLevelInfo, "main/main", "0", logging.ResultInfo, []string{"Finished queing collections"})
+				break
+			}
+			logging.WriteLog(logging.LogLevelInfo, "main/main", "0", logging.ResultInfo, []string{"Queing", strconv.FormatUint(page, 10), "of", strconv.FormatUint(maxCount, 10)})
+			for _, nextCollection := range collections {
+				//Fix missing tags
+				count, err := database.DBInterface.FixCollectionTags(nextCollection.ID)
+				if err != nil {
+					logging.WriteLog(logging.LogLevelError, "main/main", "0", logging.ResultInfo, []string{"Failed to fix collection images", err.Error()})
+				} else if err == nil && count > 0 {
+					logging.WriteLog(logging.LogLevelInfo, "main/main", "0", logging.ResultInfo, []string{"Fixed colllection tags", nextCollection.Name, "rows", strconv.FormatInt(count, 10)})
+				}
+				processedCollections++
+			}
+		}
+		logging.WriteLog(logging.LogLevelInfo, "main/main", "0", logging.ResultInfo, []string{"Completed collection tag correction"})
 
 		return //We do not want to start server if used in cli
 	}
