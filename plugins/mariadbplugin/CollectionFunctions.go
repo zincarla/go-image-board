@@ -461,7 +461,7 @@ func (DBConnection *MariaDBPlugin) GetCollectionTags(CollectionID uint64) ([]int
 	return ToReturn, nil
 }
 
-//GetCollectionTags returns a list of TagInformation for all tags that apply to the given collection
+//FixCollectionTags  verifies and fixes collection tags, returns row count and error
 func (DBConnection *MariaDBPlugin) FixCollectionTags(CollectionID uint64) (int64, error) {
 	results, err := DBConnection.DBHandle.Exec("CALL LinkCollTags(?)", CollectionID)
 
