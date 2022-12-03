@@ -243,24 +243,6 @@ function getMIME(extension, fallback) {
 	}
 }
 
-
-
-function CorrectImageOrient(imgID) {
-    var imgElement = document.getElementById(imgID);
-     window.EXIF.getData(imgElement, function () {
-        var orientation = EXIF.getTag(this, "Orientation");
-        if (orientation && orientation != 1) {
-            var canvas = window.loadImage.scale(imgElement, {orientation: orientation || 0,maxWidth: 1000,maxHeight: 1000,canvas:true});
-            var newIMG = document.createElement("img");
-            newIMG.src = canvas.toDataURL();
-            newIMG.id = imgID;
-            newIMG.alt = imgElement.alt;
-            newIMG.style = imgElement.style;
-            imgElement.parentNode.replaceChild(newIMG,imgElement);
-        } //Otherwise not needed
-    });
-}
-
 //Global Shortcuts
 var MousetrapShortcuts = "?=help\r\nr=random search\r\nq=edit search terms\r\nright arrow=next image\r\nleft arrow=prev image\r\nctrl+right arrow=next page\r\nCtrl+left arrow=prev page";
 Mousetrap.bind("?", function() { console.log(MousetrapShortcuts); });
