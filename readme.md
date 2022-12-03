@@ -12,13 +12,23 @@ Go! ImageBoard is a minimalistic booru style image board written in Go using a m
 
 ## Installation
 
-You will need a functional MariaDB/MySQL instance for the service to use. If you plan to use docker, you will need a functional docker installation as well. You may run this without docker, however you will need to compile it yourself. Once you have the service installed, keep in mind how you are going to create your first admin account. See the `Your first account` section below for options.
+You will need a functional MariaDB/MySQL instance for the service to use. If you plan to use docker, you will need a functional docker installation as well. Once you have the service installed, keep in mind how you are going to create your first admin account. See the `Your first account` section below for options.
+
+### Vanilla Docker Run
+
+You can run an instance from docker without any customizations or building with:
+
+```
+docker run --name myimageboard -p 80:8080 -v /var/docker/myimageboard/images:/var/go-image-board/images -v /var/docker/myimageboard/configuration:/var/go-image-board/configuration -d ziviz/go-image-board:latest
+```
+
+This will create your container, and start it. It will immediately stop as the config file still needs to be filled out with database information. Per the example command, the config file would be generated at `/var/docker/myimageboard/configuration/config.json`
 
 ### Simple Docker Build
 
-These steps will get you up and running immediately
+These steps will get you up and running
 
-1. Copy the executable, http/*, and the dockerfile to your build directory
+1. Copy the executable, the http folder, and the dockerfile to your build directory
 2. cd to your build directory
 3. Build the image
 ```
@@ -35,7 +45,7 @@ docker run --name myimageboard -p 80:8080 -v /var/docker/myimageboard/images:/va
 
 Similiar to the previous steps, the main difference here is that you are supplying your own template files to customize the look of the image board.
 
-1. Copy the executable, http/*, and the dockerfile to your build directory
+1. Copy the executable, the http folder, and the dockerfile to your build directory
 2. cd to your build directory
 3. Build the image
 ```
