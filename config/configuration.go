@@ -75,7 +75,7 @@ type ConfigurationSettings struct {
 	TargetLogLevel int64
 	//LoggingWhiteList regex based white-list for logging
 	LoggingWhiteList string
-	//LoggingWhiteList regex based white-list for logging
+	//LoggingBlackList regex based black-list for logging
 	LoggingBlackList string
 }
 
