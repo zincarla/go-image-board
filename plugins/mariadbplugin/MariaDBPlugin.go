@@ -93,6 +93,18 @@ func (DBConnection *MariaDBPlugin) performFreshDBInstall() error {
 		logging.WriteLog(logging.LogLevelError, "MariaDBPlugin/performFreshDBInstall", "0", logging.ResultFailure, []string{"Failed to install database", err.Error()})
 		return err
 	}
+	//Users
+	_, err = DBConnection.DBHandle.Exec("CREATE TABLE Users (ID BIGINT UNSIGNED NOT NULL AUTO_INCREMENT UNIQUE, Name VARCHAR(40) NOT NULL UNIQUE, EMail VARCHAR(255) NOT NULL UNIQUE, PasswordHash VARCHAR(255) NOT NULL, TokenID VARCHAR(255), IP VARCHAR(50), SecQuestionOne VARCHAR(50), SecQuestionTwo VARCHAR(50), SecQuestionThree VARCHAR(50), SecAnswerOne VARCHAR(255), SecAnswerTwo VARCHAR(255), SecAnswerThree VARCHAR(255), CreationTime TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL, Disabled BOOL NOT NULL DEFAULT FALSE, Permissions BIGINT UNSIGNED NOT NULL DEFAULT 0, SearchFilter VARCHAR(255) NOT NULL DEFAULT '');")
+	if err != nil {
+		logging.WriteLog(logging.LogLevelError, "MariaDBPlugin/performFreshDBInstall", "0", logging.ResultFailure, []string{"Failed to install database", err.Error()})
+		return err
+	}
+	//Images
+	_, err = DBConnection.DBHandle.Exec("CREATE TABLE Images (ID BIGINT UNSIGNED NOT NULL AUTO_INCREMENT UNIQUE, UploaderID BIGINT UNSIGNED NOT NULL, Name VARCHAR(255) NOT NULL, Rating VARCHAR(255) DEFAULT 'unrated', ScoreTotal BIGINT NOT NULL DEFAULT 0, ScoreAverage BIGINT NOT NULL DEFAULT 0, ScoreVoters BIGINT NOT NULL DEFAULT 0, Location VARCHAR(255) UNIQUE NOT NULL, Source VARCHAR(2000) NOT NULL DEFAULT '', UploadTime TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL, Description TEXT NOT NULL DEFAULT '', INDEX(UploaderID), INDEX(Rating), INDEX(UploadTime), INDEX(ScoreAverage));")
+	if err != nil {
+		logging.WriteLog(logging.LogLevelError, "MariaDBPlugin/performFreshDBInstall", "0", logging.ResultFailure, []string{"Failed to install database", err.Error()})
+		return err
+	}
 	_, err = DBConnection.DBHandle.Exec("CREATE TABLE ImageTags (ID BIGINT UNSIGNED NOT NULL AUTO_INCREMENT UNIQUE, ImageID BIGINT UNSIGNED NOT NULL, TagID BIGINT UNSIGNED NOT NULL, LinkerID BIGINT UNSIGNED NOT NULL, LinkTime TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL, UNIQUE INDEX ImageTagPair (TagID,ImageID), INDEX(ImageID), INDEX(LinkerID), CONSTRAINT fk_ImageTagsImageID FOREIGN KEY (ImageID) REFERENCES Images(ID), CONSTRAINT fk_ImageTagsTagID FOREIGN KEY (TagID) REFERENCES Tags(ID));")
 	if err != nil {
 		logging.WriteLog(logging.LogLevelError, "MariaDBPlugin/performFreshDBInstall", "0", logging.ResultFailure, []string{"Failed to install database", err.Error()})
@@ -103,18 +115,7 @@ func (DBConnection *MariaDBPlugin) performFreshDBInstall() error {
 		logging.WriteLog(logging.LogLevelError, "MariaDBPlugin/performFreshDBInstall", "0", logging.ResultFailure, []string{"Failed to install database", err.Error()})
 		return err
 	}
-	_, err = DBConnection.DBHandle.Exec("CREATE TABLE Images (ID BIGINT UNSIGNED NOT NULL AUTO_INCREMENT UNIQUE, UploaderID BIGINT UNSIGNED NOT NULL, Name VARCHAR(255) NOT NULL, Rating VARCHAR(255) DEFAULT 'unrated', ScoreTotal BIGINT NOT NULL DEFAULT 0, ScoreAverage BIGINT NOT NULL DEFAULT 0, ScoreVoters BIGINT NOT NULL DEFAULT 0, Location VARCHAR(255) UNIQUE NOT NULL, Source VARCHAR(2000) NOT NULL DEFAULT '', UploadTime TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL, Description TEXT NOT NULL DEFAULT '', INDEX(UploaderID), INDEX(Rating), INDEX(UploadTime), INDEX(ScoreAverage));")
-	if err != nil {
-		logging.WriteLog(logging.LogLevelError, "MariaDBPlugin/performFreshDBInstall", "0", logging.ResultFailure, []string{"Failed to install database", err.Error()})
-		return err
-	}
 	_, err = DBConnection.DBHandle.Exec("CREATE TABLE ImageUserScores (ID BIGINT UNSIGNED NOT NULL AUTO_INCREMENT UNIQUE, UserID BIGINT UNSIGNED NOT NULL, ImageID BIGINT UNSIGNED NOT NULL, Score BIGINT NOT NULL, CreationTime TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL, UNIQUE INDEX ImageUserPair (UserID,ImageID));")
-	if err != nil {
-		logging.WriteLog(logging.LogLevelError, "MariaDBPlugin/performFreshDBInstall", "0", logging.ResultFailure, []string{"Failed to install database", err.Error()})
-		return err
-	}
-	//Users
-	_, err = DBConnection.DBHandle.Exec("CREATE TABLE Users (ID BIGINT UNSIGNED NOT NULL AUTO_INCREMENT UNIQUE, Name VARCHAR(40) NOT NULL UNIQUE, EMail VARCHAR(255) NOT NULL UNIQUE, PasswordHash VARCHAR(255) NOT NULL, TokenID VARCHAR(255), IP VARCHAR(50), SecQuestionOne VARCHAR(50), SecQuestionTwo VARCHAR(50), SecQuestionThree VARCHAR(50), SecAnswerOne VARCHAR(255), SecAnswerTwo VARCHAR(255), SecAnswerThree VARCHAR(255), CreationTime TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL, Disabled BOOL NOT NULL DEFAULT FALSE, Permissions BIGINT UNSIGNED NOT NULL DEFAULT 0, SearchFilter VARCHAR(255) NOT NULL DEFAULT '');")
 	if err != nil {
 		logging.WriteLog(logging.LogLevelError, "MariaDBPlugin/performFreshDBInstall", "0", logging.ResultFailure, []string{"Failed to install database", err.Error()})
 		return err
