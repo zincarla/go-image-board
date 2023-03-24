@@ -144,11 +144,17 @@ User permissions are stored in the database as an unsigned 64 bit integer where 
 
 ### Your first account
 
-When creating a new Go! Image Board, you have 2 options to create an admin account. 
+When creating a new Go! Image Board, you have 3 options to create your initial admin account. 
 
-The first, is to temporarily start your new board with `AllowAccountCreation` set to `true` and `DefaultPermissions` set to `4294967295`. Granting anyone who registers full admin. You can then create your account, set `DefaultPermissions` to something more reasonable and restart the service.
+The first, is to use the cli option after the initial setup.
 
-The second option, is to set `AllowAccountCreation` to `true`, create your account, and then manually set your permissions in the database to `4294967295`, granting your account full control.
+```bash
+gib -createuser -email some@email.com -username AdminOrSomething -password somePassword
+```
+
+The second, you can temporarily start your new board with `AllowAccountCreation` set to `true` and `DefaultPermissions` set to `4294967295`. Granting anyone who registers full admin. You can then create your account, set `DefaultPermissions` to something more reasonable and restart the service. This is best done before your board is publicly accessible.
+
+The last option, is to set `AllowAccountCreation` to `true`, create your account, and then manually set your permissions in the database to `4294967295`, granting your account full control.
 
 ## About files
 
