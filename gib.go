@@ -19,6 +19,7 @@ import (
 	"path"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -34,6 +35,14 @@ func main() {
 	renameFilesOnly := flag.Bool("renameonly", false, "Renames all posts and corrects the names in the database. Use if changing naming convention of files.")
 	removeOrphanFiles := flag.Bool("removeorphanfiles", false, "Removes images and thumbnails that do not have an associated database entry.")
 	fixCollectionTags := flag.Bool("fixcollectiontags", false, "Validates and fixes tags applied to all collections")
+
+	//For account creation
+	newUserOnly := flag.Bool("createuser", false, "Creates a new user")
+	newUserName := flag.String("username", "", "Name of your new user")
+	newUserPassword := flag.String("password", "", "Password for your new user")
+	newUserEmail := flag.String("email", "", "Email for your new user")
+	newUserPermissions := flag.Uint64("permissions", 4294967295, "Permissions to grant new user (Defaults to admin!)")
+
 	flag.Parse()
 
 	//Load succeeded
@@ -264,6 +273,25 @@ func main() {
 		logging.WriteLog(logging.LogLevelInfo, "main/main", "0", logging.ResultInfo, []string{"Completed collection tag correction"})
 
 		return //We do not want to start server if used in cli
+	}
+	if *newUserOnly {
+		if *newUserName == "" || *newUserPassword == "" || *newUserEmail == "" {
+			logging.WriteLog(logging.LogLevelError, "main/main", "0", logging.ResultFailure, []string{"When creating a new user by CLI, the Name, Password, and Email are required", err.Error()})
+			return
+		}
+		if err = database.DBInterface.ValidateProposedUsername(*newUserName); err != nil {
+			logging.WriteLog(logging.LogLevelError, "main/main", "0", logging.ResultFailure, []string{"Failed to validate username", *newUserName, err.Error()})
+			return
+		}
+		if err = routers.ValidateProposedEmail(strings.ToLower(*newUserEmail)); err != nil {
+			logging.WriteLog(logging.LogLevelError, "main/main", "0", logging.ResultFailure, []string{"Failed to validate user email", *newUserEmail, err.Error()})
+			return
+		}
+		err = database.DBInterface.CreateUser(*newUserName, []byte(*newUserPassword), *newUserEmail, *newUserPermissions)
+		if err != nil {
+			logging.WriteLog(logging.LogLevelError, "main/main", "0", logging.ResultFailure, []string{"Failed to create requested user", *newUserName, *newUserEmail, strconv.FormatUint(*newUserPermissions, 10), err.Error()})
+		}
+		return
 	}
 	//Verify TLS Settings
 	if config.Configuration.UseTLS {

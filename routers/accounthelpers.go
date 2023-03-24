@@ -34,8 +34,8 @@ func getSessionInformation(request *http.Request) (string, string, *sessions.Ses
 	return userName, tokenID, session
 }
 
-//validateProposedEmail is a helper function to determine wether an e-mail is valid or not.
-func validateProposedEmail(email string) error {
+//ValidateProposedEmail is a helper function to determine wether an e-mail is valid or not.
+func ValidateProposedEmail(email string) error {
 	match, err := regexp.MatchString("^\\w+([-+.']\\w+)*@\\w+([-.]\\w+)*\\.\\w+([-.]\\w+)*$", email)
 	if match == false {
 		return errors.New("invalid e-mail... or at least a really odd one")

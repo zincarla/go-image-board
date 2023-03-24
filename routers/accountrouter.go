@@ -147,7 +147,7 @@ func LogonPostRouter(responseWriter http.ResponseWriter, request *http.Request) 
 			redirectWithFlash(responseWriter, request, "/logon", TemplateInput.HTMLMessage, "AccountFailed")
 			return
 		}
-		if request.FormValue("eMail") == "" || validateProposedEmail(strings.ToLower(request.FormValue("eMail"))) != nil {
+		if request.FormValue("eMail") == "" || ValidateProposedEmail(strings.ToLower(request.FormValue("eMail"))) != nil {
 			//If username is blank
 			logging.WriteLog(logging.LogLevelError, "accountrouter/LogonRouter", TemplateInput.UserInformation.GetCompositeID(), logging.ResultFailure, []string{"Account Creation", "E-Mail is either blank, or not formatted correctly"})
 			TemplateInput.HTMLMessage += template.HTML("Create failed, your E-Mail is incorrectly formatted.<br>")
