@@ -1,6 +1,7 @@
 configuration/*
 configuration\*
 *.exe
+*.zip
 images\*
 images/*
 .vscode
