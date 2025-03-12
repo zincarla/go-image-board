@@ -2,13 +2,13 @@
 
 Go! ImageBoard is a minimalistic booru style image board written in Go using a mysql/MariaDB backend with containerization as a primary goal.
 
-![Font page example](http://ziviz.us/images/GIBFrontPage.PNG "Front Page")
+![Font page example](https://ziviz.us/images/GIBFrontPage.PNG "Front Page")
 ----
 
-![Example of search](http://ziviz.us/images/GIBSearch.PNG "Search Page")
+![Example of search](https://ziviz.us/images/GIBSearch.PNG "Search Page")
 ----
 
-![Example of image](http://ziviz.us/images/GIBIndividualImage.PNG "Individual Image Details")
+![Example of image](https://ziviz.us/images/GIBIndividualImage.PNG "Individual Image Details")
 
 ## Installation
 
@@ -136,7 +136,7 @@ under
 <link rel="stylesheet" href="/resources/core.css">
 ```
 
-![Example of DarkTheme](http://ziviz.us/images/GIBDarkSearch.PNG "DarkTheme Image Details")
+![Example of DarkTheme](https://ziviz.us/images/GIBDarkSearch.PNG "DarkTheme Image Details")
 
 ## User Permissions
 
